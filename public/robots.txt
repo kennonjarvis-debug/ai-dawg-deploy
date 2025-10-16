@@ -1,0 +1,10 @@
+# robots.txt for AI DAW
+
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /settings/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://aidaw.com/sitemap.xml

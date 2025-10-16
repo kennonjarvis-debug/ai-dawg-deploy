@@ -1,0 +1,37 @@
+export { TransportBar } from './TransportBar';
+export { Timeline } from './Timeline';
+export { Track } from './Track';
+export { AudioClip } from './AudioClip';
+export { TimeRuler } from './TimeRuler';
+export { ProjectList } from './ProjectList';
+export { ProjectCard } from './ProjectCard';
+export { CreateProjectModal } from './CreateProjectModal';
+export { LoginForm } from './LoginForm';
+export { RegisterForm } from './RegisterForm';
+export { CollaboratorList } from './CollaboratorList';
+export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
+export { LoadingSpinner, SkeletonLoader, SkeletonCard } from './LoadingSpinner';
+export { AudioUploader } from './AudioUploader';
+export { AudioFileList } from './AudioFileList';
+export { MixerPanel } from './MixerPanel';
+export { ExportModal } from './ExportModal';
+export { AIDawgMenu } from './AIDawgMenu';
+export { AIProcessingModal } from './AIProcessingModal';
+export type { AIProcessingJob } from './AIProcessingModal';
+export { AIChatWidget } from './AIChatWidget';
+export { UpsellModal } from './UpsellModal';
+export { GenreSelector } from './GenreSelector';
+export { ProjectSettingsModal } from './ProjectSettingsModal';
+export { AIFeatureHub } from './AIFeatureHub';
+export { LiveWaveformRecorder } from './LiveWaveformRecorder';
+export { SectionMarkers } from './SectionMarkers';
+export type { SectionMarker, SectionType } from './SectionMarkers';
+export { RealtimePitchDisplay } from './RealtimePitchDisplay';
+export { FreestyleSession } from './FreestyleSession';
+export type { FreestyleSessionProps } from './FreestyleSession';
+export { FreestyleSessionEnhanced } from './FreestyleSessionEnhanced';
+export { default as PunchMarkers } from './PunchMarkers';
+export type { PunchMarker } from './PunchMarkers';
+
+// Base UI Components
+export { Modal, Button, ButtonGroup, Input, Select, Textarea, Checkbox, FormField } from './base';

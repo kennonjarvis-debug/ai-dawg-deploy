@@ -1,0 +1,31 @@
+
+:root {
+  --color-bg-base: #0D0D0F;
+  --color-bg-surface: #151518;
+  --color-bg-surface-2: #1A1A1D;
+  --color-bg-surface-hover: #202023;
+
+  --color-border-base: #2A2A2E;
+  --color-border-strong: #3A3A3F;
+
+  --color-text-base: #E0E0E0;
+  --color-text-muted: #8A8A90;
+  --color-text-dim: #6A6A70;
+
+  --color-primary: #4F46E5;
+  --color-primary-hover: #6366F1;
+  --color-secondary: #EC4899;
+
+  --font-family-sans: 'Inter', sans-serif;
+  --font-family-mono: 'Roboto Mono', monospace;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-base);
+  font-family: var(--font-family-sans);
+}

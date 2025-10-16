@@ -1,0 +1,27 @@
+{
+  "name": "AI DAW - Digital Audio Workstation",
+  "short_name": "AI DAW",
+  "description": "AI-powered Digital Audio Workstation for music production",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [],
+  "categories": ["music", "productivity", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Open DAW",
+      "short_name": "DAW",
+      "description": "Open the AI DAW interface",
+      "url": "/app"
+    },
+    {
+      "name": "Pricing",
+      "short_name": "Pricing",
+      "description": "View pricing plans",
+      "url": "/pricing"
+    }
+  ],
+  "prefer_related_applications": false
+}

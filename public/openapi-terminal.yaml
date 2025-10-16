@@ -1,0 +1,87 @@
+openapi: 3.1.0
+info:
+  title: AI DAWG Terminal Control API
+  description: Remote terminal execution for AI DAWG development environment
+  version: 1.0.0
+servers:
+  - url: https://kaycee-nonextrinsical-yosef.ngrok-free.dev/api/v1/app
+    description: AI DAWG Backend (via ngrok)
+paths:
+  /terminal/execute:
+    post:
+      operationId: executeTerminalCommand
+      summary: Execute a terminal command remotely
+      description: Executes a terminal command with security validation. Supports AI CLI tools (node, gemini, codex).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  description: The terminal command to execute
+                  example: "node scripts/orchestration/orchestrate-cli.js \"What is 2+2?\" --models gemini"
+                timeout:
+                  type: integer
+                  description: Command timeout in milliseconds (default 30000, max 60000)
+                  default: 30000
+                  minimum: 0
+                  maximum: 60000
+                workingDir:
+                  type: string
+                  description: Working directory for command execution (optional)
+              required:
+                - command
+      responses:
+        '200':
+          description: Command executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  command:
+                    type: string
+                  output:
+                    type: string
+                  exitCode:
+                    type: integer
+                  executionTime:
+                    type: integer
+                  riskLevel:
+                    type: string
+                  timestamp:
+                    type: string
+        '403':
+          description: Command blocked by firewall
+        '500':
+          description: Command execution failed
+  /terminal/validate:
+    post:
+      operationId: validateTerminalCommand
+      summary: Validate a command without executing it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+              required:
+                - command
+      responses:
+        '200':
+          description: Command validation result
+components:
+  schemas: {}
+  securitySchemes:
+    ChatGPTAppKey:
+      type: apiKey
+      in: header
+      name: X-ChatGPT-App-Key
+security:
+  - ChatGPTAppKey: []

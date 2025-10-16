@@ -1,0 +1,521 @@
+openapi: 3.0.0
+info:
+  title: Jarvis AI Assistant API
+  version: 2.0.0
+  description: |
+    AI DAWG Jarvis autonomous AI assistant with adaptive learning,
+    self-awareness, and autonomous action management.
+
+servers:
+  - url: https://kaycee-nonextrinsical-yosef.ngrok-free.dev/api/v1/jarvis
+    description: Production server
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /vitality:
+    get:
+      operationId: getVitality
+      summary: Get Jarvis self-awareness vitality status
+      description: Returns vitality index (0-100), status, recent actions, and error rate
+      tags:
+        - Self-Awareness
+      responses:
+        '200':
+          description: Vitality data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vitalityIndex:
+                    type: number
+                    description: Overall health score (0-100)
+                    example: 87.5
+                  status:
+                    type: string
+                    enum: [excellent, good, fair, poor, critical]
+                    example: excellent
+                  recentActions:
+                    type: number
+                    description: Actions executed in last hour
+                    example: 42
+                  errorRate:
+                    type: number
+                    description: Percentage of failed actions
+                    example: 2.3
+                  metrics:
+                    type: object
+                    properties:
+                      successRate:
+                        type: number
+                      avgResponseTime:
+                        type: number
+                      totalActions:
+                        type: number
+
+  /adaptive/insights:
+    get:
+      operationId: getInsights
+      summary: Get AI-powered learning insights
+      description: Returns insights and recommendations from adaptive learning engine
+      tags:
+        - Adaptive Learning
+      responses:
+        '200':
+          description: Learning insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  insights:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum: [pattern, anomaly, suggestion, warning]
+                        message:
+                          type: string
+                        confidence:
+                          type: number
+                        timestamp:
+                          type: string
+                          format: date-time
+
+  /adaptive/stats:
+    get:
+      operationId: getAdaptiveStats
+      summary: Get adaptive engine statistics
+      description: Returns learning metrics and performance statistics
+      tags:
+        - Adaptive Learning
+      responses:
+        '200':
+          description: Statistics data
+
+  /actions:
+    get:
+      operationId: getPendingActions
+      summary: Get pending autonomous actions
+      description: Returns actions awaiting approval, organized by clearance level
+      tags:
+        - Autonomy
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, executed, failed]
+        - name: clearanceLevel
+          in: query
+          schema:
+            type: string
+            enum: [LOW, MEDIUM, HIGH]
+      responses:
+        '200':
+          description: List of actions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        moduleName:
+                          type: string
+                        actionType:
+                          type: string
+                        clearanceLevel:
+                          type: string
+                          enum: [LOW, MEDIUM, HIGH]
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        status:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        reasoning:
+                          type: string
+                        parameters:
+                          type: object
+
+    post:
+      operationId: proposeAction
+      summary: Propose a new autonomous action
+      description: |
+        Creates a new action proposal with specified clearance level:
+        - LOW: Auto-executes immediately (safe operations)
+        - MEDIUM: Notifies user, executes after 5min delay
+        - HIGH: Requires explicit user approval
+      tags:
+        - Autonomy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - moduleName
+                - actionType
+                - clearanceLevel
+                - title
+                - description
+              properties:
+                moduleName:
+                  type: string
+                  example: music
+                actionType:
+                  type: string
+                  example: cleanup_temp_files
+                clearanceLevel:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH]
+                  example: LOW
+                title:
+                  type: string
+                  example: Cleanup temporary files
+                description:
+                  type: string
+                  example: Remove 150 temporary audio files older than 7 days
+                parameters:
+                  type: object
+                  example: { fileCount: 150, maxAge: 7 }
+                reasoning:
+                  type: string
+                  example: Automatic cleanup to free disk space
+      responses:
+        '200':
+          description: Action proposal created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposal:
+                    type: object
+                  vitalityCheck:
+                    type: object
+                  autoExecuted:
+                    type: boolean
+
+  /actions/{id}/approve:
+    post:
+      operationId: approveAction
+      summary: Approve a pending action
+      description: Approves and executes a HIGH clearance action
+      tags:
+        - Autonomy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Action approved and executed
+
+  /actions/{id}/reject:
+    post:
+      operationId: rejectAction
+      summary: Reject a pending action
+      description: Rejects a pending action with optional reason
+      tags:
+        - Autonomy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Action rejected
+
+  /clearance/config:
+    get:
+      operationId: getClearanceConfig
+      summary: Get clearance system configuration
+      description: Returns current clearance level settings and delays
+      tags:
+        - Clearance System
+      responses:
+        '200':
+          description: Configuration data
+
+  /desktop/quick-vitality:
+    get:
+      operationId: getQuickVitality
+      summary: Fast vitality check for desktop widgets
+      description: Lightweight endpoint optimized for frequent polling (120 req/min)
+      tags:
+        - Desktop Integration
+      responses:
+        '200':
+          description: Quick vitality data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vitalityIndex:
+                    type: number
+                  status:
+                    type: string
+                  recentActions:
+                    type: number
+                  errorRate:
+                    type: number
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /desktop/recommendations:
+    get:
+      operationId: getRecommendations
+      summary: Get personalized AI recommendations
+      description: Returns AI-powered recommendations based on usage patterns
+      tags:
+        - Desktop Integration
+      parameters:
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recommendations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        type:
+                          type: string
+                          enum: [feature_suggestion, workflow_optimization, error_prevention, performance_improvement, learning_opportunity, proactive_maintenance, usage_insight]
+                        priority:
+                          type: string
+                          enum: [low, medium, high, urgent]
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        actionable:
+                          type: boolean
+                        action:
+                          type: object
+                        estimatedImpact:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+
+  /desktop/execute-action:
+    post:
+      operationId: executeAction
+      summary: Execute a Jarvis action
+      description: Executes an action with multimodal context (voice + screen + system)
+      tags:
+        - Desktop Integration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  description: Action name or natural language command
+                  example: analyze_productivity
+                parameters:
+                  type: object
+                  example: { period: "today" }
+                context:
+                  type: object
+                  description: Multimodal context
+                  properties:
+                    voice:
+                      type: object
+                      properties:
+                        transcription:
+                          type: string
+                        confidence:
+                          type: number
+                    screen:
+                      type: object
+                      properties:
+                        imageBase64:
+                          type: string
+                        captureType:
+                          type: string
+                        metadata:
+                          type: object
+                    system:
+                      type: object
+                      properties:
+                        activeApp:
+                          type: string
+                        cpu:
+                          type: number
+                        memory:
+                          type: number
+      responses:
+        '200':
+          description: Action executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  result:
+                    type: object
+                  executionTime:
+                    type: number
+
+  /desktop/session/start:
+    post:
+      operationId: startSession
+      summary: Start desktop app session
+      description: Initializes session tracking and analytics
+      tags:
+        - Desktop Integration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - platform
+                - appVersion
+              properties:
+                sessionId:
+                  type: string
+                platform:
+                  type: string
+                  enum: [mac, windows, linux]
+                appVersion:
+                  type: string
+      responses:
+        '200':
+          description: Session started
+
+  /desktop/session/end:
+    post:
+      operationId: endSession
+      summary: End desktop app session
+      tags:
+        - Desktop Integration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+              properties:
+                sessionId:
+                  type: string
+      responses:
+        '200':
+          description: Session ended
+
+  /desktop/usage-event:
+    post:
+      operationId: trackUsageEvent
+      summary: Track desktop usage event
+      description: Records user activity for productivity analysis (200 req/min)
+      tags:
+        - Desktop Integration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - eventType
+              properties:
+                sessionId:
+                  type: string
+                eventType:
+                  type: string
+                  enum: [app_opened, app_closed, app_focused, app_switched, feature_used, hotkey_pressed, idle_detected, idle_resumed, screen_captured, voice_input]
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Event tracked
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-ChatGPT-App-Key
+      description: API key for Jarvis authentication
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        statusCode:
+          type: number
+
+tags:
+  - name: Self-Awareness
+    description: Jarvis self-awareness and vitality monitoring
+  - name: Adaptive Learning
+    description: AI-powered learning and insights
+  - name: Autonomy
+    description: Autonomous action management
+  - name: Clearance System
+    description: Three-tier permission system (LOW/MEDIUM/HIGH)
+  - name: Desktop Integration
+    description: Endpoints for macOS desktop app
