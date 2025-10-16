@@ -77,7 +77,9 @@
     "boot-check": "node memory/boot-check.js",
     "test:intelligence": "ts-node scripts/test-cloud-intelligence.ts",
     "deploy:render": "git push render feature/siri-integration-with-voice:main",
-    "imessage": "tsx src/services/imessage/cli.ts"
+    "imessage": "tsx src/services/imessage/cli.ts",
+    "health:monitor": "tsx scripts/health-monitor.ts",
+    "health:check": "curl -f https://dawg-ai-backend-production.up.railway.app/health && curl -f https://dawg-ai-gateway-production.up.railway.app/health"
   },
   "keywords": [
     "audio",

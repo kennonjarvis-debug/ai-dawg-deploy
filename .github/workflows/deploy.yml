@@ -1,0 +1,98 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm run test:backend
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: railway up --service dawg-ai-backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy Gateway to Railway
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: railway up --service dawg-ai-gateway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Wait for deployments
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Waiting 60 seconds for deployments to stabilize..."
+          sleep 60
+
+      - name: Health check - Backend
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          BACKEND_URL="https://dawg-ai-backend-production.up.railway.app"
+          for i in {1..10}; do
+            if curl -f "$BACKEND_URL/health"; then
+              echo "✅ Backend health check passed"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Backend health check failed after 10 attempts"
+          exit 1
+
+      - name: Health check - Gateway
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          GATEWAY_URL="https://dawg-ai-gateway-production.up.railway.app"
+          for i in {1..10}; do
+            if curl -f "$GATEWAY_URL/health"; then
+              echo "✅ Gateway health check passed"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Gateway health check failed after 10 attempts"
+          exit 1
+
+      - name: Notify on success
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Deployment successful!"
+          echo "Backend: https://dawg-ai-backend-production.up.railway.app"
+          echo "Gateway: https://dawg-ai-gateway-production.up.railway.app"
+          echo "Frontend: https://www.dawg-ai.com"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Check logs above."
