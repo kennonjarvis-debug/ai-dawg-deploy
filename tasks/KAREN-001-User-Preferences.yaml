@@ -1,0 +1,65 @@
+---
+id: KAREN-001
+title: User Preferences Data Model
+owner: karen
+assignee: instance-4
+priority: P0
+status: assigned
+estimate: 4 hours
+phase: Week 1 - Foundation
+category: Data Management
+
+description: |
+  Create comprehensive user preferences data model with TypeScript types,
+  Zod validation schema, and React hook for accessing preferences.
+  Supports theme, layout, and accessibility preferences.
+
+requirements:
+  - TypeScript types in lib/types/preferences.ts
+  - Zod schema for runtime validation
+  - React hook: usePreferences()
+  - Local storage persistence (immediate)
+  - Database persistence (when JERRY-001 complete)
+  - Default values for all preferences
+  - Type-safe preference updates
+
+preferences_schema:
+  theme:
+    type: enum
+    values: [light, dark, auto]
+    default: dark
+  layout:
+    sidebarCollapsed: boolean (default false)
+    compactMode: boolean (default false)
+  accessibility:
+    reduceMotion: boolean (default false)
+    highContrast: boolean (default false)
+    fontSize: enum [small, medium, large] (default medium)
+    keyboardOnly: boolean (default false)
+
+acceptance_criteria:
+  - File created: lib/types/preferences.ts (TypeScript types)
+  - Zod schema defined and exported
+  - Hook created: lib/hooks/usePreferences.ts
+  - Local storage persistence working
+  - Type-safe updates (TypeScript errors if wrong type)
+  - Default values applied on first load
+  - No TypeScript errors
+
+deliverables:
+  - lib/types/preferences.ts (types + Zod schema)
+  - lib/hooks/usePreferences.ts (React hook)
+  - Example usage in Header (theme toggle)
+  - Unit test: lib/hooks/__tests__/usePreferences.test.ts
+
+dependencies:
+  - JERRY-001 (Database setup) - ✅ Complete
+  - Design system - ✅ Complete
+
+blockers: []
+
+references:
+  - docs/UI_REDESIGN_MASTER_PLAN.md (KAREN-001)
+  - lib/ui-preferences/sync.ts (existing sync logic to integrate)
+
+next_task: KAREN-002

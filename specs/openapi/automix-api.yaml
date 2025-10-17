@@ -1,0 +1,375 @@
+openapi: 3.1.0
+info:
+  title: AutoMix API
+  description: AI-powered mixing suggestions and automatic effect chain generation
+  version: 1.0.0
+  contact:
+    name: DAWG AI Team
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://app.dawgai.com/api
+    description: Production
+
+paths:
+  /mix/suggest:
+    post:
+      operationId: getMixSuggestion
+      summary: Get AI-powered mixing suggestions for a track
+      tags:
+        - AutoMix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - track_id
+                - audio_url
+              properties:
+                track_id:
+                  type: string
+                  example: trk_001
+                audio_url:
+                  type: string
+                  format: uri
+                  example: s3://bucket/recordings/track_001.wav
+                user_id:
+                  type: string
+                vocal_profile:
+                  $ref: '#/components/schemas/VocalProfile'
+                style_preferences:
+                  $ref: '#/components/schemas/StylePreferences'
+                reference_track:
+                  $ref: '#/components/schemas/ReferenceTrack'
+                analysis_depth:
+                  type: string
+                  enum: [quick, standard, deep]
+                  default: standard
+      responses:
+        '200':
+          description: Mix suggestions generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MixSuggestion'
+        '400':
+          description: Invalid request
+        '429':
+          description: Rate limit exceeded
+
+  /mix/apply:
+    post:
+      operationId: applyMixSuggestion
+      summary: Apply suggested mix settings to track
+      tags:
+        - AutoMix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - track_id
+                - suggestion_id
+              properties:
+                track_id:
+                  type: string
+                suggestion_id:
+                  type: string
+                adjustments:
+                  type: object
+                  description: User adjustments to suggested parameters
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Mix applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MixAppliedResponse'
+        '404':
+          description: Track or suggestion not found
+
+  /mix/compare:
+    post:
+      operationId: compareMixes
+      summary: Compare multiple mix variations
+      tags:
+        - AutoMix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - track_id
+                - mix_versions
+              properties:
+                track_id:
+                  type: string
+                mix_versions:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of mix version IDs to compare
+      responses:
+        '200':
+          description: Mix comparison results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MixComparison'
+
+  /mix/presets:
+    get:
+      operationId: getMixPresets
+      summary: Get available mix presets by genre
+      tags:
+        - AutoMix
+      parameters:
+        - name: genre
+          in: query
+          schema:
+            type: string
+            enum: [country, pop, rock, r&b, indie, electronic]
+      responses:
+        '200':
+          description: List of mix presets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MixPreset'
+
+components:
+  schemas:
+    MixSuggestion:
+      type: object
+      required:
+        - suggestion_id
+        - track_id
+        - suggested_effects
+        - confidence
+      properties:
+        suggestion_id:
+          type: string
+          example: mix_01JBNCX8QF0A1Z2Y3X4W5V6U7T
+        track_id:
+          type: string
+        analysis_summary:
+          $ref: '#/components/schemas/AudioAnalysis'
+        suggested_effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/EffectSuggestion'
+        reference_track:
+          $ref: '#/components/schemas/ReferenceTrack'
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        processing_time_ms:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    AudioAnalysis:
+      type: object
+      properties:
+        detected_genre:
+          type: string
+        vocal_brightness:
+          type: string
+          enum: [dark, moderate, bright]
+        frequency_issues:
+          type: array
+          items:
+            type: string
+            enum: [low_end_mud, harsh_sibilance, boxy_mids, thin_highs, nasal_tone]
+        dynamic_range_db:
+          type: number
+          format: float
+        peak_level_db:
+          type: number
+          format: float
+        rms_level_db:
+          type: number
+          format: float
+        spectral_balance:
+          type: object
+          properties:
+            lows:
+              type: number
+            mids:
+              type: number
+            highs:
+              type: number
+
+    EffectSuggestion:
+      type: object
+      required:
+        - effect_type
+        - effect_id
+        - parameters
+        - reason
+      properties:
+        effect_type:
+          type: string
+          enum: [eq, compressor, reverb, delay, de-esser, limiter, saturation, exciter]
+        effect_id:
+          type: string
+        preset_name:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Effect-specific parameters
+        reason:
+          type: string
+          description: Human-readable explanation
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        order:
+          type: integer
+          description: Position in effect chain
+
+    VocalProfile:
+      type: object
+      properties:
+        lowest_note:
+          type: string
+        highest_note:
+          type: string
+        range_semitones:
+          type: integer
+        skill_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        strengths:
+          type: array
+          items:
+            type: string
+
+    StylePreferences:
+      type: object
+      properties:
+        favorite_genres:
+          type: array
+          items:
+            type: string
+        favorite_artists:
+          type: array
+          items:
+            type: string
+        preferred_tempo:
+          type: array
+          items:
+            type: string
+
+    ReferenceTrack:
+      type: object
+      properties:
+        artist:
+          type: string
+        song:
+          type: string
+        audio_url:
+          type: string
+          format: uri
+        similarity_score:
+          type: number
+          format: float
+
+    MixAppliedResponse:
+      type: object
+      properties:
+        track_id:
+          type: string
+        mix_version_id:
+          type: string
+        applied_effects:
+          type: array
+          items:
+            type: string
+        audio_url:
+          type: string
+          format: uri
+          description: URL to mixed audio file
+        processing_time_sec:
+          type: number
+          format: float
+
+    MixComparison:
+      type: object
+      properties:
+        track_id:
+          type: string
+        comparisons:
+          type: array
+          items:
+            type: object
+            properties:
+              mix_version_id:
+                type: string
+              name:
+                type: string
+              audio_url:
+                type: string
+              metrics:
+                $ref: '#/components/schemas/MixMetrics'
+
+    MixMetrics:
+      type: object
+      properties:
+        loudness_lufs:
+          type: number
+          format: float
+        dynamic_range_db:
+          type: number
+          format: float
+        spectral_balance_score:
+          type: number
+          format: float
+        clarity_score:
+          type: number
+          format: float
+        overall_quality_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+
+    MixPreset:
+      type: object
+      properties:
+        preset_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        genre:
+          type: string
+        effects:
+          type: array
+          items:
+            type: object
+            properties:
+              effect_type:
+                type: string
+              parameters:
+                type: object
+                additionalProperties: true
+        preview_audio_url:
+          type: string
+          format: uri

@@ -1,0 +1,122 @@
+{
+  "agents": [
+    {
+      "id": "alexis",
+      "name": "Alexis (Planner)",
+      "role": "task-creation-backlog-management",
+      "status": "active",
+      "current_task": "Backlog refinement & buddy system setup",
+      "progress": 75,
+      "health": "healthy",
+      "needs_help": false,
+      "available_to_help": true,
+      "computational_resources": {
+        "cpu_usage": 25,
+        "memory_usage": 30,
+        "available_capacity": 70
+      },
+      "last_update": "2025-10-03T03:46:00Z",
+      "capabilities": ["task_creation", "backlog_management", "dependency_tracking", "roadmap_planning"]
+    },
+    {
+      "id": "jerry",
+      "name": "Jerry (AI Conductor)",
+      "role": "orchestration-protocols-events",
+      "status": "active",
+      "current_task": "Agent collaboration system setup",
+      "progress": 80,
+      "health": "healthy",
+      "needs_help": false,
+      "available_to_help": true,
+      "computational_resources": {
+        "cpu_usage": 35,
+        "memory_usage": 40,
+        "available_capacity": 60
+      },
+      "last_update": "2025-10-03T04:30:00Z",
+      "capabilities": ["protocol_design", "event_orchestration", "contract_versioning", "metrics_monitoring"]
+    },
+    {
+      "id": "instance-1",
+      "name": "Max (UI/Frontend)",
+      "role": "ui-widgets-frontend",
+      "status": "active",
+      "current_task": "Priority 1 widgets complete, awaiting P2 assignment",
+      "progress": 100,
+      "health": "healthy",
+      "needs_help": false,
+      "available_to_help": true,
+      "computational_resources": {
+        "cpu_usage": 20,
+        "memory_usage": 25,
+        "available_capacity": 75
+      },
+      "last_update": "2025-10-03T03:30:00Z",
+      "capabilities": ["react_components", "ui_design", "widget_development", "user_journey_flow"]
+    },
+    {
+      "id": "instance-2",
+      "name": "Alex (Audio Engine)",
+      "role": "audio-processing-coaching",
+      "status": "active",
+      "current_task": "Priority 2 widgets complete, voice interface deployed",
+      "progress": 100,
+      "health": "healthy",
+      "needs_help": false,
+      "available_to_help": true,
+      "computational_resources": {
+        "cpu_usage": 30,
+        "memory_usage": 35,
+        "available_capacity": 65
+      },
+      "last_update": "2025-10-02T01:15:00Z",
+      "capabilities": ["web_audio_api", "pitch_detection", "real_time_coaching", "audio_widgets"]
+    },
+    {
+      "id": "instance-4",
+      "name": "Karen (Data Manager)",
+      "role": "database-persistence-storage",
+      "status": "active",
+      "current_task": "Priority 1 widgets complete, P2 in progress",
+      "progress": 85,
+      "health": "healthy",
+      "needs_help": false,
+      "available_to_help": false,
+      "computational_resources": {
+        "cpu_usage": 45,
+        "memory_usage": 50,
+        "available_capacity": 50
+      },
+      "last_update": "2025-10-03T03:30:00Z",
+      "capabilities": ["database_design", "api_endpoints", "cloud_sync", "data_persistence"]
+    }
+  ],
+  "help_requests": [],
+  "buddy_pairs": [
+    {
+      "primary": "instance-1",
+      "buddy": "jerry",
+      "focus": "Widget integration with event contracts",
+      "status": "active"
+    },
+    {
+      "primary": "instance-2",
+      "buddy": "jerry",
+      "focus": "Audio event schema coordination",
+      "status": "active"
+    },
+    {
+      "primary": "alexis",
+      "buddy": "jerry",
+      "focus": "Task planning and metrics coordination",
+      "status": "active"
+    }
+  ],
+  "resource_pool": {
+    "total_capacity": 320,
+    "allocated": 155,
+    "available": 165,
+    "utilization_percent": 48.4
+  },
+  "last_sync": "2025-10-03T04:30:00Z"
+}

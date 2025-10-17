@@ -1,0 +1,221 @@
+/* FileUpload - Minimal Dark Design */
+
+.fileUpload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Drop Zone */
+.dropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-6);
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  min-height: 200px;
+}
+
+.dropZone:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-tertiary);
+}
+
+.dropZone.dragging {
+  border-color: var(--text-primary);
+  background: var(--bg-tertiary);
+  transform: scale(1.02);
+}
+
+.uploadIcon {
+  width: 48px;
+  height: 48px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.dropZone:hover .uploadIcon,
+.dropZone.dragging .uploadIcon {
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.dropZoneText {
+  text-align: center;
+  margin-bottom: var(--space-3);
+}
+
+.primaryText {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.secondaryText {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+.formatText {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* Hidden file input */
+.fileInput {
+  display: none;
+}
+
+/* File List */
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fileListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fileCount {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+.clearButton {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.clearButton:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+/* File Item */
+.fileItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.fileItem:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-light);
+}
+
+.fileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.fileName {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.fileStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statusIconSuccess {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-green);
+}
+
+.statusIconError {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-red);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.removeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.removeButton:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.fileError {
+  grid-column: 1 / -1;
+  font-size: var(--text-xs);
+  color: var(--accent-red);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  margin-top: var(--space-2);
+}

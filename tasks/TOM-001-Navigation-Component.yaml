@@ -1,0 +1,54 @@
+---
+id: TOM-001
+title: Create Navigation Component
+owner: tom
+assignee: instance-2
+priority: P0
+status: assigned
+estimate: 6 hours
+phase: Week 1 - Foundation
+category: UI Components
+
+description: |
+  Build main navigation component with full keyboard accessibility support
+  and mobile-responsive hamburger menu.
+
+requirements:
+  - Reusable React component with TypeScript
+  - Desktop: Horizontal nav with links to all pages
+  - Mobile: Hamburger menu that slides in from left
+  - Pages: DAW (Home), Journey, Tasks Dashboard, Agent Dashboard, Type Errors
+  - Keyboard navigation (Tab, Arrow keys, Enter, Escape)
+  - ARIA landmarks (role="navigation", aria-label)
+  - Active page highlighting
+  - Smooth transitions (design system animations)
+  - Uses design system tokens
+
+acceptance_criteria:
+  - Component file created at src/components/Navigation/Navigation.tsx
+  - Integrated into Header component
+  - Full keyboard navigation works (no mouse required)
+  - Mobile hamburger menu works (<768px breakpoint)
+  - Active page visually highlighted
+  - ARIA attributes for screen readers
+  - No TypeScript errors
+  - Lighthouse accessibility score improves
+
+deliverables:
+  - src/components/Navigation/Navigation.tsx
+  - src/components/Navigation/index.ts (export)
+  - Updated src/components/Header.tsx (integrate Navigation)
+  - Accessibility test report (keyboard + screen reader)
+
+dependencies:
+  - Header component - ✅ Exists
+  - Design system - ✅ Complete
+
+blockers: []
+
+references:
+  - docs/UI_REDESIGN_MASTER_PLAN.md (TOM-001)
+  - docs/DESIGN_SYSTEM.md (breakpoints, animations)
+  - docs/UI_UX_AUDIT.md (Navigation & Routing section)
+
+next_task: TOM-002

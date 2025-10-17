@@ -1,0 +1,61 @@
+---
+id: T-01JCKMA2V8HQSB7K4N9PX3M1R6
+title: "Integrate ExerciseLibrary into Journey Coaching Sessions"
+created_at: 2025-10-03T03:42:00Z
+updated_at: 2025-10-03T03:42:00Z
+status: ready
+priority: P1-B
+owner: instance-3
+
+rationale: |
+  ExerciseLibrary widget exists with vocal warm-up exercises but is not integrated.
+  Essential for coaching sessions - users need guided exercises before recording.
+  High value-add for user success and vocal health.
+
+scope:
+  - Import ExerciseLibrary into journey page
+  - Add to coaching session workflow (pre-recording warm-up)
+  - Create "Warm Up" button/section in coaching overlay
+  - Connect exercise completion to session tracking
+  - Style to match journey aesthetic
+
+out_of_scope:
+  - Creating new exercises (use existing library)
+  - Exercise customization/creation UI
+  - Video demonstrations (Phase 3)
+
+interfaces:
+  events:
+    produces:
+      - exercise.started
+      - exercise.completed
+    consumes:
+      - coaching.session.started
+
+acceptance_criteria:
+  - ExerciseLibrary accessible from coaching session overlay
+  - "Warm Up" button/section visible before recording
+  - Exercise completion tracked in session metadata
+  - Styling matches journey page aesthetic
+  - No TypeScript or build errors
+
+test_plan:
+  integration:
+    - Import widget into /app/journey/page.tsx
+    - Add to coaching overlay layout
+    - Verify exercise flow
+  e2e:
+    - User starts coaching session, sees warm-up option
+    - User completes exercise, proceeds to recording
+    - Session metadata includes exercise completion
+
+risk: low
+estimate: 0.75 days
+
+dependencies: []
+
+technical_notes: |
+  - Widget exists at /src/widgets/ExerciseLibrary/
+  - Add new tab/section in coaching overlay before main coaching panel
+  - Could create "Warm Up → Record → Review" flow
+  - Track exercise completion in session state

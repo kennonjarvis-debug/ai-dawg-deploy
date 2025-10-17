@@ -1,0 +1,58 @@
+---
+id: JERRY-001
+title: PostgreSQL Database Setup
+owner: jerry
+assignee: instance-3
+priority: P0
+status: assigned
+estimate: 2 hours
+phase: Week 1 - Foundation
+category: Infrastructure
+
+description: |
+  Install and configure PostgreSQL database to unblock cloud persistence,
+  user profiles, and project saves. This is a critical blocker for Karen
+  and multiple other features.
+
+requirements:
+  - PostgreSQL 15 installed via Homebrew
+  - Service running and auto-start on boot
+  - Prisma migrations executed
+  - Database connection verified
+  - Health endpoint returns "ok" for database check
+
+acceptance_criteria:
+  - PostgreSQL 15 installed and running
+  - Database service starts automatically
+  - Prisma schema synchronized with database
+  - All migrations applied successfully
+  - curl http://localhost:3000/api/health shows "database": "ok"
+  - Connection string in .env.local configured
+  - No Prisma errors in application logs
+
+deliverables:
+  - PostgreSQL service running
+  - Prisma migrations applied
+  - Database health check passing
+  - .env.local updated with DATABASE_URL
+
+dependencies: []
+
+blockers: []
+
+blocks:
+  - KAREN-001 (User Preferences - needs database)
+  - Cloud sync features
+  - Profile manager persistence
+
+references:
+  - docs/ENVIRONMENT_AUDIT_AND_FUTURE_PLAN.md (Critical Blocker #1)
+  - prisma/schema.prisma (database schema)
+
+commands:
+  install: brew install postgresql@15
+  start: brew services start postgresql@15
+  migrate: npx prisma migrate dev
+  verify: curl http://localhost:3000/api/health
+
+next_task: JERRY-002

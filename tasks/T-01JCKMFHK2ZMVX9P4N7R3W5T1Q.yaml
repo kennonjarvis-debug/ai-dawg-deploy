@@ -1,0 +1,71 @@
+---
+id: T-01JCKMFHK2ZMVX9P4N7R3W5T1Q
+title: "UI Redesign Phase 1.3: Mode Switcher UI Component"
+created_at: 2025-10-03T03:50:00Z
+updated_at: 2025-10-03T03:50:00Z
+status: ready
+priority: P1-Redesign
+owner: instance-1
+
+rationale: |
+  Create intuitive mode switching UI that allows users to toggle between
+  Record/Edit/Mix/Learn modes. Modern tab-style interface with visual feedback.
+
+scope:
+  - Design mode switcher component
+  - Implement tab-style navigation
+  - Add icons for each mode
+  - Keyboard shortcuts (R/E/M/L keys)
+  - Active state indication
+  - Smooth transitions
+
+out_of_scope:
+  - Mode-specific layouts (separate tasks)
+  - Widget content
+  - Mobile gesture support (Phase 2)
+
+interfaces:
+  components:
+    - ModeSwitcher
+    - ModeTab
+  props:
+    - currentMode: WorkspaceMode
+    - onModeChange: (mode) => void
+    - showLabels?: boolean
+
+acceptance_criteria:
+  - Mode switcher visible at top of workspace
+  - Active mode clearly indicated
+  - Click to switch modes
+  - Keyboard shortcuts work (R, E, M, L)
+  - Smooth transition animation (<300ms)
+  - Accessible (ARIA labels, keyboard nav)
+
+test_plan:
+  unit:
+    - Mode change callbacks fire correctly
+    - Keyboard shortcuts work
+    - Active state updates
+  integration:
+    - Integrates with ModeContext
+    - Mode changes propagate to layout
+  e2e:
+    - User clicks mode, UI updates
+    - Keyboard shortcuts change mode
+
+risk: low
+estimate: 1 day
+
+dependencies:
+  - T-01JCKMF2Q9VXZN8K4P7M3R5W1T (Mode Context)
+
+technical_notes: |
+  - File: /src/components/ModeSwitcher/ModeSwitcher.tsx
+  - Use Lucide React for icons
+    - Mic (Record)
+    - Edit3 (Edit)
+    - Sliders (Mix)
+    - BookOpen (Learn)
+  - Add to main workspace header
+  - CSS transitions for tab indicator
+  - Keyboard event listener in useEffect

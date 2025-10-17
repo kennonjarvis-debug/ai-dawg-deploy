@@ -1,0 +1,311 @@
+openapi: 3.1.0
+info:
+  title: Journey API
+  description: Adaptive song creation journey management API
+  version: 1.0.0
+  contact:
+    name: DAWG AI Team
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://app.dawgai.com/api
+    description: Production
+
+paths:
+  /journey/start:
+    post:
+      operationId: startJourney
+      summary: Start a new adaptive journey
+      tags:
+        - Journey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - journey_type
+                - vocal_profile
+                - style_preferences
+              properties:
+                user_id:
+                  type: string
+                  example: usr_abc123
+                journey_type:
+                  type: string
+                  enum: [record_song, expand_range, improve_control, build_confidence]
+                timeframe:
+                  type: string
+                  enum: [15min, 30min, 60min]
+                  description: Daily practice commitment
+                vocal_profile:
+                  $ref: '#/components/schemas/VocalProfile'
+                style_preferences:
+                  $ref: '#/components/schemas/StylePreferences'
+                focus_areas:
+                  type: array
+                  items:
+                    type: string
+                    enum: [breath-control, pitch-accuracy, vocal-range, tone-quality, rhythm-timing, dynamics]
+      responses:
+        '201':
+          description: Journey created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+  /journey/{journeyId}:
+    get:
+      operationId: getJourney
+      summary: Get journey status and progress
+      tags:
+        - Journey
+      parameters:
+        - name: journeyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Journey details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+        '404':
+          description: Journey not found
+
+  /journey/{journeyId}/resume:
+    post:
+      operationId: resumeJourney
+      summary: Resume a paused journey
+      tags:
+        - Journey
+      parameters:
+        - name: journeyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Journey resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+        '404':
+          description: Journey not found
+        '409':
+          description: Journey already active
+
+  /journey/{journeyId}/stages:
+    get:
+      operationId: getJourneyStages
+      summary: Get all stages for a journey
+      tags:
+        - Journey
+      parameters:
+        - name: journeyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of journey stages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JourneyStage'
+
+  /journey/{journeyId}/stages/{stageId}/complete:
+    post:
+      operationId: completeStage
+      summary: Mark a journey stage as complete
+      tags:
+        - Journey
+      parameters:
+        - name: journeyId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: stageId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                performance_data:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Stage completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyStage'
+
+components:
+  schemas:
+    Journey:
+      type: object
+      required:
+        - id
+        - user_id
+        - journey_type
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          example: jrn_01JBNCX8QF0A1Z2Y3X4W5V6U7T
+        user_id:
+          type: string
+        journey_type:
+          type: string
+          enum: [record_song, expand_range, improve_control, build_confidence]
+        status:
+          type: string
+          enum: [active, paused, completed, abandoned]
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        estimated_weeks:
+          type: integer
+        current_stage:
+          type: integer
+        total_stages:
+          type: integer
+        progress_percentage:
+          type: number
+          format: float
+        vocal_profile:
+          $ref: '#/components/schemas/VocalProfile'
+        style_preferences:
+          $ref: '#/components/schemas/StylePreferences'
+        milestones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Milestone'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    JourneyStage:
+      type: object
+      properties:
+        id:
+          type: string
+        stage_number:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, completed, skipped]
+        widget_name:
+          type: string
+          description: Name of widget to display for this stage
+        estimated_duration_min:
+          type: integer
+        completed_at:
+          type: string
+          format: date-time
+
+    VocalProfile:
+      type: object
+      properties:
+        lowest_note:
+          type: string
+          example: A2
+        highest_note:
+          type: string
+          example: D5
+        range_semitones:
+          type: integer
+        skill_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        pitch_accuracy:
+          type: number
+          format: float
+        control_score:
+          type: number
+          format: float
+        strengths:
+          type: array
+          items:
+            type: string
+        areas_to_improve:
+          type: array
+          items:
+            type: string
+
+    StylePreferences:
+      type: object
+      properties:
+        favorite_genres:
+          type: array
+          items:
+            type: string
+        favorite_artists:
+          type: array
+          items:
+            type: string
+        vocalist_influences:
+          type: array
+          items:
+            type: string
+        preferred_tempo:
+          type: array
+          items:
+            type: string
+        emotional_themes:
+          type: array
+          items:
+            type: string
+        songwriting_interest:
+          type: string
+          enum: [yes-experienced, yes-beginner, maybe, no]
+
+    Milestone:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        week_number:
+          type: integer
+        status:
+          type: string
+          enum: [pending, completed]
+        completed_at:
+          type: string
+          format: date-time

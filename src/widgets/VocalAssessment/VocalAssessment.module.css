@@ -1,0 +1,401 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  border-radius: 8px;
+  padding: 24px;
+  gap: 24px;
+}
+
+.progressBar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #222;
+}
+
+.progressDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333;
+  transition: all 0.3s ease;
+}
+
+.progressDot.active {
+  background: #4a9eff;
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.5);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.content p {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Intro Step */
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 0;
+}
+
+.icon {
+  color: #4a9eff;
+  opacity: 0.8;
+}
+
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.checklist li {
+  padding: 12px 16px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 13px;
+}
+
+.checklist li::before {
+  content: '✓';
+  margin-right: 8px;
+  color: #4a9eff;
+  font-weight: 600;
+}
+
+/* Recorder (Steps 1-2) */
+.recorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 0;
+}
+
+.noteDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 12px;
+  min-width: 200px;
+}
+
+.note {
+  font-size: 48px;
+  font-weight: 700;
+  color: #4a9eff;
+  font-family: monospace;
+}
+
+.frequency {
+  font-size: 14px;
+  color: #666;
+  font-family: monospace;
+}
+
+.recordBtn {
+  padding: 16px 32px;
+  border: 2px solid #4a9eff;
+  border-radius: 8px;
+  background: transparent;
+  color: #4a9eff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 180px;
+}
+
+.recordBtn:hover {
+  background: rgba(74, 158, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.recordBtn.recording {
+  background: #ff4444;
+  border-color: #ff4444;
+  color: #fff;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 68, 68, 0);
+  }
+}
+
+.captured {
+  padding: 12px 24px;
+  background: rgba(74, 255, 74, 0.1);
+  border: 1px solid #4aff4a;
+  border-radius: 6px;
+  color: #4aff4a;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Control Test (Step 3) */
+.controlTest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 0;
+}
+
+.targetNote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: #1a1a1a;
+  border: 2px solid #4a9eff;
+  border-radius: 12px;
+  min-width: 200px;
+}
+
+.currentNote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 12px;
+  min-width: 200px;
+}
+
+.label {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.targetNote .note {
+  font-size: 36px;
+  font-weight: 700;
+  color: #4a9eff;
+  font-family: monospace;
+}
+
+.currentNote .note {
+  font-size: 36px;
+  font-weight: 700;
+  color: #ccc;
+  font-family: monospace;
+}
+
+.currentNote .note.inTune {
+  color: #4aff4a;
+}
+
+.currentNote .note.outOfTune {
+  color: #ff4444;
+}
+
+.progress {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.noteCheck {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #333;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #666;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: monospace;
+  transition: all 0.3s;
+}
+
+.noteCheck.complete {
+  background: rgba(74, 255, 74, 0.1);
+  border-color: #4aff4a;
+  color: #4aff4a;
+}
+
+/* Results (Step 4) */
+.results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.profileCard {
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profileCard h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  text-align: center;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 6px;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+.statValue {
+  font-size: 14px;
+  color: #4a9eff;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ccc;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section li {
+  padding: 8px 12px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 12px;
+}
+
+.completeBtn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  background: #4a9eff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.completeBtn:hover {
+  background: #3a8eef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+/* Navigation */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #222;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #ccc;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: #2a2a2a;
+  border-color: #4a9eff;
+  color: #4a9eff;
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

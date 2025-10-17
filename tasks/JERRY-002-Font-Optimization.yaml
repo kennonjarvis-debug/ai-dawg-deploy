@@ -1,0 +1,55 @@
+---
+id: JERRY-002
+title: Font Optimization (Self-Host)
+owner: jerry
+assignee: instance-3
+priority: P1
+status: assigned
+estimate: 3 hours
+phase: Week 1 - Foundation
+category: Performance
+
+description: |
+  Self-host Inter and JetBrains Mono fonts to eliminate external requests,
+  improve performance, and reduce bundle size. Add font-display: swap for
+  better loading experience.
+
+requirements:
+  - Download Inter (weights: 400, 500, 600, 700)
+  - Download JetBrains Mono (weights: 400, 500, 600)
+  - Place fonts in /public/fonts/
+  - Update app/globals.css to use local fonts
+  - Add font-display: swap
+  - Remove Google Fonts @import
+  - Verify no FOUT (Flash of Unstyled Text)
+
+acceptance_criteria:
+  - Fonts in /public/fonts/inter/ and /public/fonts/jetbrains-mono/
+  - app/globals.css uses @font-face instead of @import
+  - font-display: swap applied to all font-face declarations
+  - No external font requests (check Network tab)
+  - Page load time improves (measure with Lighthouse)
+  - Fonts load correctly on all pages
+
+deliverables:
+  - /public/fonts/inter/*.woff2 (4 weights)
+  - /public/fonts/jetbrains-mono/*.woff2 (3 weights)
+  - Updated app/globals.css (@font-face declarations)
+  - Lighthouse performance report (before/after)
+
+dependencies:
+  - Design system - ✅ Complete (references fonts)
+
+blockers: []
+
+references:
+  - docs/UI_REDESIGN_MASTER_PLAN.md (JERRY-002)
+  - docs/ENVIRONMENT_AUDIT_AND_FUTURE_PLAN.md (Bundle optimization)
+  - https://fonts.google.com/specimen/Inter
+  - https://fonts.google.com/specimen/JetBrains+Mono
+
+font_sources:
+  inter: https://github.com/rsms/inter/releases
+  jetbrains_mono: https://github.com/JetBrains/JetBrainsMono/releases
+
+next_task: JERRY-003

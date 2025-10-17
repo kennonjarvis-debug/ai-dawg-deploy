@@ -1,0 +1,59 @@
+---
+id: T-01JCKM6P3RXSB9M4T8ZN1K6V2Q
+title: "Integrate AIFeedbackTimeline into Journey Progress View"
+created_at: 2025-10-03T03:35:00Z
+updated_at: 2025-10-03T03:42:00Z
+status: ready
+priority: P2
+owner: instance-3
+
+rationale: |
+  AIFeedbackTimeline widget already exists but is not integrated into the journey page.
+  Provides chronological AI feedback across sessions showing improvement trends.
+  Users see their journey progress with AI-generated insights over time.
+
+scope:
+  - Import AIFeedbackTimeline into journey page
+  - Integrate into Progress view
+  - Connect to existing performance/session data
+  - Add filter controls in UI
+  - Style to match journey aesthetic
+
+out_of_scope:
+  - Widget modification (already built and functional)
+  - New AI feedback generation logic
+  - Social sharing features
+
+interfaces:
+  events:
+    consumes:
+      - session.completed
+      - performance.scored
+      - ai.feedback.generated (from existing event bus)
+
+acceptance_criteria:
+  - AIFeedbackTimeline displays in Progress view of journey page
+  - Shows feedback from coaching sessions
+  - Filter controls work for different feedback types
+  - Styling matches journey page aesthetic
+  - No TypeScript or build errors
+
+test_plan:
+  integration:
+    - Import widget into /app/journey/page.tsx
+    - Verify event bus connection
+    - Test filter functionality
+  e2e:
+    - User completes coaching session, sees feedback in timeline
+    - User filters timeline by feedback type
+
+risk: low
+estimate: 0.5 days
+
+dependencies: []
+
+technical_notes: |
+  - Widget exists at /src/widgets/AIFeedbackTimeline/
+  - Uses event bus from /src/core/eventBus
+  - Add to Progress view section (line ~358-371 in journey page)
+  - Connect to existing session/performance data

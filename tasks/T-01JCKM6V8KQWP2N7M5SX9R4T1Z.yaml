@@ -1,0 +1,68 @@
+---
+id: T-01JCKM6V8KQWP2N7M5SX9R4T1Z
+title: "MilestoneTracker Widget - Instance 4"
+created_at: 2025-10-03T03:35:00Z
+updated_at: 2025-10-03T03:35:00Z
+status: ready
+priority: P2
+owner: instance-4
+
+rationale: |
+  Gamification and motivation through milestone tracking. Celebrates achievements
+  and sets clear goals for user progression through the journey.
+
+scope:
+  - Visual milestone badges/achievements
+  - Progress bar toward next milestone
+  - Milestone categories (pitch mastery, consistency, song completion)
+  - Unlock notifications with celebrations
+  - Streak tracking (consecutive practice days)
+
+out_of_scope:
+  - Social leaderboards (Phase 2)
+  - Custom milestone creation
+  - Rewards/points system
+
+interfaces:
+  rest:
+    - GET /api/milestones
+    - POST /api/milestones/unlock
+    - GET /api/milestones/user/:userId
+  events:
+    produces:
+      - milestone.unlocked
+      - streak.updated
+    consumes:
+      - session.completed
+      - performance.scored
+
+acceptance_criteria:
+  - Display unlocked and locked milestones with icons
+  - Progress bar shows % toward next milestone
+  - Unlock animation/notification when milestone achieved
+  - Streak counter shows consecutive practice days
+  - Integration into UserProfileCard and Progress view
+
+test_plan:
+  unit:
+    - Milestone unlock logic
+    - Progress calculation
+    - Streak counter logic
+  integration:
+    - Milestone unlocking from session events
+    - Notification system
+  e2e:
+    - User completes sessions, unlocks milestone, sees celebration
+
+risk: low
+estimate: 1.5 days
+
+dependencies:
+  - PerformanceScorer (existing)
+  - SessionPlanner (existing)
+
+technical_notes: |
+  - Define milestone schema in /src/types/milestones.ts
+  - Store progress in localStorage with cloud sync option
+  - Use Framer Motion for unlock animations
+  - Widget location: /src/widgets/MilestoneTracker/

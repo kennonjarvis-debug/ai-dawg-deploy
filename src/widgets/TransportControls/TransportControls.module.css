@@ -1,0 +1,164 @@
+/* Transport Bar - Minimal Dark Design */
+
+.transportBar {
+  width: 100%;
+  height: var(--transport-height);
+  background: var(--transport-bg);
+  border-bottom: 1px solid var(--transport-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-6);
+  position: relative;
+}
+
+/* === SECTIONS === */
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.centerSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+  justify-content: center;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* === ACTION BUTTONS === */
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+/* === TRANSPORT BUTTONS === */
+
+.transportButtons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.transportButtons .btn {
+  color: var(--text-secondary);
+}
+
+.transportButtons .btn:hover {
+  color: var(--text-primary);
+}
+
+.transportButtons .btn.active {
+  color: var(--text-primary);
+}
+
+/* === TIME DISPLAYS === */
+
+.timeDisplays {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* === ICONS === */
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.iconSm {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}
+
+/* === ACTIVE STATE === */
+
+.active {
+  color: var(--text-primary) !important;
+}
+
+/* === RECORDING STATE === */
+
+.recording {
+  color: #ff0000 !important;
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* === WAVEFORM CONTAINER === */
+
+.waveformContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 40px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.waveformPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+
+.waveformText {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* === RESPONSIVE === */
+
+@media (max-width: 1024px) {
+  .transportBar {
+    padding: 0 var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .centerSection {
+    gap: var(--space-2);
+  }
+
+  .timeDisplays {
+    gap: var(--space-2);
+  }
+}
+
+@media (max-width: 768px) {
+  .leftSection {
+    display: none;
+  }
+
+  .rightSection {
+    font-size: var(--text-xs);
+  }
+}

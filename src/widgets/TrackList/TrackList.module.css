@@ -1,0 +1,75 @@
+/* TrackList - Minimal Dark Design */
+
+.trackList {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Track Items Container */
+.trackItems {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Custom Scrollbar */
+.trackItems::-webkit-scrollbar {
+  width: 8px;
+}
+
+.trackItems::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+.trackItems::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: var(--radius-full);
+}
+
+.trackItems::-webkit-scrollbar-thumb:hover {
+  background: var(--border-medium);
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: var(--space-4);
+  opacity: 0.3;
+}
+
+.emptyText {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-6);
+  color: var(--text-secondary);
+}

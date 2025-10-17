@@ -1,0 +1,507 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+  border-bottom: 1px solid #333;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stats {
+  display: flex;
+  gap: 16px;
+}
+
+.statBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: monospace;
+  color: #4a9eff;
+}
+
+.statLabel {
+  font-size: 9px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #666;
+}
+
+.loading p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Agent Grid */
+.agentGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.agentCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: #1a1a1a;
+  border: 2px solid #222;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.agentCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+  transform: translateY(-2px);
+}
+
+.agentCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  box-shadow: 0 0 12px rgba(74, 158, 255, 0.3);
+}
+
+.agentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.agentName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.agentBadges {
+  display: flex;
+  gap: 6px;
+}
+
+.badge {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #000;
+}
+
+.agentRole {
+  font-size: 10px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.agentTask {
+  font-size: 11px;
+  color: #ccc;
+  line-height: 1.3;
+  min-height: 32px;
+}
+
+.progressBar {
+  position: relative;
+  height: 6px;
+  background: #0f0f0f;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a9eff 0%, #4aff9f 100%);
+  transition: width 0.3s;
+}
+
+.progressText {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 2px #000;
+}
+
+.resourceBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #888;
+}
+
+.resourceFill {
+  flex: 1;
+  height: 4px;
+  background: #0f0f0f;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.resourceUsed {
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.resourceText {
+  font-size: 9px;
+  font-family: monospace;
+}
+
+.agentFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.healthBadge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.lastUpdate {
+  font-size: 9px;
+  color: #666;
+  font-family: monospace;
+}
+
+/* Details Panel */
+.detailsPanel {
+  width: 350px;
+  background: #0f0f0f;
+  border-left: 1px solid #222;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.detailsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #222;
+}
+
+.detailsHeader h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.closeBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #0a0a0a;
+  color: #ccc;
+  font-size: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: #ff4444;
+  color: #fff;
+}
+
+.detailsContent {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detailSection h4 {
+  margin: 0 0 10px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.capabilityTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.capabilityTag {
+  padding: 4px 8px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #4a9eff;
+  font-weight: 500;
+}
+
+.statusGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.statusItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.statusLabel {
+  font-size: 9px;
+  color: #888;
+}
+
+.statusValue {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.resourceMetrics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.metric span:first-child {
+  color: #888;
+}
+
+.metric span:last-child {
+  color: #4a9eff;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+/* Help Requests */
+.helpSection {
+  padding: 14px 18px;
+  background: #0f0f0f;
+  border-top: 1px solid #222;
+}
+
+.helpHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ff4444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.helpList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.helpRequest {
+  padding: 12px;
+  background: #1a1a1a;
+  border-left: 3px solid #ff4444;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.helpRequestHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.requester {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.urgencyBadge {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.helpIssue {
+  font-size: 11px;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.claimedBy {
+  font-size: 10px;
+  color: #4aff4a;
+  font-weight: 500;
+}
+
+.helpTime {
+  font-size: 9px;
+  color: #666;
+  font-family: monospace;
+}
+
+/* Buddy Pairs */
+.buddySection {
+  padding: 14px 18px;
+  background: #0f0f0f;
+  border-top: 1px solid #222;
+}
+
+.buddyHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4aff9f;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.buddyList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.buddyPair {
+  padding: 10px;
+  background: #1a1a1a;
+  border-left: 3px solid #4aff9f;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.buddyNames {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.buddyFocus {
+  font-size: 10px;
+  color: #888;
+}
+
+/* Scrollbar */
+.agentGrid::-webkit-scrollbar,
+.detailsPanel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.agentGrid::-webkit-scrollbar-track,
+.detailsPanel::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+.agentGrid::-webkit-scrollbar-thumb,
+.detailsPanel::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+.agentGrid::-webkit-scrollbar-thumb:hover,
+.detailsPanel::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}

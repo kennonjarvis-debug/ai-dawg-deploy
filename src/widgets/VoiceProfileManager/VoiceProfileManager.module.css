@@ -1,0 +1,302 @@
+.container {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  color: #fff;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.createButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #4a9eff;
+  background: transparent;
+  color: #4a9eff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.createButton:hover {
+  background: #4a9eff;
+  color: white;
+}
+
+/* Create Form */
+.createForm {
+  background: #0a0a0a;
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.createForm h3 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+}
+
+.input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 13px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+/* Audio Input */
+.audioInput {
+  margin-bottom: 16px;
+}
+
+.audioInput h4 {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+}
+
+.inputOptions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.recordButton,
+.uploadButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recordButton:hover,
+.uploadButton:hover {
+  background: #3a3a3a;
+  border-color: #444;
+}
+
+.recordButton.recording {
+  background: #ff4444;
+  border-color: #ff4444;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.recordButton:disabled,
+.uploadButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Audio Preview */
+.audioPreview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.audioPlayer {
+  flex: 1;
+  height: 32px;
+}
+
+.removeButton {
+  padding: 6px;
+  border: none;
+  background: #ff4444;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.removeButton:hover {
+  background: #ff6666;
+}
+
+/* Form Actions */
+.formActions {
+  margin-top: 16px;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 6px;
+  border: none;
+  background: #4a9eff;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submitButton:hover {
+  opacity: 0.9;
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error */
+.error {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ff4444;
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 13px;
+  margin: 16px 0;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 14px;
+}
+
+/* Empty State */
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Profiles List */
+.profilesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profileCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #0a0a0a;
+  border-radius: 6px;
+  border: 1px solid #2a2a2a;
+  transition: all 0.2s;
+}
+
+.profileCard:hover {
+  border-color: #333;
+  background: #141414;
+}
+
+.profileInfo h3 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.profileMeta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #666;
+  font-family: monospace;
+}
+
+.profileMeta span {
+  padding: 2px 6px;
+  background: #1a1a1a;
+  border-radius: 3px;
+}
+
+.profileActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profileAudio {
+  width: 200px;
+  height: 32px;
+}
+
+.deleteButton {
+  padding: 8px;
+  border: none;
+  background: #2a2a2a;
+  color: #ff4444;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  background: #ff4444;
+  color: white;
+}

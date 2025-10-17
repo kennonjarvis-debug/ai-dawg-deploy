@@ -1,0 +1,74 @@
+---
+id: T-STABILITY-C-DATA-TYPES
+title: "[P0 Stability] Fix Data/API/Schema Type Errors"
+created_at: 2025-10-02T22:40:00Z
+updated_at: 2025-10-02T22:40:00Z
+status: ready
+priority: P0-Stability
+owner: instance-3
+type: fix
+
+rationale: |
+  Stability sprint gate: API and database types must be correct.
+  11 production data/API errors causing runtime failures.
+  Critical for user profiles, voice cloning, chat integration.
+
+scope:
+  - Fix chat-openai/route.ts OpenAI ChatCompletionTool types (2 errors)
+  - Fix profile/route.ts VocalRange.semitones type (1 error)
+  - Fix voice/clone/route.ts missing Prisma voiceProfile model (4 errors)
+  - Fix voice/harmony/route.ts missing Prisma voiceProfile model (2 errors)
+  - Fix ProfileManager.ts UserProfile missing/incompatible properties (2 errors)
+
+out_of_scope:
+  - INTEGRATION_EXAMPLE.tsx (Bucket D handles integration patterns)
+  - Prisma schema changes (must coordinate with Bucket D)
+  - New API endpoints
+
+acceptance_criteria:
+  - All 11 data/API errors resolved
+  - API routes return properly typed responses
+  - Prisma client types match schema
+  - UserProfile type complete and consistent
+  - OpenAI tool definitions strictly typed
+  - No runtime type coercion in API handlers
+  - Green gate check passes
+
+test_plan:
+  unit:
+    - Validate API route types
+    - Test Prisma query types
+  integration:
+    - POST /api/profile with vocalRange data
+    - GET /api/voice/clone (requires auth)
+    - POST /api/chat-openai with tools
+  manual:
+    - Create user profile, verify all fields save
+    - Test voice cloning flow
+    - Chat with AI coach using tool calls
+
+dependencies:
+  - T-STABILITY-D-SHARED-TYPES (API contracts, event types)
+
+estimate: 1 day
+
+technical_notes: |
+  Files to fix:
+  - app/api/chat-openai/route.ts (2 errors)
+    - ChatCompletionTool type must use literal "function" not string
+    - tool_calls.function property access needs type guard
+  - app/api/profile/route.ts (1 error)
+    - VocalRange.semitones should not be optional
+  - app/api/voice/clone/route.ts (4 errors)
+    - Prisma schema missing VoiceProfile model
+    - Need to run prisma generate after schema update
+  - app/api/voice/harmony/route.ts (2 errors)
+    - Same Prisma VoiceProfile issue
+  - lib/profile/ProfileManager.ts (2 errors)
+    - UserProfile missing: lastActiveDate, skillHistory, sessionHistory
+    - lastActiveDate type should be Date not Date | undefined
+
+  Critical: Prisma schema update needed
+  - Add VoiceProfile model to schema.prisma
+  - Run: npx prisma generate
+  - Coordinate with Bucket D on shared types

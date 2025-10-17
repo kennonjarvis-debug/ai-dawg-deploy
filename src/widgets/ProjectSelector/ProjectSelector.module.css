@@ -1,0 +1,220 @@
+.container {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-elevated, #2a2a2a);
+  border: 1px solid var(--border, #444);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 200px;
+}
+
+.trigger:hover:not(:disabled) {
+  background: var(--surface-hover, #333);
+  border-color: var(--text-secondary, #888);
+}
+
+.trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.projectName {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevronDown {
+  transition: transform 0.2s;
+}
+
+.chevronUp {
+  transition: transform 0.2s;
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--surface-elevated, #2a2a2a);
+  border: 1px solid var(--border, #444);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 320px;
+  max-width: 400px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #444);
+}
+
+.dropdownHeader span:first-child {
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.count {
+  color: var(--text-tertiary, #666);
+  font-size: 12px;
+}
+
+.error {
+  padding: 12px 16px;
+  color: var(--text-danger, #ef4444);
+  font-size: 13px;
+  background: rgba(239, 68, 68, 0.1);
+  border-bottom: 1px solid var(--border, #444);
+}
+
+.emptyState {
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.emptyState p {
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  margin: 0 0 4px 0;
+}
+
+.emptyState span {
+  color: var(--text-secondary, #888);
+  font-size: 13px;
+}
+
+.projectList {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.projectList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.projectList::-webkit-scrollbar-track {
+  background: var(--surface, #242424);
+}
+
+.projectList::-webkit-scrollbar-thumb {
+  background: var(--border, #444);
+  border-radius: 4px;
+}
+
+.projectList::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #888);
+}
+
+.projectItem,
+.projectItemActive {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.projectItem:hover {
+  background: var(--surface-hover, #333);
+}
+
+.projectItemActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.projectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.projectItemName {
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectMeta {
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectItemActive .projectItemName {
+  color: var(--accent-blue, #3b82f6);
+}
+
+.projectItemActive svg {
+  color: var(--accent-blue, #3b82f6);
+  flex-shrink: 0;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border, #444);
+  margin: 4px 0;
+}
+
+.newProjectButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--accent-blue, #3b82f6);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.newProjectButton:hover {
+  background: var(--surface-hover, #333);
+}

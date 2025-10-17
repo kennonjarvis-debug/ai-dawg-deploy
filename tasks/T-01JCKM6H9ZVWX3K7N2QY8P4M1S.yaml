@@ -1,0 +1,67 @@
+---
+id: T-01JCKM6H9ZVWX3K7N2QY8P4M1S
+title: "VoicematchVisualizer Widget - Instance 2"
+created_at: 2025-10-03T03:35:00Z
+updated_at: 2025-10-03T03:35:00Z
+status: ready
+priority: P2
+owner: instance-2
+
+rationale: |
+  Visualize vocal comparison between user performance and reference track.
+  Shows pitch/timing differences with color-coded overlay for learning.
+
+scope:
+  - Dual waveform display (user vs reference)
+  - Pitch overlay comparison with deviation indicators
+  - Timing alignment visualization
+  - Similarity score calculation and display
+  - Real-time comparison during playback
+
+out_of_scope:
+  - Audio manipulation/effects
+  - Reference track library management (Instance 1)
+  - ML-based comparison (Phase 2)
+
+interfaces:
+  rest:
+    - POST /api/audio/compare
+    - GET /api/audio/comparison/:id
+  events:
+    produces:
+      - audio.comparison.completed
+      - audio.similarity.calculated
+    consumes:
+      - reference.track.uploaded
+      - recording.completed
+
+acceptance_criteria:
+  - Display two waveforms stacked for visual comparison
+  - Color-coded pitch deviation (green=match, yellow=close, red=off)
+  - Similarity score shown as percentage with breakdown
+  - Playback sync for both tracks
+  - Integration into coaching session overlay
+
+test_plan:
+  unit:
+    - Pitch comparison algorithm
+    - Similarity calculation
+    - Waveform rendering
+  integration:
+    - Compare user recording to reference
+    - Event flow validation
+  e2e:
+    - User records vocal, compares to reference, sees visualization
+
+risk: medium
+estimate: 2 days
+
+dependencies:
+  - T-01JCKM6A7TQRS4M8N9PX2V5W1Y (Reference track uploader)
+  - usePitchDetection hook (existing)
+
+technical_notes: |
+  - Leverage existing pitch detection from /src/core/usePitchDetection.ts
+  - Use Canvas API for dual waveform rendering
+  - Store comparison results in session state
+  - Widget location: /src/widgets/VoicematchVisualizer/

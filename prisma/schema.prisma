@@ -1,0 +1,954 @@
+// DAWG AI - Database Schema
+// Manages users, projects, tracks, and recordings for the AI-powered DAW
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - for authentication and user management
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Auth fields (for NextAuth.js compatibility)
+  accounts      Account[]
+  sessions      Session[]
+
+  // User's projects
+  projects      Project[]
+
+  // Voice cloning profiles
+  voiceProfiles VoiceProfile[]
+
+  // User preferences and vocal profile
+  preferences   Json?     // Stores UI preferences, favorite effects, etc.
+  vocalProfile  Json?     // Stores vocal range, skill level, analyzed characteristics
+
+  // Adaptive Journey System
+  journeys      Journey[]
+  practiceSessions PracticeSession[]
+  achievements  UserAchievement[]
+  vocalMetrics  VocalMetric[]
+
+  @@map("users")
+}
+
+// Account model - for OAuth providers (NextAuth.js)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// Session model - for session management (NextAuth.js)
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Project model - represents a song/project
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  bpm         Int      @default(120)
+  genre       String?  // e.g., "country", "pop", "rock"
+  key         String?  // e.g., "C", "G", "Am"
+
+  // Project state
+  isArchived  Boolean  @default(false)
+  lastOpenedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks      Track[]
+
+  // Project settings (transport, effects, etc.)
+  settings    Json?
+
+  @@index([userId])
+  @@index([userId, lastOpenedAt])
+  @@map("projects")
+}
+
+// Track model - represents an audio track in a project
+model Track {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  position    Int      // Track order in the project
+  color       String?  // Hex color for UI
+
+  // Track state
+  volume      Float    @default(0.8)
+  pan         Float    @default(0.0)  // -1 (left) to 1 (right)
+  isSolo      Boolean  @default(false)
+  isMuted     Boolean  @default(false)
+  isRecordArmed Boolean @default(false)
+
+  // Device settings
+  inputDeviceId  String?
+  outputDeviceId String?
+
+  // Effects chain
+  effects     Json?    // Array of effects with settings
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recordings  Recording[]
+
+  @@index([projectId])
+  @@index([projectId, position])
+  @@map("tracks")
+}
+
+// Recording model - represents an audio recording/take
+model Recording {
+  id          String   @id @default(cuid())
+  trackId     String
+  name        String?
+
+  // Audio file reference
+  audioUrl    String   // S3/R2 URL or local path
+  fileSize    Int      // Bytes
+  duration    Float    // Seconds
+  format      String   @default("webm") // webm, wav, mp3
+  sampleRate  Int      @default(48000)
+
+  // Recording metadata
+  startTime   Float    @default(0.0) // Position in project timeline
+  waveformData Json?   // Precomputed waveform peaks for visualization
+
+  // Recording state
+  isActive    Boolean  @default(true) // Current active take
+  isMaster    Boolean  @default(false) // Final/exported version
+
+  // AI analysis (future)
+  pitchData   Json?    // Pitch detection results
+  vocalAnalysis Json?  // AI vocal analysis feedback
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  track       Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@index([trackId])
+  @@index([trackId, isActive])
+  @@map("recordings")
+}
+
+// VerificationToken model - for email verification (NextAuth.js)
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// VoiceProfile model - for voice cloning profiles
+model VoiceProfile {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String   // User-friendly name (e.g., "My Voice", "Lead Singer")
+
+  // Voice sample reference
+  sampleAudioUrl  String   // S3 URL to 6-30 second voice sample
+  s3Key           String   // S3 key for deletion
+
+  // Metadata
+  duration        Float    // Duration of voice sample in seconds
+  sampleRate      Int      @default(48000)
+  format          String   @default("webm") // webm, wav, mp3
+  fileSize        Int?     // Size in bytes
+
+  // Usage tracking
+  harmoniesGenerated Int   @default(0) // Number of harmonies generated with this profile
+  lastUsedAt      DateTime? // Last time this profile was used
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("voice_profiles")
+}
+
+// ============================================================================
+// DATA ARCHITECTURE - UI & ANALYTICS (Instance 4 - Karen)
+// ============================================================================
+
+// UserProfileUI - GDPR-compliant user profile with privacy controls
+model UserProfileUI {
+  id       String   @id @default(cuid())
+  userId   String   @unique
+  userHash String   @unique // SHA-256 anonymized hash for analytics
+
+  // Profile data
+  displayName String?  @db.VarChar(50)
+  realName    String?  @db.VarChar(100) // Encrypted at rest
+  bio         String?  @db.VarChar(500)
+  location    String?  @db.VarChar(100) // Encrypted at rest
+  timezone    String?  @db.VarChar(50)
+
+  // Avatar
+  avatarUrl      String?
+  avatarS3Key    String?
+  thumbnailUrl   String?
+
+  // Social links (JSON array)
+  socialLinks Json @default("[]") // Array of {platform, url, displayText}
+
+  // Visibility settings
+  visibility Json @default("{\"profilePublic\":false,\"showRealName\":false,\"showEmail\":false}")
+
+  // Consent flags (GDPR)
+  dataProcessingConsent Boolean @default(false)
+  marketingConsent      Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  uiPreferences       UIPreferences?
+  dashboardStates     DashboardState[]
+  telemetryConsent    TelemetryConsent?
+  deletionRequests    ProfileDeletionRequest[]
+  exportRequests      DataExportRequest[]
+
+  @@index([userHash])
+  @@map("user_profiles_ui")
+}
+
+// UIPreferences - User's UI customization settings
+model UIPreferences {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  version        Int      @default(1) // Schema version for migrations
+
+  // Preference categories (stored as JSON for flexibility)
+  theme          Json     @default("{\"mode\":\"system\",\"primaryColor\":\"#3B82F6\"}")
+  layout         Json     @default("{\"sidebarPosition\":\"left\",\"widgetPositions\":{}}")
+  dashboard      Json     @default("{\"defaultView\":\"projects\"}")
+  audio          Json     @default("{\"sampleRate\":48000,\"bufferSize\":512}")
+  ai             Json     @default("{\"chatPosition\":\"right\"}")
+  privacy        Json     @default("{\"syncTheme\":true,\"allowUsageAnalytics\":false}")
+
+  // Sync metadata
+  lastModified   DateTime @updatedAt
+  lastSynced     DateTime?
+
+  // Relations (optional - profile may not exist yet)
+  profile        UserProfileUI? @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("ui_preferences")
+}
+
+// DashboardState - Persistent state for each dashboard view
+model DashboardState {
+  id           String   @id @default(cuid())
+  userId       String
+  dashboardId  String   // 'projects', 'recordings', 'journeys', 'analytics'
+
+  // View state (JSON for dashboard-specific structure)
+  viewMode     String   @default("grid") // grid, list, kanban
+  sortBy       String   @default("modified")
+  sortOrder    String   @default("desc")
+  filters      Json     @default("{}")
+  searchQuery  String?
+
+  // Pagination
+  page         Int      @default(1)
+  pageSize     Int      @default(20)
+
+  // Selection
+  selectedIds  Json     @default("[]") // Array of selected item IDs
+
+  // Timestamps
+  lastAccessed DateTime @default(now())
+  lastModified DateTime @updatedAt
+
+  // Relations
+  profile      UserProfileUI @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, dashboardId])
+  @@index([userId])
+  @@index([userId, lastAccessed])
+  @@map("dashboard_states")
+}
+
+// TelemetryConsent - User's telemetry and analytics consent
+model TelemetryConsent {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  userHash  String   @unique
+
+  // Consent flags
+  allowUsageAnalytics      Boolean @default(false)
+  allowErrorReporting      Boolean @default(false)
+  allowPerformanceTracking Boolean @default(false)
+  allowExperiments         Boolean @default(false)
+
+  // Data retention
+  dataRetentionDays Int     @default(365)
+
+  // Timestamps
+  consentGivenAt    DateTime @default(now())
+  consentUpdatedAt  DateTime @updatedAt
+
+  // Relations
+  profile           UserProfileUI @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userHash])
+  @@map("telemetry_consent")
+}
+
+// TelemetryEvent - UI interaction and analytics events (time-series)
+model TelemetryEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique // UUID from client
+  userHash    String   // Anonymized user identifier
+  sessionId   String   // Session UUID
+
+  // Event details
+  eventType   String   // 'page_view', 'button_click', etc.
+  eventCategory String @default("ui") // ui, performance, error, feature
+  component   String?
+  action      String?
+  label       String?
+  value       Float?
+
+  // Context
+  currentPage String
+  previousPage String?
+
+  // Metadata (PII-scrubbed)
+  metadata    Json?
+
+  // Device info (anonymized)
+  deviceType  String?
+  browser     String?
+  os          String?
+
+  // A/B testing
+  experimentId String?
+  variant      String?
+
+  // Timestamps
+  timestamp   DateTime @default(now())
+
+  @@index([userHash])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([timestamp])
+  @@index([experimentId, variant])
+  @@map("telemetry_events")
+}
+
+// PerformanceMetric - Performance monitoring data (time-series)
+model PerformanceMetric {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  userHash    String
+
+  // Metric details
+  metricType  String   // 'page_load', 'api_latency', 'audio_processing'
+  durationMs  Float
+  context     String   // URL, API endpoint, etc.
+  statusCode  Int?
+
+  // Web Vitals
+  ttfb        Float?   // Time to First Byte
+  fcp         Float?   // First Contentful Paint
+  lcp         Float?   // Largest Contentful Paint
+  fid         Float?   // First Input Delay
+  cls         Float?   // Cumulative Layout Shift
+
+  // Resource info
+  resourceSize Int?
+  cacheHit     Boolean?
+
+  // Timestamps
+  timestamp   DateTime @default(now())
+
+  @@index([userHash])
+  @@index([metricType])
+  @@index([timestamp])
+  @@map("performance_metrics")
+}
+
+// ErrorEvent - Error tracking and monitoring
+model ErrorEvent {
+  id           String   @id @default(cuid())
+  eventId      String   @unique
+  userHash     String
+
+  // Error details
+  errorType    String   // 'javascript', 'api', 'audio', 'network'
+  errorCode    String?
+  errorMessage String   @db.Text
+  errorStack   String?  @db.Text
+
+  // Context
+  component    String?
+  action       String?
+  currentPage  String
+
+  // Severity
+  severity     String   @default("medium") // low, medium, high, critical
+  userVisible  Boolean  @default(true)
+  recoverable  Boolean  @default(true)
+
+  // Environment
+  browser      String?
+  os           String?
+  deviceType   String?
+
+  // Timestamps
+  timestamp    DateTime @default(now())
+
+  @@index([userHash])
+  @@index([errorType])
+  @@index([severity])
+  @@index([timestamp])
+  @@map("error_events")
+}
+
+// Experiment - A/B testing experiments
+model Experiment {
+  id              String   @id @default(cuid())
+  experimentId    String   @unique
+  name            String
+  description     String   @db.Text
+  hypothesis      String   @db.Text
+
+  // Variants (stored as JSON array)
+  variants        Json     // [{variantId, name, description, weight}]
+
+  // Targeting
+  targetAudience  String   @default("all") // all, new_users, returning_users, beta_testers
+
+  // Metrics
+  primaryMetric   String
+  secondaryMetrics Json    @default("[]")
+
+  // Status
+  status          String   @default("draft") // draft, running, paused, completed, archived
+
+  // Timestamps
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  assignments     ExperimentAssignment[]
+
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("experiments")
+}
+
+// ExperimentAssignment - User assignments to A/B test variants
+model ExperimentAssignment {
+  id            String   @id @default(cuid())
+  assignmentId  String   @unique
+  userHash      String
+  experimentId  String
+  variantId     String
+  sticky        Boolean  @default(true) // Always get same variant
+
+  // Timestamps
+  assignedAt    DateTime @default(now())
+
+  // Relations
+  experiment    Experiment @relation(fields: [experimentId], references: [experimentId], onDelete: Cascade)
+
+  @@unique([userHash, experimentId])
+  @@index([userHash])
+  @@index([experimentId])
+  @@index([experimentId, variantId])
+  @@map("experiment_assignments")
+}
+
+// ProfileDeletionRequest - GDPR Right to Erasure requests
+model ProfileDeletionRequest {
+  id             String   @id @default(cuid())
+  userId         String
+  requestedAt    DateTime @default(now())
+  scheduledFor   DateTime // When deletion will occur (30-day grace period)
+  status         String   @default("pending") // pending, processing, completed, cancelled
+  reason         String?  @db.Text
+
+  // Deletion details
+  dataDeleted    Json?    // What data was deleted
+  completedAt    DateTime?
+
+  // Relations
+  profile        UserProfileUI @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("profile_deletion_requests")
+}
+
+// DataExportRequest - GDPR Right to Portability requests
+model DataExportRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  requestedAt DateTime @default(now())
+  status      String   @default("pending") // pending, processing, completed, failed, expired
+  format      String   @default("json") // json, csv, xml
+
+  // Export details
+  dataTypes   Json     @default("[]") // Which data types to export
+  exportUrl   String?  // S3 URL to download (expires in 7 days)
+  fileSize    Int?
+  expiresAt   DateTime?
+
+  // Completion
+  completedAt DateTime?
+  error       String?  @db.Text
+
+  // Relations
+  profile     UserProfileUI @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("data_export_requests")
+}
+
+// AuditLog - Compliance and security audit trail
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  userHash    String?
+
+  // Action details
+  action      String   // 'profile_updated', 'consent_changed', 'data_exported', 'data_deleted'
+  resource    String   // 'profile', 'preferences', 'telemetry', etc.
+  resourceId  String?
+
+  // Changes (before/after)
+  changes     Json?
+
+  // Context
+  ipAddress   String?  // Encrypted
+  userAgent   String?
+  requestId   String?
+
+  // Timestamps
+  timestamp   DateTime @default(now())
+
+  @@index([userId])
+  @@index([userHash])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// Journey - Adaptive vocal coaching journey
+model Journey {
+  id           String   @id @default(cuid())
+  userId       String
+
+  // Journey metadata
+  title        String
+  description  String?  @db.Text
+  journeyType  String   // 'song_creation', 'vocal_training', 'range_expansion', 'technique_focus'
+  difficulty   String   @default("beginner") // beginner, intermediate, advanced, adaptive
+
+  // Journey configuration
+  goalType     String   // 'expand_range', 'improve_control', 'record_song', 'build_confidence'
+  timeframe    String   // 'quick_15', 'moderate_30', 'intensive_60' (minutes per day)
+  focusAreas   Json     @default("[]") // Array of focus areas: breath_control, pitch_accuracy, range, tone, rhythm, dynamics
+
+  // Progress tracking
+  currentStage Int      @default(1)
+  totalStages  Int      @default(12)
+  completedStages Json  @default("[]") // Array of completed stage IDs
+
+  // Milestones (generated based on goal + timeframe)
+  milestones   Json     @default("[]") // [{id, title, description, targetDate, completed, completedAt}]
+
+  // Adaptation state
+  adaptiveLevel String  @default("stable") // stable, increasing, decreasing
+  performanceScore Float @default(50.0)   // 0-100, used for adaptive difficulty
+
+  // Status
+  status       String   @default("active") // active, paused, completed, abandoned
+
+  // Timestamps
+  startedAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  completedAt  DateTime?
+  pausedAt     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions     PracticeSession[]
+  achievements UserAchievement[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, lastActiveAt])
+  @@map("journeys")
+}
+
+// PracticeSession - Individual practice sessions within a journey
+model PracticeSession {
+  id           String   @id @default(cuid())
+  userId       String
+  journeyId    String?  // Optional - sessions can exist without journey
+
+  // Session metadata
+  title        String
+  duration     Int      // minutes
+  goals        Json     @default("[]") // Array of goal strings
+
+  // Session content
+  exercises    Json     @default("[]") // [{id, title, type, duration, completed}]
+  recordings   Json     @default("[]") // Array of recording IDs from this session
+
+  // Performance metrics
+  pitchAccuracy Float?   // 0-100
+  rhythmAccuracy Float?  // 0-100
+  breathControl Float?   // 0-100
+  overallScore Float?    // 0-100
+
+  // Skills focused
+  skillsFocused Json    @default("[]") // Array of skill strings
+
+  // Completion
+  completed    Boolean  @default(false)
+  completedAt  DateTime?
+  notes        String?  @db.Text
+  aiNotes      String?  @db.Text // AI-generated feedback and insights
+
+  // Scheduled vs actual
+  scheduledFor DateTime?
+  startedAt    DateTime?
+  endedAt      DateTime?
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journey      Journey? @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([journeyId])
+  @@index([userId, scheduledFor])
+  @@index([userId, completed])
+  @@index([userId, createdAt])
+  @@map("practice_sessions")
+}
+
+// Achievement - Achievement definitions (system-wide)
+model Achievement {
+  id           String   @id @default(cuid())
+  achievementId String  @unique // e.g., 'first_steps', 'pitch_perfect'
+
+  // Achievement metadata
+  title        String
+  description  String   @db.Text
+  icon         String   // Emoji or icon identifier
+  category     String   // skill, milestone, badge
+  rarity       String   // common, rare, epic, legendary
+
+  // Unlock criteria
+  criteria     Json     // {type: 'metric', metric: 'pitch_accuracy', value: 90, comparison: 'gte'}
+  points       Int      @default(0)
+
+  // Display
+  displayOrder Int?
+  isHidden     Boolean  @default(false) // Hidden until unlocked
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@index([category])
+  @@index([rarity])
+  @@map("achievements")
+}
+
+// UserAchievement - User's unlocked achievements
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  journeyId     String?  // Optional - which journey was this achieved in
+
+  // Progress (for multi-step achievements)
+  progress      Float    @default(0) // 0-100
+  unlocked      Boolean  @default(false)
+
+  // Unlock details
+  unlockedAt    DateTime?
+  context       String?  // What triggered the unlock
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [achievementId], onDelete: Cascade)
+  journey       Journey? @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([userId, unlocked])
+  @@index([journeyId])
+  @@map("user_achievements")
+}
+
+// VocalMetric - Time-series vocal performance data
+model VocalMetric {
+  id            String   @id @default(cuid())
+  userId        String
+  sessionId     String?  // Link to practice session
+  recordingId   String?  // Link to specific recording
+
+  // Metric type
+  metricType    String   // 'pitch_accuracy', 'range_max', 'range_min', 'breath_duration', etc.
+  value         Float
+  unit          String?  // '%', 'hz', 'seconds', 'semitones'
+
+  // Context
+  exercise      String?
+  note          String?  // Musical note (e.g., 'A4')
+  frequency     Float?   // Hz
+
+  // Timestamps
+  timestamp     DateTime @default(now())
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, metricType])
+  @@index([userId, timestamp])
+  @@index([sessionId])
+  @@map("vocal_metrics")
+}
+
+// ============================================================================
+// NOTES & VOICE MEMOS INTEGRATION (JARVIS & DAWG AI)
+// ============================================================================
+
+// Note - Text notes and transcribed voice memos
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  sourceType  String   @default("manual") // ios_notes, voice_memo, manual
+
+  // File reference (for voice memos)
+  originalFilePath String?
+
+  // Metadata
+  wordCount   Int?
+  duration    Float?   // For voice memos (seconds)
+  transcriptionStatus String? // pending, processing, completed, failed
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  analyses    AIAnalysis[]
+  voiceMemo   VoiceMemo?
+  versions    NoteVersion[]
+
+  @@index([sourceType])
+  @@index([createdAt])
+  @@map("notes")
+}
+
+// NoteVersion - Version history for notes
+model NoteVersion {
+  id          String   @id @default(cuid())
+  noteId      String
+  version     Int      // 1, 2, 3, etc.
+  title       String
+  content     String   @db.Text
+  editReason  String?  @db.Text // Why this version was created (e.g., "Song completion", "Typo fix")
+  createdBy   String   @default("ai") // "ai", "user", "system"
+  createdAt   DateTime @default(now())
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, version])
+  @@index([noteId])
+  @@index([createdAt])
+  @@map("note_versions")
+}
+
+// VoiceMemo - Audio recordings from iOS Voice Memos
+model VoiceMemo {
+  id          String   @id @default(cuid())
+  noteId      String   @unique
+  fileName    String
+  filePath    String
+  duration    Float    // seconds
+
+  // Transcription
+  transcription String? @db.Text
+  transcriptionStatus String @default("pending") // pending, processing, completed, failed
+
+  // Audio metadata
+  format      String?  // mp3, m4a, wav
+  sampleRate  Int?
+  fileSize    Int?     // bytes
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([transcriptionStatus])
+  @@index([createdAt])
+  @@map("voice_memos")
+}
+
+// AIAnalysis - Claude AI analysis of notes
+model AIAnalysis {
+  id          String   @id @default(cuid())
+  noteId      String
+
+  // Analysis results
+  contentType String   // song_lyrics, song_idea, reminder, meeting_note, todo, general_note, other
+  confidence  Float    @default(0.0) // 0.0 to 1.0
+  summary     String   @db.Text
+
+  // App context (which AI analyzed it)
+  appContext  String   // jarvis, dawg_ai
+
+  // Extracted data (stored as JSON)
+  extractedData Json   @default("{}")
+  // Structure: {
+  //   keywords: string[],
+  //   entities: string[],
+  //   dates: string[],
+  //   actionItems: string[],
+  //   songStructure: {
+  //     verses: string[],
+  //     chorus: string[],
+  //     bridge: string
+  //   }
+  // }
+
+  // User preferences (optional context)
+  userPreferences Json?
+
+  // Timestamps
+  analyzedAt  DateTime @default(now())
+
+  // Relations
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  actions     Action[]
+
+  @@index([noteId])
+  @@index([contentType])
+  @@index([appContext])
+  @@index([analyzedAt])
+  @@map("ai_analyses")
+}
+
+// Action - Suggested/executed actions from AI analysis
+model Action {
+  id          String   @id @default(cuid())
+  analysisId  String
+
+  // Action details
+  type        String   // finalize_song, create_track, suggest_improvements, schedule_event, create_reminder, etc.
+  description String   @db.Text
+  priority    String   @default("medium") // low, medium, high
+
+  // App context
+  appContext  String   // jarvis, dawg_ai
+
+  // Action metadata (stored as JSON)
+  metadata    Json     @default("{}")
+  // Structure varies by action type:
+  // {
+  //   bpm: 95,
+  //   key: "G",
+  //   genre: "country",
+  //   ...
+  // }
+
+  // Execution
+  executed    Boolean  @default(false)
+  executedAt  DateTime?
+  executionResult Json?
+  error       String?  @db.Text
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  analysis    AIAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([type])
+  @@index([appContext])
+  @@index([executed])
+  @@index([createdAt])
+  @@map("actions")
+}

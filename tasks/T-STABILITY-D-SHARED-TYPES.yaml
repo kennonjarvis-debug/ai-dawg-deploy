@@ -1,0 +1,104 @@
+---
+id: T-STABILITY-D-SHARED-TYPES
+title: "[P0 Stability] Create Shared Types Foundation & Fix Cross-Package Issues"
+created_at: 2025-10-02T22:40:00Z
+updated_at: 2025-10-02T22:40:00Z
+status: ready
+priority: P0-Stability
+owner: instance-4
+type: create
+
+rationale: |
+  Stability sprint lead task: establish shared type contracts.
+  10 critical cross-package errors + 9 event type errors.
+  Foundation for all other buckets - MUST complete first.
+  Remaining 89 errors in examples/tests are P2 (post-stability).
+
+scope:
+  - Create /packages/types/ shared package
+  - Fix packages/types/src/events.ts type errors (9 errors)
+  - Create shared API contracts (REST, WebSocket)
+  - Create shared event bus types
+  - Define environment variable types
+  - Create utility types (ID generators, validators)
+  - Fix src/core/eventBus.ts duplicate 'mode' property (1 error)
+  - Fix INTEGRATION_EXAMPLE.tsx path/export issues (3 errors)
+  - Configure tsconfig path mappings
+  - Document type usage patterns
+
+out_of_scope:
+  - src/widgets/_examples/EffectsPanel.example.tsx (79 errors) - P2
+  - tests/e2e/journey-beginner.spec.ts (10 errors) - P2
+  - These can be fixed post-stability sprint
+
+acceptance_criteria:
+  - Shared types package created with proper exports
+  - All 9 event type errors in packages/types/src/events.ts resolved
+  - eventBus.ts duplicate property fixed
+  - INTEGRATION_EXAMPLE.tsx imports work
+  - tsconfig paths resolve correctly
+  - All buckets A/B/C can import shared types
+  - Zero circular dependencies
+  - Type documentation complete
+  - Green gate check passes for critical files
+
+test_plan:
+  unit:
+    - Import shared types from all packages
+    - Validate event type definitions
+  integration:
+    - Buckets A/B/C use shared types successfully
+    - Event bus publishes with correct types
+  build:
+    - npm run type-check passes (excluding P2 files)
+    - Build succeeds without type errors
+
+dependencies: []
+
+estimate: 1.5 days
+
+technical_notes: |
+  Critical files (P0):
+  - packages/types/src/events.ts (9 errors) - MUST FIX FIRST
+  - src/core/eventBus.ts (1 error) - duplicate 'mode'
+  - INTEGRATION_EXAMPLE.tsx (3 errors) - path mapping
+
+  Non-critical files (P2 - post-stability):
+  - src/widgets/_examples/EffectsPanel.example.tsx (79 errors)
+  - tests/e2e/journey-beginner.spec.ts (10 errors)
+
+  Shared types structure:
+  /packages/types/
+    /src/
+      /events/          # Event bus types
+        index.ts
+        task-events.ts
+        audio-events.ts
+      /api/             # API contracts
+        index.ts
+        rest.ts
+        websocket.ts
+      /data/            # Data models
+        index.ts
+        user.ts
+        track.ts
+      /utils/           # Utility types
+        index.ts
+        ids.ts
+        validators.ts
+    package.json
+    tsconfig.json
+
+  Strategy:
+  1. Fix packages/types/src/events.ts FIRST (9 errors)
+  2. Create proper type exports
+  3. Fix eventBus.ts duplicate property
+  4. Update tsconfig paths
+  5. Fix INTEGRATION_EXAMPLE imports
+  6. Document type contracts
+  7. Unblock Buckets A/B/C
+
+  Post-stability (P2):
+  - Once green gate achieved, tackle example files (79 errors)
+  - Fix E2E test types (10 errors)
+  - These don't block feature work

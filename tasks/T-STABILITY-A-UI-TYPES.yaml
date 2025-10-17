@@ -1,0 +1,76 @@
+---
+id: T-STABILITY-A-UI-TYPES
+title: "[P0 Stability] Fix UI/React Component Type Errors"
+created_at: 2025-10-02T22:40:00Z
+updated_at: 2025-10-02T22:40:00Z
+status: ready
+priority: P0-Stability
+owner: instance-1
+type: fix
+
+rationale: |
+  Stability sprint gate: no new features until TypeScript is green.
+  26 production UI/React type errors must be fixed before feature work resumes.
+  Focus on component props, type definitions, and proper validation.
+
+scope:
+  - Fix transport-bar.tsx GlassButton missing 'children' prop (6 errors)
+  - Fix journey/page.tsx missing props: audioContext, mediaStream, onBack, isRecording (4 errors)
+  - Fix page.tsx missing props: onProjectChange, onNewProject, compact (2 errors)
+  - Fix DashboardHeader.tsx onProjectSelect prop type (1 error)
+  - Fix TrackItem and DeviceSelector prop types (2 errors)
+  - Fix PianoRoll.tsx component types (5 errors)
+  - Fix WaveformDisplay.tsx types (2 errors)
+  - Fix MusicGenerator and HarmonyGenerator types (2 errors)
+  - Fix AIFeedbackTimeline index signature (1 error)
+  - Fix MusicGenerator.example.tsx track type (1 error)
+
+out_of_scope:
+  - Example files with 79 errors (Bucket D responsibility)
+  - New features or refactoring
+  - Performance optimizations
+
+acceptance_criteria:
+  - All 26 UI/React errors resolved
+  - npm run type-check shows 0 errors in scope files
+  - No new 'any' types added (max 3 exceptions with comments)
+  - All props properly typed with interfaces
+  - Components render without runtime errors
+  - Green gate check passes before PR merge
+
+test_plan:
+  unit:
+    - Run type-check on modified files
+    - Verify component props match usage
+  integration:
+    - Start dev server, verify no console errors
+    - Test affected pages: /, /journey
+  manual:
+    - Open transport bar, verify buttons work
+    - Navigate journey wizard, verify all steps
+    - Check ProjectSelector dropdown
+
+dependencies:
+  - T-STABILITY-D-SHARED-TYPES (shared type contracts)
+
+estimate: 1 day
+
+technical_notes: |
+  Files to fix:
+  - components/layout/transport-bar.tsx (6 errors)
+  - app/journey/page.tsx (4 errors)
+  - app/page.tsx (2 errors)
+  - src/components/DashboardHeader.tsx (1 error)
+  - src/widgets/TrackItem/*.tsx (2 errors)
+  - src/widgets/PianoRoll/PianoRoll.tsx (5 errors)
+  - src/widgets/WaveformDisplay/WaveformDisplay.tsx (2 errors)
+  - src/widgets/MusicGenerator/MusicGenerator.tsx (1 error)
+  - src/widgets/HarmonyGenerator/HarmonyGenerator.tsx (1 error)
+  - src/widgets/AIFeedbackTimeline/AIFeedbackTimeline.tsx (1 error)
+  - src/widgets/_examples/MusicGenerator.example.tsx (1 error)
+
+  Strategy:
+  1. Start with transport-bar (highest count)
+  2. Fix journey/page.tsx props (blocking user flow)
+  3. Work through widgets systematically
+  4. Verify each fix with incremental type-check

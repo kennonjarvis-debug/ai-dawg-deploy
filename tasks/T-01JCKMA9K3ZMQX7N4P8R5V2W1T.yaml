@@ -1,0 +1,63 @@
+---
+id: T-01JCKMA9K3ZMQX7N4P8R5V2W1T
+title: "Integrate VocalEffectsPanel into Journey Coaching Sessions"
+created_at: 2025-10-03T03:42:00Z
+updated_at: 2025-10-03T03:42:00Z
+status: ready
+priority: P2
+owner: instance-2
+
+rationale: |
+  VocalEffectsPanel exists for applying vocal effects but not integrated into journey.
+  Users need to apply effects during practice to hear polished sound and boost confidence.
+  Helps users understand how effects transform their raw vocals.
+
+scope:
+  - Import VocalEffectsPanel into journey page
+  - Add to coaching session overlay (alongside PerformanceScorer)
+  - Connect to audio context for real-time FX
+  - Preset effects for different vocal styles
+  - Save effect settings with session
+
+out_of_scope:
+  - Custom effect creation
+  - Effect automation/mixing
+  - Export with effects (Phase 3)
+
+interfaces:
+  events:
+    produces:
+      - effects.applied
+      - effects.preset.selected
+    consumes:
+      - coaching.session.started
+      - audio.context.ready
+
+acceptance_criteria:
+  - VocalEffectsPanel accessible in coaching overlay
+  - Effects apply in real-time during recording/playback
+  - Preset selection works correctly
+  - Effect settings saved with session metadata
+  - No audio glitches or latency issues
+
+test_plan:
+  integration:
+    - Import widget into /app/journey/page.tsx
+    - Connect to audio context
+    - Test effect application
+  e2e:
+    - User starts coaching, applies reverb effect, hears change
+    - User saves session with effect settings
+    - Effect settings persist on session replay
+
+risk: medium
+estimate: 1 day
+
+dependencies:
+  - T-01JCKM7B2PMZK8V4N3WX6Q9R1T (Real-time Audio Integration - for audio context)
+
+technical_notes: |
+  - Widget exists at /src/widgets/VocalEffectsPanel/
+  - Requires audio context from coaching session
+  - Add to coaching overlay as collapsible panel or tab
+  - Could integrate with existing useVocalEffects hook

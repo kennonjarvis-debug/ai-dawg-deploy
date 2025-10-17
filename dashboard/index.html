@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAWG AI - Development Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+
+    .dashboard {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header .phase {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .header .last-updated {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      margin-top: 0.5rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: #1a1a1a;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #333;
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.9rem;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .overall-progress {
+      background: #1a1a1a;
+      padding: 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      border: 1px solid #333;
+    }
+
+    .overall-progress h2 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 40px;
+      background: #0a0a0a;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid #333;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 1rem;
+      font-weight: bold;
+    }
+
+    .modules-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .module-card {
+      background: #1a1a1a;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 2px solid #333;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .module-card:hover {
+      transform: translateY(-2px);
+      border-color: #667eea;
+    }
+
+    .module-card.complete {
+      border-color: #22c55e;
+      background: linear-gradient(135deg, #1a1a1a 0%, #1a2a1a 100%);
+    }
+
+    .module-card.in-progress {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2210 100%);
+      animation: pulse 2s infinite;
+    }
+
+    .module-card.blocked {
+      border-color: #ef4444;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a1010 100%);
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+    }
+
+    .module-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .module-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .module-instance {
+      font-size: 0.9rem;
+      padding: 0.25rem 0.75rem;
+      background: #667eea;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .status-badge.complete {
+      background: #22c55e;
+      color: #000;
+    }
+
+    .status-badge.in-progress {
+      background: #f59e0b;
+      color: #000;
+    }
+
+    .status-badge.pending {
+      background: #6b7280;
+      color: #fff;
+    }
+
+    .status-badge.blocked {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .module-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #0a0a0a;
+      border-radius: 8px;
+    }
+
+    .module-stat {
+      text-align: center;
+    }
+
+    .module-stat .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .module-stat .label {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .module-progress {
+      margin: 1rem 0;
+    }
+
+    .module-progress .bar {
+      width: 100%;
+      height: 8px;
+      background: #0a0a0a;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .module-progress .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.5s ease;
+    }
+
+    .prompts {
+      margin: 1rem 0;
+    }
+
+    .prompts h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+    }
+
+    .prompts ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .prompts li {
+      padding: 0.5rem;
+      background: #0a0a0a;
+      margin-bottom: 0.25rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      border-left: 3px solid #667eea;
+    }
+
+    .next-steps {
+      margin: 1rem 0;
+    }
+
+    .next-steps h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+      color: #22c55e;
+    }
+
+    .next-steps ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .next-steps li {
+      padding: 0.5rem;
+      background: #0a2a0a;
+      margin-bottom: 0.25rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      border-left: 3px solid #22c55e;
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+
+    .blockers {
+      margin: 1rem 0;
+    }
+
+    .blockers h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+      color: #ef4444;
+    }
+
+    .blockers ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .blockers li {
+      padding: 0.5rem;
+      background: #2a0a0a;
+      margin-bottom: 0.25rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      border-left: 3px solid #ef4444;
+    }
+
+    .refresh-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 30px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+      transition: transform 0.2s;
+    }
+
+    .refresh-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+
+    .completed-date {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 0.5rem;
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      margin: 2rem 0 1rem 0;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="header">
+      <h1 id="project-name">DAWG AI</h1>
+      <div class="phase" id="phase">Loading...</div>
+      <div class="last-updated" id="last-updated">Last updated: ...</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="value" id="stat-completed">0</div>
+        <div class="label">Completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-in-progress">0</div>
+        <div class="label">In Progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-pending">0</div>
+        <div class="label">Pending</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-lines">0</div>
+        <div class="label">Lines of Code</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-files">0</div>
+        <div class="label">Files Added</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-days">0</div>
+        <div class="label">Days Remaining</div>
+      </div>
+    </div>
+
+    <div class="overall-progress">
+      <h2>Overall Progress</h2>
+      <div class="progress-bar">
+        <div class="progress-fill" id="overall-progress-fill" style="width: 0%">
+          <span id="overall-progress-text">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Completed Modules ✅</h2>
+    <div class="modules-grid" id="completed-modules"></div>
+
+    <h2 class="section-title">In Progress 🔥</h2>
+    <div class="modules-grid" id="in-progress-modules"></div>
+
+    <h2 class="section-title">Ready to Start 🚀</h2>
+    <div class="modules-grid" id="pending-modules"></div>
+
+    <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+  </div>
+
+  <script>
+    async function loadData() {
+      try {
+        const response = await fetch('progress.json?' + new Date().getTime());
+        const data = await response.json();
+
+        // Update header
+        document.getElementById('project-name').textContent = data.project.name;
+        document.getElementById('phase').textContent = data.project.phase;
+        document.getElementById('last-updated').textContent =
+          `Last updated: ${new Date(data.project.lastUpdated).toLocaleString()}`;
+
+        // Update stats
+        document.getElementById('stat-completed').textContent = data.stats.completed;
+        document.getElementById('stat-in-progress').textContent = data.stats.inProgress;
+        document.getElementById('stat-pending').textContent = data.stats.pending;
+        document.getElementById('stat-lines').textContent = data.stats.totalLinesAdded.toLocaleString();
+        document.getElementById('stat-files').textContent = data.stats.totalFilesAdded;
+        document.getElementById('stat-days').textContent = data.stats.estimatedDaysRemaining;
+
+        // Update overall progress
+        const progressFill = document.getElementById('overall-progress-fill');
+        const progressText = document.getElementById('overall-progress-text');
+        progressFill.style.width = data.project.overallProgress + '%';
+        progressText.textContent = data.project.overallProgress + '%';
+
+        // Group modules by status
+        const completed = data.modules.filter(m => m.status === 'complete');
+        const inProgress = data.modules.filter(m => m.status === 'in-progress');
+        const pending = data.modules.filter(m => m.status === 'pending' || m.status === 'blocked');
+
+        // Render modules
+        document.getElementById('completed-modules').innerHTML = completed.map(renderModule).join('');
+        document.getElementById('in-progress-modules').innerHTML =
+          inProgress.length > 0 ? inProgress.map(renderModule).join('') : '<p style="opacity: 0.5; text-align: center;">No modules in progress</p>';
+        document.getElementById('pending-modules').innerHTML = pending.map(renderModule).join('');
+
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+        alert('Failed to load data. Make sure progress.json exists.');
+      }
+    }
+
+    function renderModule(module) {
+      const statusClass = module.status;
+      const statusText = module.status.replace('-', ' ');
+
+      let statsHtml = '';
+      if (module.status === 'complete') {
+        statsHtml = `
+          <div class="module-stats">
+            <div class="module-stat">
+              <div class="value">${module.filesAdded}</div>
+              <div class="label">Files</div>
+            </div>
+            <div class="module-stat">
+              <div class="value">${module.linesAdded.toLocaleString()}</div>
+              <div class="label">Lines</div>
+            </div>
+            <div class="module-stat">
+              <div class="value">${module.components}</div>
+              <div class="label">Components</div>
+            </div>
+          </div>
+          <div class="completed-date">✅ Completed: ${module.completedDate}</div>
+        `;
+      } else {
+        statsHtml = `
+          <div class="module-progress">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <span style="font-size: 0.9rem; opacity: 0.8;">Progress</span>
+              <span style="font-size: 0.9rem; font-weight: bold;">${module.progress}%</span>
+            </div>
+            <div class="bar">
+              <div class="fill" style="width: ${module.progress}%"></div>
+            </div>
+          </div>
+        `;
+
+        if (module.estimatedDays) {
+          statsHtml += `
+            <div style="font-size: 0.9rem; opacity: 0.7; margin-top: 0.5rem;">
+              ⏱️ Estimated: ${module.estimatedDays} days
+            </div>
+          `;
+        }
+      }
+
+      let promptsHtml = '';
+      if (module.prompts && module.prompts.length > 0) {
+        promptsHtml = `
+          <div class="prompts">
+            <h4>📝 Prompts to Use:</h4>
+            <ul>
+              ${module.prompts.map(p => `<li>${p}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      let nextStepsHtml = '';
+      if (module.nextSteps && module.nextSteps.length > 0) {
+        nextStepsHtml = `
+          <div class="next-steps">
+            <h4>🚀 Next Steps:</h4>
+            <ul>
+              ${module.nextSteps.map(s => `<li>${s}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      let blockersHtml = '';
+      if (module.blockers && module.blockers.length > 0) {
+        blockersHtml = `
+          <div class="blockers">
+            <h4>🚫 Blockers:</h4>
+            <ul>
+              ${module.blockers.map(b => `<li>${b}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="module-card ${statusClass}">
+          <div class="module-header">
+            <div class="module-title">${module.name}</div>
+            <div class="module-instance">Instance ${module.instance}</div>
+          </div>
+          <div class="status-badge ${statusClass}">${statusText}</div>
+          ${statsHtml}
+          ${promptsHtml}
+          ${nextStepsHtml}
+          ${blockersHtml}
+        </div>
+      `;
+    }
+
+    // Load data on page load
+    loadData();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadData, 30000);
+  </script>
+</body>
+</html>

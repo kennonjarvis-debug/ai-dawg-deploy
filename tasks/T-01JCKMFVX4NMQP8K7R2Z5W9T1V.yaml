@@ -1,0 +1,87 @@
+---
+id: T-01JCKMFVX4NMQP8K7R2Z5W9T1V
+title: "UI Redesign Phase 2.1: Record Mode Layout Implementation"
+created_at: 2025-10-03T03:50:00Z
+updated_at: 2025-10-03T03:50:00Z
+status: ready
+priority: P2-Redesign
+owner: instance-2
+
+rationale: |
+  Build the Record mode layout - vocal-first experience with large waveform,
+  real-time pitch overlay, performance scoring, and AI coaching.
+  This is the primary use case for DAWG AI.
+
+scope:
+  - Create RecordLayout component
+  - Large waveform display (60% viewport)
+  - Real-time pitch overlay on waveform
+  - Performance scorer in bottom panel
+  - Live AI coaching sidebar
+  - Lyrics panel (collapsible)
+  - Transport controls bar
+
+out_of_scope:
+  - Widget logic (use existing widgets)
+  - Recording implementation (already exists)
+  - Effects processing
+
+interfaces:
+  components:
+    - RecordLayout
+  widgets_used:
+    - WaveformDisplay (primary, enlarged)
+    - PerformanceScorer (bottom)
+    - WaveformAnnotations (overlay)
+    - LiveCoachingPanel (sidebar)
+    - LyricWorkspace (drawer)
+    - VocalEffectsPanel (sidebar)
+    - TransportControls (footer)
+
+acceptance_criteria:
+  - Waveform takes 60% of vertical space
+  - Pitch overlay visible during recording
+  - Performance score updates in real-time
+  - AI coaching panel toggleable (sidebar)
+  - Lyrics panel collapsible from bottom
+  - Layout responsive down to 1024px
+  - No layout shift during recording
+
+test_plan:
+  visual:
+    - Layout matches design spec
+    - Waveform is prominent
+    - All panels accessible
+  integration:
+    - Real-time audio flows to widgets
+    - Recording triggers all live features
+  e2e:
+    - User enters Record mode, sees layout
+    - User starts recording, sees live feedback
+    - User collapses panels, layout adjusts
+
+risk: medium
+estimate: 2 days
+
+dependencies:
+  - T-01JCKMFP8QVWZR3N7K5M9X2T1P (Workspace Orchestrator)
+  - T-01JCKM7B2PMZK8V4N3WX6Q9R1T (Real-time Audio Integration)
+
+technical_notes: |
+  - File: /src/layouts/RecordLayout/RecordLayout.tsx
+  - Grid areas:
+    grid-template-areas:
+      "header header header"
+      "waveform waveform sidebar"
+      "controls controls controls"
+      "lyrics lyrics lyrics";
+
+  - Waveform height: 60vh
+  - Sidebar width: 320px (collapsible to 0)
+  - Controls height: 80px
+  - Lyrics drawer: 0 → 200px (animated)
+
+  - Connect to existing audio hooks:
+    - useRecording()
+    - usePitchDetection()
+    - useVocalEffects()

@@ -1,0 +1,70 @@
+---
+id: T-01JCKM7J9WSQZ4K8P2MV7N1X3R
+title: "Journey Progress Persistence & Cloud Sync"
+created_at: 2025-10-03T03:35:00Z
+updated_at: 2025-10-03T03:35:00Z
+status: ready
+priority: P2
+owner: instance-4
+
+rationale: |
+  Persist user journey data across sessions and devices. Enable cloud sync
+  for seamless experience and data backup.
+
+scope:
+  - IndexedDB storage for local persistence
+  - Cloud sync API endpoints
+  - Conflict resolution for offline changes
+  - Export journey data to JSON
+  - Import journey data from backup
+
+out_of_scope:
+  - Real-time collaboration
+  - Version history/time travel
+  - Multi-device session handoff
+
+interfaces:
+  rest:
+    - POST /api/journey/sync
+    - GET /api/journey/export
+    - POST /api/journey/import
+    - GET /api/journey/status
+  events:
+    produces:
+      - journey.synced
+      - journey.exported
+      - journey.conflict.resolved
+    consumes:
+      - journey.data.updated
+      - user.logged_in
+
+acceptance_criteria:
+  - Journey data persists across browser sessions
+  - Cloud sync triggers on data change (debounced)
+  - Offline changes merge correctly on reconnect
+  - Export generates complete JSON backup
+  - Import restores journey from backup file
+
+test_plan:
+  unit:
+    - IndexedDB operations
+    - Conflict resolution logic
+    - Export/import serialization
+  integration:
+    - Sync flow end-to-end
+    - Offline/online transitions
+  e2e:
+    - User makes progress offline, comes online, sees data sync
+
+risk: medium
+estimate: 2 days
+
+dependencies:
+  - NextAuth authentication (existing)
+  - All journey widgets (existing)
+
+technical_notes: |
+  - Use Dexie.js for IndexedDB wrapper
+  - Implement optimistic UI updates with rollback
+  - Store schema version for migration support
+  - Add sync status indicator to UserProfileCard

@@ -1,0 +1,228 @@
+/**
+ * GridSystem.module.css - UI Redesign Phase 1
+ *
+ * 12-column responsive grid system with mode-specific templates.
+ * Mobile-first approach with breakpoints at 768px, 1024px, 1440px.
+ */
+
+/* ============================================================================
+   Grid Container - Main layout grid
+   ============================================================================ */
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+  height: 100vh;
+  padding: 12px;
+  overflow: hidden;
+  background: var(--bg-primary, #0a0a0a);
+}
+
+/* ============================================================================
+   Mode-Specific Grid Templates
+   ============================================================================ */
+
+/* RECORD MODE - Vocal-first recording */
+.recordMode {
+  grid-template-areas:
+    "header header header header header header header header header header header header"
+    "wave wave wave wave wave wave wave wave wave wave wave wave"
+    "controls controls controls controls coach coach lyrics lyrics lyrics lyrics lyrics lyrics"
+    "pitch pitch pitch effects effects effects lyrics lyrics lyrics lyrics lyrics lyrics";
+  grid-template-rows: 60px 1fr auto auto;
+}
+
+/* EDIT MODE - Multi-track editing */
+.editMode {
+  grid-template-areas:
+    "header header header header header header header header header header header header"
+    "tracks tracks tracks wave wave wave wave wave wave wave wave wave"
+    "tracks tracks tracks structure structure structure structure structure structure structure structure structure"
+    "controls controls controls controls controls controls controls controls controls controls controls controls";
+  grid-template-rows: 60px 1fr auto 80px;
+}
+
+/* MIX MODE - Mixing console */
+.mixMode {
+  grid-template-areas:
+    "header header header header header header header header header header header header"
+    "tracks tracks tracks wave wave wave wave effects effects effects effects effects"
+    "tracks tracks tracks wave wave wave wave effects effects effects effects effects"
+    "controls controls controls controls controls controls controls controls controls controls controls controls";
+  grid-template-rows: 60px 1fr 1fr 80px;
+}
+
+/* LEARN MODE - Coaching and exercises */
+.learnMode {
+  grid-template-areas:
+    "header header header header header header header header header header header header"
+    "exercises exercises exercises exercises progress progress progress progress goals goals goals goals"
+    "assessment assessment assessment assessment progress progress progress progress goals goals goals goals"
+    "dashboard dashboard dashboard dashboard dashboard dashboard dashboard dashboard dashboard dashboard dashboard dashboard";
+  grid-template-rows: 60px 1fr 1fr auto;
+}
+
+/* ============================================================================
+   Grid Areas - Semantic positioning
+   ============================================================================ */
+
+.headerArea { grid-area: header; }
+.waveArea { grid-area: wave; }
+.controlsArea { grid-area: controls; }
+.lyricsArea { grid-area: lyrics; }
+.pitchArea { grid-area: pitch; }
+.coachArea { grid-area: coach; }
+.effectsArea { grid-area: effects; }
+.tracksArea { grid-area: tracks; }
+.structureArea { grid-area: structure; }
+.exercisesArea { grid-area: exercises; }
+.progressArea { grid-area: progress; }
+.goalsArea { grid-area: goals; }
+.assessmentArea { grid-area: assessment; }
+.dashboardArea { grid-area: dashboard; }
+
+/* ============================================================================
+   Grid Panels - Styled containers for grid areas
+   ============================================================================ */
+
+.gridPanel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Important for nested scrolling */
+}
+
+.gridPanel.glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.gridPanel.noPadding {
+  padding: 0;
+}
+
+.gridPanel.scrollable {
+  overflow-y: auto;
+}
+
+/* ============================================================================
+   Responsive Breakpoints
+   ============================================================================ */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
+  .layoutGrid {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .gridPanel {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  /* Simplified templates for tablet */
+  .recordMode {
+    grid-template-areas:
+      "header header header header header header header header header header header header"
+      "wave wave wave wave wave wave wave wave wave wave wave wave"
+      "controls controls controls controls controls controls lyrics lyrics lyrics lyrics lyrics lyrics"
+      "pitch pitch pitch coach coach coach lyrics lyrics lyrics lyrics lyrics lyrics";
+  }
+
+  .editMode {
+    grid-template-areas:
+      "header header header header header header header header header header header header"
+      "tracks tracks wave wave wave wave wave wave wave wave wave wave"
+      "tracks tracks structure structure structure structure structure structure structure structure structure structure"
+      "controls controls controls controls controls controls controls controls controls controls controls controls";
+  }
+}
+
+/* Mobile (< 768px) */
+@media (max-width: 768px) {
+  .layoutGrid {
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 8px;
+    padding: 8px;
+    height: auto; /* Allow vertical scroll */
+  }
+
+  .gridPanel {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  /* Stack everything vertically on mobile */
+  .recordMode,
+  .editMode,
+  .mixMode,
+  .learnMode {
+    grid-template-areas:
+      "header"
+      "wave"
+      "controls"
+      "lyrics"
+      "pitch"
+      "coach"
+      "effects"
+      "tracks"
+      "structure"
+      "exercises"
+      "progress"
+      "goals"
+      "assessment"
+      "dashboard";
+    grid-template-rows: auto;
+  }
+}
+
+/* Large Desktop (> 1440px) */
+@media (min-width: 1440px) {
+  .layoutGrid {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .gridPanel {
+    padding: 20px;
+  }
+}
+
+/* ============================================================================
+   Utility Classes - Grid positioning helpers
+   ============================================================================ */
+
+/* Grid column spans */
+.span1 { grid-column: span 1; }
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+.span4 { grid-column: span 4; }
+.span5 { grid-column: span 5; }
+.span6 { grid-column: span 6; }
+.span7 { grid-column: span 7; }
+.span8 { grid-column: span 8; }
+.span9 { grid-column: span 9; }
+.span10 { grid-column: span 10; }
+.span11 { grid-column: span 11; }
+.span12 { grid-column: span 12; }
+
+/* Grid row spans */
+.rowSpan1 { grid-row: span 1; }
+.rowSpan2 { grid-row: span 2; }
+.rowSpan3 { grid-row: span 3; }
+.rowSpan4 { grid-row: span 4; }
+
+/* Alignment */
+.alignStart { align-self: start; }
+.alignCenter { align-self: center; }
+.alignEnd { align-self: end; }
+.justifyStart { justify-self: start; }
+.justifyCenter { justify-self: center; }
+.justifyEnd { justify-self: end; }

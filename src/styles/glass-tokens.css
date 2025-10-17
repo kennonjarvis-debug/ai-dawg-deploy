@@ -1,0 +1,314 @@
+/**
+ * DAWG AI - Glassmorphic Design System
+ * Pro Tools-inspired design tokens for consistent UI
+ */
+
+:root {
+  /* === COLOR PALETTE === */
+
+  /* Primary Neon Colors */
+  --color-neon-blue: #00d4ff;
+  --color-neon-blue-dim: #00a3cc;
+  --color-neon-blue-bright: #33ddff;
+
+  --color-electric-purple: #b066ff;
+  --color-electric-purple-dim: #8844cc;
+  --color-electric-purple-bright: #c088ff;
+
+  --color-mint-green: #00ff88;
+  --color-mint-green-dim: #00cc66;
+  --color-mint-green-bright: #33ffaa;
+
+  /* Base Colors */
+  --color-deep-black: #0a0a0a;
+  --color-charcoal: #1a1a1a;
+  --color-dark-gray: #2a2a2a;
+  --color-medium-gray: #444444;
+  --color-light-gray: #888888;
+
+  /* Semantic Colors */
+  --color-record: #ff2e4c;
+  --color-record-dim: #cc2539;
+  --color-record-glow: rgba(255, 46, 76, 0.5);
+
+  --color-success: #00ff88;
+  --color-warning: #ffa500;
+  --color-error: #ff2e4c;
+
+  /* === GLASSMORPHISM EFFECTS === */
+
+  /* Glass Background */
+  --glass-bg-light: rgba(255, 255, 255, 0.05);
+  --glass-bg-medium: rgba(255, 255, 255, 0.08);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.12);
+  --glass-bg-panel: rgba(26, 26, 26, 0.6);
+  --glass-bg-panel-dark: rgba(10, 10, 10, 0.3);
+
+  /* Blur Values */
+  --blur-sm: blur(10px);
+  --blur-md: blur(20px);
+  --blur-lg: blur(30px);
+  --blur-xl: blur(40px);
+
+  /* Border Colors */
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --glass-border-light: rgba(255, 255, 255, 0.1);
+  --glass-border-medium: rgba(255, 255, 255, 0.15);
+  --glass-border-neon-blue: rgba(0, 212, 255, 0.3);
+  --glass-border-neon-purple: rgba(176, 102, 255, 0.3);
+  --glass-border-neon-green: rgba(0, 255, 136, 0.3);
+
+  /* === SHADOWS & GLOWS === */
+
+  /* Glass Shadows */
+  --shadow-glass-sm: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-glass-md: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-glass-lg: 0 12px 48px rgba(0, 0, 0, 0.4);
+  --shadow-glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Neon Glows */
+  --glow-blue-sm: 0 0 10px rgba(0, 212, 255, 0.3);
+  --glow-blue-md: 0 0 20px rgba(0, 212, 255, 0.5);
+  --glow-blue-lg: 0 0 40px rgba(0, 212, 255, 0.7);
+  --glow-blue-inset: inset 0 0 10px rgba(0, 212, 255, 0.1);
+
+  --glow-purple-sm: 0 0 10px rgba(176, 102, 255, 0.3);
+  --glow-purple-md: 0 0 20px rgba(176, 102, 255, 0.5);
+  --glow-purple-lg: 0 0 40px rgba(176, 102, 255, 0.7);
+
+  --glow-green-sm: 0 0 10px rgba(0, 255, 136, 0.3);
+  --glow-green-md: 0 0 20px rgba(0, 255, 136, 0.5);
+  --glow-green-lg: 0 0 40px rgba(0, 255, 136, 0.7);
+
+  --glow-red-sm: 0 0 10px rgba(255, 46, 76, 0.3);
+  --glow-red-md: 0 0 20px rgba(255, 46, 76, 0.5);
+  --glow-red-lg: 0 0 40px rgba(255, 46, 76, 0.7);
+
+  /* === GRADIENTS === */
+
+  /* Primary Gradients */
+  --gradient-blue-green: linear-gradient(135deg, var(--color-neon-blue) 0%, var(--color-mint-green) 100%);
+  --gradient-purple-blue: linear-gradient(135deg, var(--color-electric-purple) 0%, var(--color-neon-blue) 100%);
+  --gradient-dark: linear-gradient(135deg, var(--color-deep-black) 0%, var(--color-charcoal) 100%);
+
+  /* Overlay Gradients */
+  --gradient-glass-overlay: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+
+  --gradient-shine: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+
+  /* === TYPOGRAPHY === */
+
+  /* Font Families */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Font Sizes */
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px */
+  --text-xl: 1.25rem;      /* 20px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 1.875rem;    /* 30px */
+
+  /* Font Weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* === SPACING === */
+
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+
+  /* === ANIMATION === */
+
+  /* Timing Functions */
+  --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-elastic: cubic-bezier(0.68, -0.3, 0.32, 1.3);
+
+  /* Duration */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+
+  /* === BORDER RADIUS === */
+
+  --radius-sm: 0.375rem;   /* 6px */
+  --radius-md: 0.5rem;     /* 8px */
+  --radius-lg: 0.75rem;    /* 12px */
+  --radius-xl: 1rem;       /* 16px */
+  --radius-full: 9999px;   /* circular */
+
+  /* === Z-INDEX === */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+}
+
+/* === UTILITY CLASSES === */
+
+/* Glass Effects */
+.glass {
+  background: var(--glass-bg-light);
+  backdrop-filter: var(--blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(180%);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: var(--shadow-glass-md);
+}
+
+.glass-panel {
+  background: var(--glass-bg-panel);
+  backdrop-filter: var(--blur-md) saturate(150%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(150%);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: var(--shadow-glass-md), var(--shadow-glass-inset);
+}
+
+.glass-heavy {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: var(--blur-lg) saturate(200%);
+  -webkit-backdrop-filter: var(--blur-lg) saturate(200%);
+  border: 1px solid var(--glass-border-medium);
+  box-shadow: var(--shadow-glass-lg);
+}
+
+/* Neon Borders */
+.neon-border-blue {
+  border: 1px solid var(--glass-border-neon-blue);
+  box-shadow: var(--glow-blue-sm), var(--glow-blue-inset);
+}
+
+.neon-border-purple {
+  border: 1px solid var(--glass-border-neon-purple);
+  box-shadow: var(--glow-purple-sm);
+}
+
+.neon-border-green {
+  border: 1px solid var(--glass-border-neon-green);
+  box-shadow: var(--glow-green-sm);
+}
+
+/* Glow Effects */
+.glow-blue {
+  box-shadow: var(--glow-blue-md);
+}
+
+.glow-purple {
+  box-shadow: var(--glow-purple-md);
+}
+
+.glow-green {
+  box-shadow: var(--glow-green-md);
+}
+
+.glow-red {
+  box-shadow: var(--glow-red-md);
+}
+
+/* Hover Glows */
+.hover-glow-blue:hover {
+  box-shadow: var(--glow-blue-lg);
+  transition: box-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+.hover-glow-purple:hover {
+  box-shadow: var(--glow-purple-lg);
+  transition: box-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+.hover-glow-green:hover {
+  box-shadow: var(--glow-green-lg);
+  transition: box-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+.hover-glow-red:hover {
+  box-shadow: var(--glow-red-lg);
+  transition: box-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s var(--ease-smooth) infinite;
+}
+
+.animate-ripple {
+  animation: ripple 0.6s var(--ease-smooth) forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Transition Utilities */
+.transition-smooth {
+  transition-timing-function: var(--ease-smooth);
+}
+
+.transition-bounce {
+  transition-timing-function: var(--ease-bounce);
+}
+
+.transition-elastic {
+  transition-timing-function: var(--ease-elastic);
+}

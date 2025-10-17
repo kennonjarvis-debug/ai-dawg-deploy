@@ -1,0 +1,11 @@
+.widget {
+  /* Base glassmorphic styling */
+  background: var(--glass-bg-light);
+  backdrop-filter: var(--blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(180%);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: var(--shadow-glass-md);
+  border-radius: var(--radius-lg);
+
+  /* Add your custom styles here */
+}

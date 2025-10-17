@@ -1,0 +1,470 @@
+openapi: 3.1.0
+info:
+  title: MasterMe API
+  description: AI-powered mastering service with loudness normalization and genre-specific processing
+  version: 1.0.0
+  contact:
+    name: DAWG AI Team
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://app.dawgai.com/api
+    description: Production
+
+paths:
+  /master/request:
+    post:
+      operationId: requestMastering
+      summary: Request AI mastering for a mixed track
+      tags:
+        - MasterMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - track_id
+                - input_audio_url
+                - target_loudness_lufs
+              properties:
+                track_id:
+                  type: string
+                user_id:
+                  type: string
+                journey_id:
+                  type: string
+                input_audio_url:
+                  type: string
+                  format: uri
+                  example: s3://bucket/mixes/final_mix.wav
+                target_loudness_lufs:
+                  type: number
+                  format: float
+                  minimum: -20
+                  maximum: -8
+                  default: -14
+                  description: Target integrated loudness (LUFS)
+                target_genre:
+                  type: string
+                  enum: [country, pop, rock, r&b, indie, electronic, acoustic]
+                mastering_style:
+                  type: string
+                  enum: [gentle, moderate, aggressive, streaming, vinyl, cd]
+                  default: moderate
+                reference_track:
+                  $ref: '#/components/schemas/ReferenceTrack'
+                custom_settings:
+                  $ref: '#/components/schemas/CustomMasteringSettings'
+      responses:
+        '202':
+          description: Mastering job accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasteringJob'
+        '400':
+          description: Invalid request
+        '429':
+          description: Rate limit exceeded
+
+  /master/{masterId}/status:
+    get:
+      operationId: getMasteringStatus
+      summary: Check mastering job status
+      tags:
+        - MasterMe
+      parameters:
+        - name: masterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mastering job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasteringJob'
+        '404':
+          description: Mastering job not found
+
+  /master/{masterId}/download:
+    get:
+      operationId: downloadMasteredTrack
+      summary: Download completed mastered track
+      tags:
+        - MasterMe
+      parameters:
+        - name: masterId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [wav, flac, mp3-320, mp3-v0]
+            default: wav
+      responses:
+        '200':
+          description: Mastered audio file
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+            audio/flac:
+              schema:
+                type: string
+                format: binary
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Mastered track not found
+        '409':
+          description: Mastering job not complete yet
+
+  /master/{masterId}/report:
+    get:
+      operationId: getMasteringReport
+      summary: Get detailed mastering report with before/after analysis
+      tags:
+        - MasterMe
+      parameters:
+        - name: masterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mastering report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasteringReport'
+
+  /master/presets:
+    get:
+      operationId: getMasteringPresets
+      summary: Get available mastering presets by genre
+      tags:
+        - MasterMe
+      parameters:
+        - name: genre
+          in: query
+          schema:
+            type: string
+            enum: [country, pop, rock, r&b, indie, electronic, acoustic]
+      responses:
+        '200':
+          description: List of mastering presets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MasteringPreset'
+
+  /master/analyze:
+    post:
+      operationId: analyzeMix
+      summary: Analyze mixed track before mastering
+      tags:
+        - MasterMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - audio_url
+              properties:
+                audio_url:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Mix analysis results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MixAnalysis'
+
+components:
+  schemas:
+    MasteringJob:
+      type: object
+      required:
+        - master_id
+        - track_id
+        - status
+      properties:
+        master_id:
+          type: string
+          example: mst_01JBNCX8QF0A1Z2Y3X4W5V6U7T
+        track_id:
+          type: string
+        user_id:
+          type: string
+        journey_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+        progress_percentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+        input_audio_url:
+          type: string
+          format: uri
+        output_audio_url:
+          type: string
+          format: uri
+        target_loudness_lufs:
+          type: number
+          format: float
+        target_genre:
+          type: string
+        mastering_style:
+          type: string
+        processing_steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessingStep'
+        metrics:
+          $ref: '#/components/schemas/MasteringMetrics'
+        quality_report:
+          $ref: '#/components/schemas/QualityReport'
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        processing_time_sec:
+          type: number
+          format: float
+
+    ProcessingStep:
+      type: object
+      properties:
+        step:
+          type: string
+          enum: [analysis, eq, multiband_compression, stereo_enhancement, limiting, dithering]
+        description:
+          type: string
+        reason:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+
+    MasteringMetrics:
+      type: object
+      properties:
+        input_lufs:
+          type: number
+          format: float
+          description: Input integrated loudness
+        output_lufs:
+          type: number
+          format: float
+          description: Output integrated loudness
+        dynamic_range_lu:
+          type: number
+          format: float
+          description: Dynamic range in Loudness Units
+        true_peak_dbtp:
+          type: number
+          format: float
+          description: True peak level in dBTP
+        crest_factor_db:
+          type: number
+          format: float
+        stereo_width:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    QualityReport:
+      type: object
+      properties:
+        overall_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        frequency_balance:
+          type: string
+          enum: [poor, fair, good, excellent]
+        dynamic_range:
+          type: string
+          enum: [poor, fair, good, excellent]
+        loudness_consistency:
+          type: string
+          enum: [poor, fair, good, excellent]
+        stereo_image:
+          type: string
+          enum: [poor, fair, good, excellent]
+        warnings:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+
+    ReferenceTrack:
+      type: object
+      properties:
+        artist:
+          type: string
+        song:
+          type: string
+        audio_url:
+          type: string
+          format: uri
+        analyzed_loudness_lufs:
+          type: number
+          format: float
+        analyzed_dynamic_range:
+          type: number
+          format: float
+
+    CustomMasteringSettings:
+      type: object
+      properties:
+        enable_eq:
+          type: boolean
+          default: true
+        enable_compression:
+          type: boolean
+          default: true
+        enable_stereo_enhancement:
+          type: boolean
+          default: false
+        enable_harmonic_exciter:
+          type: boolean
+          default: false
+        limiter_ceiling_db:
+          type: number
+          format: float
+          minimum: -1.0
+          maximum: 0.0
+          default: -0.5
+        preserve_dynamics:
+          type: boolean
+          default: false
+          description: Prioritize dynamic range over loudness
+
+    MasteringReport:
+      type: object
+      properties:
+        master_id:
+          type: string
+        track_id:
+          type: string
+        before_analysis:
+          $ref: '#/components/schemas/MixAnalysis'
+        after_analysis:
+          $ref: '#/components/schemas/MixAnalysis'
+        processing_steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessingStep'
+        improvements:
+          type: array
+          items:
+            type: object
+            properties:
+              metric:
+                type: string
+              before:
+                type: number
+              after:
+                type: number
+              change_percentage:
+                type: number
+        waveform_comparison_url:
+          type: string
+          format: uri
+          description: URL to visual waveform before/after comparison
+        spectrum_comparison_url:
+          type: string
+          format: uri
+          description: URL to visual spectrum before/after comparison
+
+    MixAnalysis:
+      type: object
+      properties:
+        loudness_lufs:
+          type: number
+          format: float
+        loudness_range_lu:
+          type: number
+          format: float
+        true_peak_dbtp:
+          type: number
+          format: float
+        dynamic_range_db:
+          type: number
+          format: float
+        frequency_distribution:
+          type: object
+          properties:
+            sub_bass:
+              type: number
+            bass:
+              type: number
+            low_mids:
+              type: number
+            mids:
+              type: number
+            high_mids:
+              type: number
+            highs:
+              type: number
+        stereo_width:
+          type: number
+          format: float
+        issues:
+          type: array
+          items:
+            type: string
+
+    MasteringPreset:
+      type: object
+      properties:
+        preset_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        genre:
+          type: string
+        target_loudness_lufs:
+          type: number
+          format: float
+        style:
+          type: string
+        processing_steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessingStep'
+        example_audio_url:
+          type: string
+          format: uri

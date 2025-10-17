@@ -1,0 +1,75 @@
+{
+  "timestamp": "2025-10-03T00:11:25.427Z",
+  "totalTests": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "duration": 0,
+  "suites": [
+    {
+      "name": "Visual Regression",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    },
+    {
+      "name": "Performance",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    },
+    {
+      "name": "Accessibility",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    },
+    {
+      "name": "Dashboard Navigation",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    },
+    {
+      "name": "Widget Interactions",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    },
+    {
+      "name": "Theme Switching",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    },
+    {
+      "name": "Responsive Layouts",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    },
+    {
+      "name": "Chat & Real-time",
+      "tests": [],
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "duration": 0
+    }
+  ],
+  "greenGateStatus": "PASS"
+}

@@ -1,0 +1,246 @@
+{
+  "tasks": {
+    "T-01JCKM6A7TQRS4M8N9PX2V5W1Y": {
+      "id": "T-01JCKM6A7TQRS4M8N9PX2V5W1Y",
+      "title": "ReferenceTrackUploader Widget - Instance 1",
+      "status": "ready",
+      "owner": "instance-1",
+      "priority": "P2",
+      "estimate": "1.5 days",
+      "type": "create",
+      "dependencies": [],
+      "dependents": ["T-01JCKM6H9ZVWX3K7N2QY8P4M1S"]
+    },
+    "T-01JCKM6H9ZVWX3K7N2QY8P4M1S": {
+      "id": "T-01JCKM6H9ZVWX3K7N2QY8P4M1S",
+      "title": "VoicematchVisualizer Widget - Instance 2",
+      "status": "ready",
+      "owner": "instance-2",
+      "priority": "P2",
+      "estimate": "2 days",
+      "type": "create",
+      "dependencies": ["T-01JCKM6A7TQRS4M8N9PX2V5W1Y"],
+      "dependents": []
+    },
+    "T-01JCKM6P3RXSB9M4T8ZN1K6V2Q": {
+      "id": "T-01JCKM6P3RXSB9M4T8ZN1K6V2Q",
+      "title": "Integrate AIFeedbackTimeline into Journey Progress View",
+      "status": "ready",
+      "owner": "instance-3",
+      "priority": "P2",
+      "estimate": "0.5 days",
+      "type": "integrate",
+      "dependencies": [],
+      "dependents": []
+    },
+    "T-01JCKM6V8KQWP2N7M5SX9R4T1Z": {
+      "id": "T-01JCKM6V8KQWP2N7M5SX9R4T1Z",
+      "title": "MilestoneTracker Widget - Instance 4",
+      "status": "ready",
+      "owner": "instance-4",
+      "priority": "P2",
+      "estimate": "1.5 days",
+      "type": "create",
+      "dependencies": [],
+      "dependents": []
+    },
+    "T-01JCKM7B2PMZK8V4N3WX6Q9R1T": {
+      "id": "T-01JCKM7B2PMZK8V4N3WX6Q9R1T",
+      "title": "Real-time Audio Integration for Coaching Widgets",
+      "status": "ready",
+      "owner": "instance-2",
+      "priority": "P2",
+      "estimate": "2 days",
+      "type": "enhance",
+      "dependencies": [],
+      "dependents": ["T-01JCKMA9K3ZMQX7N4P8R5V2W1T"]
+    },
+    "T-01JCKM7J9WSQZ4K8P2MV7N1X3R": {
+      "id": "T-01JCKM7J9WSQZ4K8P2MV7N1X3R",
+      "title": "Journey Progress Persistence & Cloud Sync",
+      "status": "ready",
+      "owner": "instance-4",
+      "priority": "P2",
+      "estimate": "2 days",
+      "type": "enhance",
+      "dependencies": [],
+      "dependents": []
+    },
+    "T-01JCKMA2V8HQSB7K4N9PX3M1R6": {
+      "id": "T-01JCKMA2V8HQSB7K4N9PX3M1R6",
+      "title": "Integrate ExerciseLibrary into Journey Coaching Sessions",
+      "status": "ready",
+      "owner": "instance-3",
+      "priority": "P1-B",
+      "estimate": "0.75 days",
+      "type": "integrate",
+      "dependencies": [],
+      "dependents": []
+    },
+    "T-01JCKMA9K3ZMQX7N4P8R5V2W1T": {
+      "id": "T-01JCKMA9K3ZMQX7N4P8R5V2W1T",
+      "title": "Integrate VocalEffectsPanel into Journey Coaching Sessions",
+      "status": "ready",
+      "owner": "instance-2",
+      "priority": "P2",
+      "estimate": "1 day",
+      "type": "integrate",
+      "dependencies": ["T-01JCKM7B2PMZK8V4N3WX6Q9R1T"],
+      "dependents": []
+    },
+    "T-STABILITY-D-SHARED-TYPES": {
+      "id": "T-STABILITY-D-SHARED-TYPES",
+      "title": "[P0 Stability] Create Shared Types Foundation & Fix Cross-Package Issues",
+      "status": "ready",
+      "owner": "instance-4",
+      "priority": "P0-Stability",
+      "estimate": "1.5 days",
+      "type": "fix",
+      "dependencies": [],
+      "dependents": ["T-STABILITY-A-UI-TYPES", "T-STABILITY-B-AUDIO-TYPES", "T-STABILITY-C-DATA-TYPES"]
+    },
+    "T-STABILITY-A-UI-TYPES": {
+      "id": "T-STABILITY-A-UI-TYPES",
+      "title": "[P0 Stability] Fix UI/React Component Type Errors",
+      "status": "blocked",
+      "owner": "instance-1",
+      "priority": "P0-Stability",
+      "estimate": "1 day",
+      "type": "fix",
+      "dependencies": ["T-STABILITY-D-SHARED-TYPES"],
+      "dependents": []
+    },
+    "T-STABILITY-B-AUDIO-TYPES": {
+      "id": "T-STABILITY-B-AUDIO-TYPES",
+      "title": "[P0 Stability] Fix Audio/WebAudio Engine Type Errors",
+      "status": "blocked",
+      "owner": "instance-2",
+      "priority": "P0-Stability",
+      "estimate": "1 day",
+      "type": "fix",
+      "dependencies": ["T-STABILITY-D-SHARED-TYPES"],
+      "dependents": []
+    },
+    "T-STABILITY-C-DATA-TYPES": {
+      "id": "T-STABILITY-C-DATA-TYPES",
+      "title": "[P0 Stability] Fix Data/API/Schema Type Errors",
+      "status": "blocked",
+      "owner": "instance-3",
+      "priority": "P0-Stability",
+      "estimate": "1 day",
+      "type": "fix",
+      "dependencies": ["T-STABILITY-D-SHARED-TYPES"],
+      "dependents": []
+    },
+    "T-01JCKMF2Q9VXZN8K4P7M3R5W1T": {
+      "id": "T-01JCKMF2Q9VXZN8K4P7M3R5W1T",
+      "title": "UI Redesign Phase 1.1: Mode Context & State Management",
+      "status": "blocked",
+      "owner": "instance-1",
+      "priority": "P1-Redesign",
+      "estimate": "1 day",
+      "type": "create",
+      "dependencies": ["T-STABILITY-A-UI-TYPES"],
+      "dependents": ["T-01JCKMF9X7PSQB4K2N8M6V1R9T", "T-01JCKMFHK2ZMVX9P4N7R3W5T1Q"]
+    },
+    "T-01JCKMF9X7PSQB4K2N8M6V1R9T": {
+      "id": "T-01JCKMF9X7PSQB4K2N8M6V1R9T",
+      "title": "UI Redesign Phase 1.2: Responsive Grid System",
+      "status": "blocked",
+      "owner": "instance-1",
+      "priority": "P1-Redesign",
+      "estimate": "1.5 days",
+      "type": "create",
+      "dependencies": ["T-01JCKMF2Q9VXZN8K4P7M3R5W1T"],
+      "dependents": ["T-01JCKMFP8QVWZR3N7K5M9X2T1P"]
+    },
+    "T-01JCKMFHK2ZMVX9P4N7R3W5T1Q": {
+      "id": "T-01JCKMFHK2ZMVX9P4N7R3W5T1Q",
+      "title": "UI Redesign Phase 1.3: Mode Switcher UI",
+      "status": "blocked",
+      "owner": "instance-1",
+      "priority": "P1-Redesign",
+      "estimate": "1 day",
+      "type": "create",
+      "dependencies": ["T-01JCKMF2Q9VXZN8K4P7M3R5W1T"],
+      "dependents": ["T-01JCKMFP8QVWZR3N7K5M9X2T1P"]
+    },
+    "T-01JCKMFP8QVWZR3N7K5M9X2T1P": {
+      "id": "T-01JCKMFP8QVWZR3N7K5M9X2T1P",
+      "title": "UI Redesign Phase 1.4: Workspace Orchestrator",
+      "status": "blocked",
+      "owner": "instance-1",
+      "priority": "P1-Redesign",
+      "estimate": "1.5 days",
+      "type": "create",
+      "dependencies": ["T-01JCKMF2Q9VXZN8K4P7M3R5W1T", "T-01JCKMF9X7PSQB4K2N8M6V1R9T", "T-01JCKMFHK2ZMVX9P4N7R3W5T1Q"],
+      "dependents": ["T-01JCKMFVX4NMQP8K7R2Z5W9T1V"]
+    },
+    "T-01JCKMFVX4NMQP8K7R2Z5W9T1V": {
+      "id": "T-01JCKMFVX4NMQP8K7R2Z5W9T1V",
+      "title": "UI Redesign Phase 2: Record Mode Layout",
+      "status": "blocked",
+      "owner": "instance-2",
+      "priority": "P1-Redesign",
+      "estimate": "2 days",
+      "type": "create",
+      "dependencies": ["T-01JCKMFP8QVWZR3N7K5M9X2T1P", "T-STABILITY-B-AUDIO-TYPES"],
+      "dependents": []
+    }
+  },
+  "graph": {
+    "nodes": [
+      {"id": "T-STABILITY-D-SHARED-TYPES", "label": "Shared Types Foundation", "instance": 4, "type": "fix", "priority": "P0"},
+      {"id": "T-STABILITY-A-UI-TYPES", "label": "UI Type Fixes", "instance": 1, "type": "fix", "priority": "P0"},
+      {"id": "T-STABILITY-B-AUDIO-TYPES", "label": "Audio Type Fixes", "instance": 2, "type": "fix", "priority": "P0"},
+      {"id": "T-STABILITY-C-DATA-TYPES", "label": "Data Type Fixes", "instance": 3, "type": "fix", "priority": "P0"},
+      {"id": "T-01JCKMF2Q9VXZN8K4P7M3R5W1T", "label": "Mode Context", "instance": 1, "type": "create", "priority": "P1"},
+      {"id": "T-01JCKMF9X7PSQB4K2N8M6V1R9T", "label": "Grid System", "instance": 1, "type": "create", "priority": "P1"},
+      {"id": "T-01JCKMFHK2ZMVX9P4N7R3W5T1Q", "label": "Mode Switcher", "instance": 1, "type": "create", "priority": "P1"},
+      {"id": "T-01JCKMFP8QVWZR3N7K5M9X2T1P", "label": "Workspace Orchestrator", "instance": 1, "type": "create", "priority": "P1"},
+      {"id": "T-01JCKMFVX4NMQP8K7R2Z5W9T1V", "label": "Record Mode Layout", "instance": 2, "type": "create", "priority": "P1"},
+      {"id": "T-01JCKM6A7TQRS4M8N9PX2V5W1Y", "label": "ReferenceTrackUploader", "instance": 1, "type": "create", "priority": "P2"},
+      {"id": "T-01JCKM6H9ZVWX3K7N2QY8P4M1S", "label": "VoicematchVisualizer", "instance": 2, "type": "create", "priority": "P2"},
+      {"id": "T-01JCKM6P3RXSB9M4T8ZN1K6V2Q", "label": "AIFeedbackTimeline", "instance": 3, "type": "integrate", "priority": "P2"},
+      {"id": "T-01JCKM6V8KQWP2N7M5SX9R4T1Z", "label": "MilestoneTracker", "instance": 4, "type": "create", "priority": "P2"},
+      {"id": "T-01JCKM7B2PMZK8V4N3WX6Q9R1T", "label": "Real-time Audio", "instance": 2, "type": "enhance", "priority": "P2"},
+      {"id": "T-01JCKM7J9WSQZ4K8P2MV7N1X3R", "label": "Progress Persistence", "instance": 4, "type": "enhance", "priority": "P2"},
+      {"id": "T-01JCKMA2V8HQSB7K4N9PX3M1R6", "label": "ExerciseLibrary", "instance": 3, "type": "integrate", "priority": "P1"},
+      {"id": "T-01JCKMA9K3ZMQX7N4P8R5V2W1T", "label": "VocalEffectsPanel", "instance": 2, "type": "integrate", "priority": "P2"}
+    ],
+    "edges": [
+      {"from": "T-STABILITY-D-SHARED-TYPES", "to": "T-STABILITY-A-UI-TYPES", "type": "blocks"},
+      {"from": "T-STABILITY-D-SHARED-TYPES", "to": "T-STABILITY-B-AUDIO-TYPES", "type": "blocks"},
+      {"from": "T-STABILITY-D-SHARED-TYPES", "to": "T-STABILITY-C-DATA-TYPES", "type": "blocks"},
+      {"from": "T-STABILITY-A-UI-TYPES", "to": "T-01JCKMF2Q9VXZN8K4P7M3R5W1T", "type": "blocks"},
+      {"from": "T-01JCKMF2Q9VXZN8K4P7M3R5W1T", "to": "T-01JCKMF9X7PSQB4K2N8M6V1R9T", "type": "blocks"},
+      {"from": "T-01JCKMF2Q9VXZN8K4P7M3R5W1T", "to": "T-01JCKMFHK2ZMVX9P4N7R3W5T1Q", "type": "blocks"},
+      {"from": "T-01JCKMF9X7PSQB4K2N8M6V1R9T", "to": "T-01JCKMFP8QVWZR3N7K5M9X2T1P", "type": "blocks"},
+      {"from": "T-01JCKMFHK2ZMVX9P4N7R3W5T1Q", "to": "T-01JCKMFP8QVWZR3N7K5M9X2T1P", "type": "blocks"},
+      {"from": "T-01JCKMFP8QVWZR3N7K5M9X2T1P", "to": "T-01JCKMFVX4NMQP8K7R2Z5W9T1V", "type": "blocks"},
+      {"from": "T-STABILITY-B-AUDIO-TYPES", "to": "T-01JCKMFVX4NMQP8K7R2Z5W9T1V", "type": "blocks"},
+      {"from": "T-01JCKM6A7TQRS4M8N9PX2V5W1Y", "to": "T-01JCKM6H9ZVWX3K7N2QY8P4M1S", "type": "blocks"},
+      {"from": "T-01JCKM7B2PMZK8V4N3WX6Q9R1T", "to": "T-01JCKMA9K3ZMQX7N4P8R5V2W1T", "type": "blocks"}
+    ]
+  },
+  "updated_at": "2025-10-02T22:40:00Z",
+  "stats": {
+    "total_tasks": 17,
+    "ready": 9,
+    "in_progress": 0,
+    "blocked": 8,
+    "completed": 0,
+    "by_type": {
+      "create": 9,
+      "integrate": 3,
+      "enhance": 2,
+      "fix": 4
+    },
+    "by_priority": {
+      "P0-Stability": 4,
+      "P1-Redesign": 5,
+      "P1-B": 1,
+      "P2": 7
+    }
+  }
+}

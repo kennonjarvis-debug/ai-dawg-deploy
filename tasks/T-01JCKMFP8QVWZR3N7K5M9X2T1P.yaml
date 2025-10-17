@@ -1,0 +1,82 @@
+---
+id: T-01JCKMFP8QVWZR3N7K5M9X2T1P
+title: "UI Redesign Phase 1.4: Workspace Orchestrator & Routing"
+created_at: 2025-10-03T03:50:00Z
+updated_at: 2025-10-03T03:50:00Z
+status: ready
+priority: P1-Redesign
+owner: instance-1
+
+rationale: |
+  Create main workspace page that orchestrates mode-based layouts and widget rendering.
+  Central hub that combines mode context, grid system, and mode switcher.
+
+scope:
+  - Create /app/workspace route
+  - Build WorkspacePage component
+  - Integrate ModeContext provider
+  - Wire up ModeSwitcher
+  - Implement mode-based layout rendering
+  - Add loading states
+
+out_of_scope:
+  - Individual mode layouts (separate tasks)
+  - Widget implementations
+  - Advanced routing (nested routes)
+
+interfaces:
+  routes:
+    - /workspace (new main workspace)
+    - /workspace?mode=record (deep link to mode)
+  components:
+    - WorkspacePage
+    - WorkspaceLayout
+
+acceptance_criteria:
+  - /workspace route accessible
+  - Mode switcher renders at top
+  - Current mode determines layout
+  - URL param syncs with mode (?mode=record)
+  - Loading states for mode transitions
+  - Redirects from / to /workspace
+
+test_plan:
+  integration:
+    - Navigate to /workspace loads correctly
+    - Mode switching works
+    - URL updates with mode
+    - Back/forward navigation works
+  e2e:
+    - User visits /workspace
+    - User switches modes, layout changes
+    - User refreshes, mode persists
+
+risk: low
+estimate: 1.5 days
+
+dependencies:
+  - T-01JCKMF2Q9VXZN8K4P7M3R5W1T (Mode Context)
+  - T-01JCKMF9X7PSQB4K2N8M6V1R9T (Grid System)
+  - T-01JCKMFHK2ZMVX9P4N7R3W5T1Q (Mode Switcher)
+
+technical_notes: |
+  - File: /app/workspace/page.tsx
+  - File: /app/workspace/layout.tsx
+  - Use Next.js App Router
+  - Query params for mode: useSearchParams()
+  - Redirect from /app/page.tsx to /workspace
+
+  Structure:
+  ```tsx
+  <ModeProvider>
+    <WorkspaceLayout>
+      <ModeSwitcher />
+      <GridContainer>
+        {mode === 'record' && <RecordLayout />}
+        {mode === 'edit' && <EditLayout />}
+        {mode === 'mix' && <MixLayout />}
+        {mode === 'learn' && <LearnLayout />}
+      </GridContainer>
+    </WorkspaceLayout>
+  </ModeProvider>
+  ```

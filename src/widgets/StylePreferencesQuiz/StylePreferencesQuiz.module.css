@@ -1,0 +1,531 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  border-radius: 8px;
+  padding: 24px;
+  gap: 24px;
+}
+
+.progressBar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #222;
+}
+
+.progressDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #333;
+  transition: all 0.3s ease;
+}
+
+.progressDot.active {
+  background: #4a9eff;
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.5);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.content p {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Intro */
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 0;
+}
+
+.icon {
+  color: #4a9eff;
+  opacity: 0.8;
+}
+
+.introText {
+  max-width: 400px;
+}
+
+.introText p {
+  font-size: 14px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.introText ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.introText li {
+  padding: 10px 12px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 13px;
+}
+
+.introText li::before {
+  content: '✓';
+  margin-right: 8px;
+  color: #4a9eff;
+  font-weight: 600;
+}
+
+/* Generic Option Grid */
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.optionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 12px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.optionCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.optionCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.emoji {
+  font-size: 32px;
+}
+
+.optionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Artists Grid */
+.artistGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.artistCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.artistCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.artistCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.artistIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0a;
+  border-radius: 50%;
+  border: 1px solid #333;
+}
+
+.artistCard.selected .artistIcon {
+  background: rgba(74, 158, 255, 0.2);
+  border-color: #4a9eff;
+}
+
+.artistLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Vocalists List */
+.vocalistList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.vocalistCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.vocalistCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.vocalistCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.vocalistInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vocalistLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.vocalistExamples {
+  font-size: 11px;
+  color: #666;
+}
+
+.vocalistCard.selected .vocalistExamples {
+  color: #4a9eff;
+}
+
+.heartIcon {
+  color: #ff4a9e;
+}
+
+/* Tempo List */
+.tempoList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.tempoCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.tempoCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.tempoCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.tempoEmoji {
+  font-size: 32px;
+}
+
+.tempoInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tempoLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tempoBPM {
+  font-size: 11px;
+  color: #666;
+  font-family: monospace;
+}
+
+.tempoCard.selected .tempoBPM {
+  color: #4a9eff;
+}
+
+/* Emotion Grid */
+.emotionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.emotionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 12px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.emotionCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.emotionCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.emotionEmoji {
+  font-size: 32px;
+}
+
+.emotionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Songwriting List */
+.songwritingList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.songwritingCard {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.songwritingCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.songwritingCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.songwritingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.songwritingLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.songwritingDesc {
+  font-size: 11px;
+  color: #666;
+}
+
+.songwritingCard.selected .songwritingDesc {
+  color: #4a9eff;
+}
+
+/* Results */
+.results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.resultsCard {
+  width: 100%;
+  max-width: 600px;
+  padding: 24px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.resultsCard h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #4a9eff;
+  margin: 0;
+  text-align: center;
+}
+
+.resultSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resultSection h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  padding: 6px 12px;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ccc;
+  font-weight: 500;
+}
+
+.songwritingResult {
+  padding: 10px 14px;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #ccc;
+  font-weight: 500;
+}
+
+.completeBtn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  background: #4a9eff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.completeBtn:hover {
+  background: #3a8eef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+/* Navigation */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #222;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #ccc;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: #2a2a2a;
+  border-color: #4a9eff;
+  color: #4a9eff;
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

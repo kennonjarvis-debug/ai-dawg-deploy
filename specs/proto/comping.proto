@@ -1,0 +1,256 @@
+syntax = "proto3";
+
+package dawgai.comping.v1;
+
+option go_package = "github.com/dawgai/proto/comping/v1;compingv1";
+
+// CompingService provides AI-powered take selection and comping
+service CompingService {
+  // CompareTakes analyzes multiple takes and returns comparison metrics
+  rpc CompareTakes(CompareTakesRequest) returns (CompareTakesResponse);
+
+  // AutoComp automatically creates a comped track from multiple takes
+  rpc AutoComp(AutoCompRequest) returns (AutoCompResponse);
+
+  // GetCompSuggestion provides comping suggestions for manual editing
+  rpc GetCompSuggestion(CompSuggestionRequest) returns (CompSuggestionResponse);
+}
+
+message CompareTakesRequest {
+  // Comp session ID
+  string comp_session_id = 1;
+
+  // User ID
+  string user_id = 2;
+
+  // List of take IDs to compare
+  repeated string take_ids = 3;
+
+  // Analysis method
+  AnalysisMethod analysis_method = 4;
+
+  // User's vocal profile for personalized analysis
+  optional VocalProfile vocal_profile = 5;
+}
+
+enum AnalysisMethod {
+  ANALYSIS_METHOD_UNSPECIFIED = 0;
+  ANALYSIS_METHOD_PITCH_ACCURACY = 1;
+  ANALYSIS_METHOD_ENERGY_LEVEL = 2;
+  ANALYSIS_METHOD_EMOTIONAL_DELIVERY = 3;
+  ANALYSIS_METHOD_HYBRID = 4; // Combines all methods
+}
+
+message CompareTakesResponse {
+  // Comparison results per take
+  repeated TakeComparison take_comparisons = 1;
+
+  // Recommended take ID
+  string recommended_take_id = 2;
+
+  // Confidence score for recommendation
+  float confidence = 3;
+}
+
+message TakeComparison {
+  // Take ID
+  string take_id = 1;
+
+  // Overall score (0-100)
+  float overall_score = 2;
+
+  // Pitch accuracy score (0-100)
+  float pitch_accuracy = 3;
+
+  // Energy score (0-100)
+  float energy_score = 4;
+
+  // Emotional delivery score (0-100)
+  float emotional_delivery = 5;
+
+  // Timing accuracy score (0-100)
+  float timing_accuracy = 6;
+
+  // Tone quality score (0-100)
+  float tone_quality = 7;
+
+  // Strengths of this take
+  repeated string strengths = 8;
+
+  // Weaknesses of this take
+  repeated string weaknesses = 9;
+}
+
+message AutoCompRequest {
+  // Comp session ID
+  string comp_session_id = 1;
+
+  // User ID
+  string user_id = 2;
+
+  // List of take IDs to comp
+  repeated Take takes = 3;
+
+  // Song structure for sectional analysis
+  SongStructure song_structure = 4;
+
+  // Comping strategy
+  CompingStrategy strategy = 5;
+
+  // User's vocal profile
+  optional VocalProfile vocal_profile = 6;
+}
+
+message Take {
+  // Take ID
+  string take_id = 1;
+
+  // Recording ID
+  string recording_id = 2;
+
+  // Audio file URL
+  string audio_url = 3;
+
+  // Duration in seconds
+  float duration_sec = 4;
+
+  // User rating (1-5, optional)
+  optional int32 user_rating = 5;
+}
+
+message SongStructure {
+  // List of song sections
+  repeated SongSection sections = 1;
+}
+
+message SongSection {
+  // Section type (verse, chorus, bridge, etc.)
+  string type = 1;
+
+  // Section name
+  string name = 2;
+
+  // Start time in seconds
+  float start_sec = 3;
+
+  // End time in seconds
+  float end_sec = 4;
+}
+
+enum CompingStrategy {
+  COMPING_STRATEGY_UNSPECIFIED = 0;
+  COMPING_STRATEGY_BEST_PITCH = 1; // Prioritize pitch accuracy
+  COMPING_STRATEGY_BEST_ENERGY = 2; // Prioritize energy/dynamics
+  COMPING_STRATEGY_BEST_EMOTION = 3; // Prioritize emotional delivery
+  COMPING_STRATEGY_BALANCED = 4; // Balance all factors
+  COMPING_STRATEGY_USER_RATINGS = 5; // Use user ratings as primary factor
+}
+
+message AutoCompResponse {
+  // Comp ID
+  string comp_id = 1;
+
+  // Comped audio URL
+  string audio_url = 2;
+
+  // Comp regions showing which takes were used
+  repeated CompRegion comp_regions = 3;
+
+  // Overall comp quality score
+  float quality_score = 4;
+
+  // Processing time in seconds
+  float processing_time_sec = 5;
+}
+
+message CompRegion {
+  // Region ID
+  string region_id = 1;
+
+  // Section name (e.g., "Verse 1")
+  string section_name = 2;
+
+  // Source take ID
+  string source_take_id = 3;
+
+  // Start time in seconds
+  float start_sec = 4;
+
+  // End time in seconds
+  float end_sec = 5;
+
+  // Reason for selection
+  string reason = 6;
+
+  // Confidence score (0-1)
+  float confidence_score = 7;
+}
+
+message CompSuggestionRequest {
+  // Comp session ID
+  string comp_session_id = 1;
+
+  // User ID
+  string user_id = 2;
+
+  // List of takes
+  repeated Take takes = 3;
+
+  // Song structure
+  SongStructure song_structure = 4;
+
+  // Current comp regions (if user has started manual comp)
+  repeated CompRegion current_comp_regions = 5;
+}
+
+message CompSuggestionResponse {
+  // Suggested comp regions
+  repeated CompRegion suggested_regions = 1;
+
+  // Alternative suggestions (different approaches)
+  repeated AlternativeComp alternatives = 2;
+
+  // Overall suggestion confidence
+  float confidence = 3;
+}
+
+message AlternativeComp {
+  // Alternative comp ID
+  string alt_id = 1;
+
+  // Name/description of this alternative
+  string name = 2;
+
+  // Comp regions for this alternative
+  repeated CompRegion comp_regions = 3;
+
+  // Score for this alternative
+  float score = 4;
+}
+
+message VocalProfile {
+  // Lowest note
+  string lowest_note = 1;
+
+  // Highest note
+  string highest_note = 2;
+
+  // Range in semitones
+  int32 range_semitones = 3;
+
+  // Skill level
+  SkillLevel skill_level = 4;
+
+  // Strengths
+  repeated string strengths = 5;
+
+  // Areas to improve
+  repeated string areas_to_improve = 6;
+}
+
+enum SkillLevel {
+  SKILL_LEVEL_UNSPECIFIED = 0;
+  SKILL_LEVEL_BEGINNER = 1;
+  SKILL_LEVEL_INTERMEDIATE = 2;
+  SKILL_LEVEL_ADVANCED = 3;
+}

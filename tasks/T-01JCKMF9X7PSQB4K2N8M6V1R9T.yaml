@@ -1,0 +1,74 @@
+---
+id: T-01JCKMF9X7PSQB4K2N8M6V1R9T
+title: "UI Redesign Phase 1.2: Responsive Grid Layout System"
+created_at: 2025-10-03T03:50:00Z
+updated_at: 2025-10-03T03:50:00Z
+status: ready
+priority: P1-Redesign
+owner: instance-1
+
+rationale: |
+  Build 12-column responsive grid system that adapts to different workspace modes.
+  Enables flexible widget positioning based on context (record vs edit vs mix vs learn).
+
+scope:
+  - Create 12-column CSS grid system
+  - Define breakpoints (mobile, tablet, desktop)
+  - Build grid container components
+  - Create utility classes for grid positioning
+  - Mode-specific grid templates
+
+out_of_scope:
+  - Widget content (just containers)
+  - Animations/transitions
+  - Drag-and-drop repositioning (Phase 2)
+
+interfaces:
+  components:
+    - GridContainer
+    - GridArea
+    - GridPanel
+  css:
+    - .layout-grid
+    - .grid-span-{1-12}
+    - .mode-{record|edit|mix|learn}
+
+acceptance_criteria:
+  - 12-column grid renders correctly
+  - Responsive at 768px, 1024px, 1440px breakpoints
+  - Grid gaps consistent (12px)
+  - Mode-specific templates defined
+  - Works in all major browsers
+
+test_plan:
+  visual:
+    - Grid renders at different screen sizes
+    - Gaps are consistent
+    - No overflow issues
+  integration:
+    - Integrates with ModeContext
+    - Grid changes with mode switch
+
+risk: low
+estimate: 1.5 days
+
+dependencies:
+  - T-01JCKMF2Q9VXZN8K4P7M3R5W1T (Mode Context)
+
+technical_notes: |
+  - File: /src/layouts/GridSystem/
+  - Use CSS Grid (not Flexbox)
+  - Mobile-first approach
+  - Grid template areas for semantic layout
+
+  Example:
+  ```css
+  .record-mode {
+    grid-template-areas:
+      "header header header"
+      "wave wave wave"
+      "controls controls controls"
+      "lyrics lyrics lyrics";
+    grid-template-rows: 60px 1fr auto auto;
+  }
+  ```

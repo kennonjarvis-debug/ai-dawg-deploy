@@ -1,0 +1,66 @@
+---
+id: T-01JCKM6A7TQRS4M8N9PX2V5W1Y
+title: "ReferenceTrackUploader Widget - Instance 1"
+created_at: 2025-10-03T03:35:00Z
+updated_at: 2025-10-03T03:35:00Z
+status: ready
+priority: P2
+owner: instance-1
+
+rationale: |
+  Enable users to upload reference tracks for comparison and learning. Essential for the
+  "voicematch" feature where AI compares user vocals to professional references.
+
+scope:
+  - File upload interface with drag-and-drop support
+  - Audio format validation (mp3, wav, m4a)
+  - Waveform preview of uploaded reference
+  - Tag/label system for organizing references
+  - Integration with journey context
+
+out_of_scope:
+  - Audio analysis (handled by Instance 2)
+  - AI comparison logic (handled by Instance 3)
+  - Cloud storage (local only for MVP)
+
+interfaces:
+  rest:
+    - POST /api/reference-tracks/upload
+    - GET /api/reference-tracks
+    - DELETE /api/reference-tracks/:id
+  events:
+    produces:
+      - reference.track.uploaded
+      - reference.track.deleted
+    consumes:
+      - journey.context.updated
+
+acceptance_criteria:
+  - Users can upload audio files via drag-and-drop or file picker
+  - Uploaded files show waveform preview
+  - Files can be tagged with genre/style/artist metadata
+  - Integration into journey "Practice" view
+  - Error handling for invalid formats
+
+test_plan:
+  unit:
+    - File validation logic
+    - Waveform generation
+    - Tag management
+  integration:
+    - Upload flow end-to-end
+    - Event emission on upload
+  e2e:
+    - User uploads reference track in journey page
+    - Track appears in reference library
+
+risk: low
+estimate: 1.5 days
+
+dependencies:
+  - T-01JCKM5P8QZXN9W7H4KFVJ2E3R (Journey integration complete)
+
+technical_notes: |
+  - Use existing audioImport utility from /src/utils/audioImport.ts
+  - Store references in Zustand store with new slice
+  - Widget location: /src/widgets/ReferenceTrackUploader/

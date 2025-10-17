@@ -1,0 +1,489 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  border-radius: 8px;
+  padding: 24px;
+  gap: 24px;
+}
+
+.progressBar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #222;
+}
+
+.progressDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333;
+  transition: all 0.3s ease;
+}
+
+.progressDot.active {
+  background: #4a9eff;
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.5);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.content p {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Welcome Step */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px 0;
+}
+
+.profileSummary {
+  padding: 20px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.profileSummary h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 16px 0;
+}
+
+.profileStats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profileStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 6px;
+}
+
+.label {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+
+.value {
+  font-size: 13px;
+  color: #4a9eff;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.insights {
+  padding: 16px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.insights h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ccc;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.insights ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insights li {
+  padding: 8px 12px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 12px;
+}
+
+/* Goal Selection */
+.goalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.goalCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.goalCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.goalCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.goalLabel {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.goalWeeks {
+  font-size: 11px;
+  color: #666;
+  font-family: monospace;
+}
+
+.goalCard.selected .goalWeeks {
+  color: #4a9eff;
+}
+
+/* Timeframe Selection */
+.timeframeList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.timeframeCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+}
+
+.timeframeCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.timeframeCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.timeframeInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeframeLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.timeframeHours {
+  font-size: 11px;
+  color: #666;
+  font-family: monospace;
+}
+
+.timeframeCard.selected .timeframeHours {
+  color: #4a9eff;
+}
+
+.difficultyBadge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.difficultyBadge.easy {
+  background: rgba(74, 255, 74, 0.1);
+  color: #4aff4a;
+  border: 1px solid #4aff4a;
+}
+
+.difficultyBadge.medium {
+  background: rgba(255, 165, 0, 0.1);
+  color: #ffa500;
+  border: 1px solid #ffa500;
+}
+
+.difficultyBadge.hard {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  border: 1px solid #ff4444;
+}
+
+/* Focus Areas */
+.focusGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.focusCard {
+  padding: 16px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ccc;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.focusCard:hover {
+  border-color: #4a9eff;
+  background: #1f1f1f;
+}
+
+.focusCard.selected {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+/* Journey Preview */
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.journeyCard {
+  width: 100%;
+  max-width: 600px;
+  padding: 24px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.journeyCard h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #4a9eff;
+  margin: 0;
+  text-align: center;
+}
+
+.journeyInfo {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.focusList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.focusList h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ccc;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.focusTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.focusTag {
+  padding: 6px 12px;
+  background: rgba(74, 158, 255, 0.1);
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #4a9eff;
+  font-weight: 500;
+}
+
+.milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.milestones h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ccc;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.milestone {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 6px;
+}
+
+.milestoneWeek {
+  flex-shrink: 0;
+  width: 60px;
+  padding: 8px;
+  background: rgba(74, 158, 255, 0.1);
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #4a9eff;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.milestoneContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.milestoneTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.milestoneDesc {
+  font-size: 11px;
+  color: #888;
+  line-height: 1.4;
+}
+
+.startBtn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  background: #4a9eff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.startBtn:hover {
+  background: #3a8eef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+/* Navigation */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #222;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #ccc;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: #2a2a2a;
+  border-color: #4a9eff;
+  color: #4a9eff;
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

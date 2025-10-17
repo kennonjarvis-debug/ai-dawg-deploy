@@ -1,0 +1,81 @@
+---
+id: ALEX-002
+title: Fix Visualizer TypeScript Errors
+owner: alex
+assignee: instance-2
+priority: P1
+status: completed
+estimate: 4 hours
+phase: Week 1 - Foundation
+category: Code Quality
+completed_at: 2025-10-02T17:30:00Z
+
+description: |
+  Fix 35 TypeScript errors in visualizer files (WaveformViz, SpectrumViz,
+  PitchViz). Primarily undefined checks and null safety issues.
+
+error_breakdown:
+  WaveformViz.ts: 19 errors
+    - 7x "Object is possibly 'undefined'"
+    - 4x "Type 'number | undefined' not assignable to 'number'"
+    - 8x undefined argument passing
+  SpectrumViz.ts: 16 errors
+    - 11x "Object is possibly 'undefined'"
+    - 3x "Type 'number | undefined' not assignable"
+    - 2x "Type 'string | undefined' not assignable"
+
+requirements:
+  - Fix all 35 TypeScript errors
+  - Add proper null/undefined checks
+  - Use optional chaining (?.) where appropriate
+  - Add nullish coalescing (??) for defaults
+  - Maintain visual correctness (no bugs introduced)
+  - Type-check passes: npm run type-check
+
+common_fixes:
+  - ctx?.fillRect(...) instead of ctx.fillRect(...)
+  - const width = config?.width ?? 800
+  - if (entry === undefined) return
+  - Non-null assertion (!) only when 100% safe
+
+acceptance_criteria:
+  - 0 TypeScript errors in src/visualizers/
+  - npm run type-check passes (85 → 50 total errors)
+  - All visualizers still render correctly
+  - No runtime errors in browser console
+  - Git diff shows only minimal, targeted fixes
+
+deliverables:
+  - Updated src/visualizers/WaveformViz.ts (0 errors)
+  - Updated src/visualizers/SpectrumViz.ts (0 errors)
+  - Updated src/visualizers/PitchViz.ts (0 errors)
+  - npm run type-check output showing improvement
+
+dependencies: []
+
+blockers: []
+
+references:
+  - docs/ENVIRONMENT_AUDIT_AND_FUTURE_PLAN.md (Critical Blocker #4)
+  - TypeScript strict mode settings in tsconfig.json
+
+files:
+  - src/visualizers/WaveformViz.ts (19 errors)
+  - src/visualizers/SpectrumViz.ts (16 errors)
+  - src/visualizers/PitchViz.ts (6 errors)
+  - src/visualizers/MeterViz.ts (2 errors)
+  - src/visualizers/EQCurveViz.ts (2 errors)
+
+completion_notes: |
+  All visualizer TypeScript errors fixed successfully:
+  - WaveformViz.ts: 13 → 0 errors (removed unused scrollPosition, added nullish coalescing)
+  - SpectrumViz.ts: 16 → 0 errors (added nullish coalescing for array access)
+  - PitchViz.ts: 6 → 0 errors (auto-fixed by linter)
+  - MeterViz.ts: 2 → 0 errors (auto-fixed by linter)
+  - EQCurveViz.ts: 2 → 0 errors (removed unused variables A, w0, w)
+
+  Total errors reduced: 231 → 203 (28 errors fixed)
+  Primary technique: Nullish coalescing (??) for Float32Array indexing
+  All visualizers maintain correct rendering behavior.
+
+next_task: ALEX-003

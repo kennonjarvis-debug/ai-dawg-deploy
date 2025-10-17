@@ -1,0 +1,9 @@
+{
+  "/agent-dashboard/page": "app/agent-dashboard/page.js",
+  "/api/agent-status/route": "app/api/agent-status/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/command-center/route": "app/api/command-center/route.js",
+  "/api/health/route": "app/api/health/route.js",
+  "/api/team-chat/route": "app/api/team-chat/route.js",
+  "/command-center/page": "app/command-center/page.js"
+}

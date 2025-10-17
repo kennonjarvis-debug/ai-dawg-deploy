@@ -1,0 +1,33 @@
+{
+  "agents": [
+    {
+      "name": "alexis",
+      "role": "planner",
+      "status": "active",
+      "last_seen": "2025-10-03T03:35:00Z",
+      "capabilities": [
+        "task_creation",
+        "backlog_management",
+        "dependency_tracking",
+        "interface_generation",
+        "roadmap_planning",
+        "task_prioritization"
+      ],
+      "topics_produced": [
+        "tasks.created",
+        "tasks.updated",
+        "tasks.assigned",
+        "tasks.completed",
+        "alerts.info",
+        "alerts.error"
+      ],
+      "topics_consumed": [
+        "conductor.plan.updated",
+        "code.diff.tested",
+        "code.build.failed",
+        "profile.policy.updated"
+      ]
+    }
+  ],
+  "updated_at": "2025-10-03T03:35:00Z"
+}

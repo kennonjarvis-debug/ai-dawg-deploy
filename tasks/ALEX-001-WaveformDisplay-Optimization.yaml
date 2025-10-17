@@ -1,0 +1,63 @@
+---
+id: ALEX-001
+title: WaveformDisplay Optimization
+owner: alex
+assignee: instance-2
+priority: P1
+status: assigned
+estimate: 6 hours
+phase: Week 1 - Foundation
+category: Audio Performance
+
+description: |
+  Optimize WaveformDisplay widget to achieve 60fps rendering on 10+
+  simultaneous tracks. Use OffscreenCanvas, throttle redraws, and
+  implement lazy rendering for off-screen portions.
+
+requirements:
+  - OffscreenCanvas for rendering (WebWorker if possible)
+  - Throttle redraws to 60fps max (16.67ms per frame)
+  - Lazy rendering: Only draw visible waveforms
+  - Caching: Pre-render static waveforms to bitmap
+  - RequestAnimationFrame for smooth updates
+  - Measure performance with Chrome DevTools
+
+current_performance:
+  - 10 tracks: ~30fps (target: 60fps)
+  - Redraw on every state change (no throttling)
+  - Drawing all waveforms even if off-screen
+  - No caching (recompute peaks every frame)
+
+optimization_techniques:
+  - OffscreenCanvas: Render in worker thread
+  - Throttle: requestAnimationFrame + timestamp check
+  - Lazy: Intersection Observer for visibility
+  - Cache: Pre-render to ImageBitmap, reuse
+
+acceptance_criteria:
+  - 60fps sustained with 10+ tracks playing
+  - OffscreenCanvas implementation working
+  - Throttling prevents excessive redraws
+  - Lazy rendering skips off-screen waveforms
+  - Chrome DevTools Performance profile shows <16ms frames
+  - No visual artifacts or tearing
+  - No TypeScript errors
+
+deliverables:
+  - Updated src/widgets/WaveformDisplay/WaveformDisplay.tsx
+  - Chrome DevTools performance profile (before/after)
+  - Benchmark results (30fps → 60fps proof)
+  - Documentation of optimization techniques used
+
+dependencies:
+  - Design system - ✅ Complete
+  - WaveformDisplay widget - ✅ Exists
+
+blockers: []
+
+references:
+  - docs/UI_REDESIGN_MASTER_PLAN.md (ALEX-001)
+  - docs/ENVIRONMENT_AUDIT_AND_FUTURE_PLAN.md (Performance targets)
+  - src/visualizers/WaveformViz.ts (19 TypeScript errors to fix)
+
+next_task: ALEX-002

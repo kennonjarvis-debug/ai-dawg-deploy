@@ -1,0 +1,62 @@
+---
+id: T-01JCKMF2Q9VXZN8K4P7M3R5W1T
+title: "UI Redesign Phase 1.1: Mode Context & State Management"
+created_at: 2025-10-03T03:50:00Z
+updated_at: 2025-10-03T03:50:00Z
+status: ready
+priority: P1-Redesign
+owner: instance-1
+
+rationale: |
+  Foundation for adaptive workspace UI. Create mode switching system that allows
+  UI to adapt based on user intent (Record/Edit/Mix/Learn modes).
+  Based on modern DAW trends (Ableton dual-view, AI-first design).
+
+scope:
+  - Create ModeContext for global mode state
+  - Implement mode types (Record, Edit, Mix, Learn)
+  - Build mode switching logic with transitions
+  - Persist mode preference in localStorage
+  - Create useModeContext hook
+
+out_of_scope:
+  - Actual mode layouts (separate tasks)
+  - Widget migrations
+  - UI components (buttons, etc)
+
+interfaces:
+  react_context:
+    - ModeContext
+    - ModeProvider
+  hooks:
+    - useModeContext()
+  types:
+    - WorkspaceMode: 'record' | 'edit' | 'mix' | 'learn'
+    - ModeConfig: { mode, widgets[], layout }
+
+acceptance_criteria:
+  - Mode state managed globally via React Context
+  - Mode persists across page reloads
+  - Mode transitions trigger layout updates
+  - TypeScript types defined for all modes
+  - Hook returns current mode + setMode function
+
+test_plan:
+  unit:
+    - Mode state changes correctly
+    - LocalStorage persistence works
+    - Hook returns correct values
+  integration:
+    - Mode changes propagate to consumers
+    - Persistence survives page refresh
+
+risk: low
+estimate: 1 day
+
+dependencies: []
+
+technical_notes: |
+  - File: /src/contexts/ModeContext.tsx
+  - File: /src/types/workspace.ts
+  - Use Zustand or React Context (prefer Context for this)
+  - localStorage key: 'dawg_workspace_mode'

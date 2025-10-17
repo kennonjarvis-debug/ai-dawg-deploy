@@ -1,0 +1,146 @@
+.container {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-elevated, #2a2a2a);
+  border: 1px solid var(--border, #444);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trigger:hover {
+  background: var(--surface-hover, #333);
+  border-color: var(--text-secondary, #888);
+}
+
+.projectName {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--surface-elevated, #2a2a2a);
+  border: 1px solid var(--border, #444);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 280px;
+  max-width: 320px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropdownHeader {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #444);
+}
+
+.dropdownHeader span {
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.emptyState {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-secondary, #888);
+  font-size: 14px;
+}
+
+.projectList {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.projectItem,
+.projectItemActive {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.projectItem:hover {
+  background: var(--surface-hover, #333);
+}
+
+.projectItemActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.projectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.projectItemName {
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectDate {
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+}
+
+.projectItemActive .projectItemName {
+  color: var(--accent-blue, #3b82f6);
+}
+
+.projectItemActive svg {
+  color: var(--accent-blue, #3b82f6);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border, #444);
+  margin: 4px 0;
+}
+
+.newProjectButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--accent-blue, #3b82f6);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.newProjectButton:hover {
+  background: var(--surface-hover, #333);
+}

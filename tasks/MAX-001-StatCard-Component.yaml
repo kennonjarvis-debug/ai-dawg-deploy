@@ -1,0 +1,51 @@
+---
+id: MAX-001
+title: Create StatCard Shared Component
+owner: max
+assignee: instance-1
+priority: P0
+status: assigned
+estimate: 4 hours
+phase: Week 1 - Foundation
+category: UI Components
+
+description: |
+  Build a reusable StatCard component that can be used across all dashboards
+  to replace duplicate stat card implementations (found in 3+ places).
+
+requirements:
+  - Reusable React component with TypeScript
+  - Props: title, value, trend (up/down/neutral), icon, color variant
+  - Color variants: blue, purple, green, red, neutral
+  - Trend indicators with up/down arrows and percentage
+  - Icon support (lucide-react icons)
+  - Responsive design (mobile, tablet, desktop)
+  - Uses design system tokens from components/ui/design-system/tokens.css
+  - Glass morphism effect (floating-card style)
+
+acceptance_criteria:
+  - Component file created at src/components/StatCard/StatCard.tsx
+  - Props interface defined with TypeScript
+  - Used in tasks-dashboard as proof-of-concept (replace 3 duplicate cards)
+  - Tested on mobile (390px), tablet (768px), desktop (1280px)
+  - No TypeScript errors
+  - Matches design system aesthetic (dark glass, neon accents)
+
+deliverables:
+  - src/components/StatCard/StatCard.tsx
+  - src/components/StatCard/index.ts (export)
+  - Updated app/tasks-dashboard/page.tsx (using StatCard)
+  - Screenshot of StatCard in all color variants
+
+dependencies:
+  - Design system (tokens.css, utils.css) - ✅ Complete
+  - tasks-dashboard page - ✅ Exists
+
+blockers: []
+
+references:
+  - docs/DESIGN_SYSTEM.md (colors, spacing, glass effects)
+  - docs/UI_REDESIGN_MASTER_PLAN.md (Week 1 tasks)
+  - app/tasks-dashboard/page.tsx (current duplicate cards to replace)
+
+next_task: MAX-002
