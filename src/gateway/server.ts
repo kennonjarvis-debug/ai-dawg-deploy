@@ -10,6 +10,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { SessionManager } from './session-manager';
 import { CommandFirewall } from './firewall';
 import { SessionMonitor } from './monitor';
@@ -85,9 +87,17 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// 404 handler
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' });
+// Serve static files from dist folder in production
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.join(__dirname, '../../dist');
+
+// Serve static assets (JS, CSS, images, etc.)
+app.use(express.static(distPath));
+
+// Serve index.html for all non-API routes (SPA support)
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // Error handler
