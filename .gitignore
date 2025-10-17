@@ -72,3 +72,6 @@ credentials.json
 # Build artifacts
 *.tsbuildinfo
 .eslintcache
+
+# Local Netlify folder
+.netlify

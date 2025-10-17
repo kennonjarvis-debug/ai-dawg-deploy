@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Music2, TrendingUp, Sliders, Wand2, ChevronDown, Scissors, AlignCenter, Music, Volume2, Zap } from 'lucide-react';
+import { Sparkles, Music2, TrendingUp, Sliders, Wand2, ChevronDown, Scissors, AlignCenter, Music, Volume2, Zap, Mic, Drum } from 'lucide-react';
 
 export interface AIDawgMenuItem {
   id: string;
@@ -7,7 +7,7 @@ export interface AIDawgMenuItem {
   icon: React.ReactNode;
   action: () => void;
   requiresSelection?: boolean;
-  category: 'vocal' | 'production' | 'mastering' | 'auto';
+  category: 'vocal' | 'production' | 'auto';
 }
 
 interface AIDawgMenuProps {
@@ -22,8 +22,8 @@ interface AIDawgMenuProps {
   onAnalyzeVocals: () => void;
   onGenerateHarmony: () => void;
   onApplyGenrePreset: (genre: string) => void;
-  onGenerateChords: () => void;
-  onGenerateMelody: () => void;
+  onGenerateBeat: () => void;
+  onVoiceMemo: () => void;
 }
 
 export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
@@ -38,8 +38,8 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
   onAnalyzeVocals,
   onGenerateHarmony,
   onApplyGenrePreset,
-  onGenerateChords,
-  onGenerateMelody,
+  onGenerateBeat,
+  onVoiceMemo,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showGenreSubmenu, setShowGenreSubmenu] = useState(false);
@@ -54,63 +54,70 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
   ];
 
   const menuItems: AIDawgMenuItem[] = [
-    // AI DAWG Auto Features
+    // DAWG AI AUTO FEATURES
     {
       id: 'ai-dawg-full',
-      label: '🚀 AI DAWG (Full Auto)',
+      label: '🎸 Dawg AI (Full Auto)',
       icon: <Zap className="w-5 h-5" />,
       action: onAIDawg,
       requiresSelection: true,
       category: 'auto',
     },
     {
-      id: 'auto-comp',
-      label: 'Auto Comp',
+      id: 'ai-voice-memo',
+      label: 'AI Voice Memo',
+      icon: <Mic className="w-5 h-5" />,
+      action: onVoiceMemo,
+      category: 'auto',
+    },
+    {
+      id: 'ai-comp',
+      label: 'AI Comp',
       icon: <Scissors className="w-5 h-5" />,
       action: onAutoComp,
       requiresSelection: true,
       category: 'auto',
     },
     {
-      id: 'auto-time-align',
-      label: 'Auto Time Align',
+      id: 'ai-tune',
+      label: 'AI Tune',
       icon: <AlignCenter className="w-5 h-5" />,
       action: onAutoTimeAlign,
       requiresSelection: true,
       category: 'auto',
     },
     {
-      id: 'auto-pitch',
-      label: 'Auto Pitch Correct',
+      id: 'ai-pitch',
+      label: 'AI Pitch',
       icon: <Music className="w-5 h-5" />,
       action: onAutoPitch,
       requiresSelection: true,
       category: 'auto',
     },
     {
-      id: 'auto-mix',
-      label: 'Auto Mix',
+      id: 'ai-mix',
+      label: 'AI Mix',
       icon: <Sliders className="w-5 h-5" />,
       action: onAutoMix,
       requiresSelection: true,
       category: 'auto',
     },
     {
-      id: 'auto-master',
-      label: 'Auto Master',
+      id: 'ai-master',
+      label: 'AI Master',
       icon: <Volume2 className="w-5 h-5" />,
       action: onAutoMaster,
       requiresSelection: true,
       category: 'auto',
     },
     {
-      id: 'auto-music',
-      label: 'Auto Music Generation',
+      id: 'ai-music-gen',
+      label: 'AI Music Gen',
       icon: <Sparkles className="w-5 h-5" />,
       action: onAutoMusic,
       category: 'auto',
     },
-    // Vocal Tools
+    // VOCAL TOOLS
     {
       id: 'analyze-vocals',
       label: 'Analyze Vocals',
@@ -135,19 +142,12 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
       requiresSelection: true,
       category: 'vocal',
     },
-    // Production Tools
+    // PRODUCTION
     {
-      id: 'generate-chords',
-      label: 'Generate Chords',
-      icon: <Music2 className="w-5 h-5" />,
-      action: onGenerateChords,
-      category: 'production',
-    },
-    {
-      id: 'generate-melody',
-      label: 'Generate Melody',
-      icon: <Sparkles className="w-5 h-5" />,
-      action: onGenerateMelody,
+      id: 'generate-beat',
+      label: '🥁 Generate Beat',
+      icon: <Drum className="w-5 h-5 text-red-400" />,
+      action: onGenerateBeat,
       category: 'production',
     },
   ];
@@ -192,13 +192,11 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
   const getCategoryLabel = (category: string) => {
     switch (category) {
       case 'auto':
-        return '⚡ AI DAWG Auto Features';
+        return '⚡ DAWG AI AUTO FEATURES';
       case 'vocal':
-        return 'Vocal Tools';
+        return 'VOCAL TOOLS';
       case 'production':
-        return 'Production';
-      case 'mastering':
-        return 'Mastering';
+        return 'PRODUCTION';
       default:
         return category;
     }
@@ -220,7 +218,7 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium shadow-lg shadow-purple-500/25 transition-all"
       >
         <Sparkles className="w-5 h-5" />
-        AI Dawg
+        DAWG AI
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -296,13 +294,6 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
               </div>
             </div>
           ))}
-
-          {/* Footer */}
-          <div className="px-4 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-t border-white/10">
-            <p className="text-xs text-gray-400 text-center">
-              ✨ Powered by AI • {selectedClipCount > 0 ? 'Ready to process' : 'Select clips to begin'}
-            </p>
-          </div>
         </div>
       )}
     </div>

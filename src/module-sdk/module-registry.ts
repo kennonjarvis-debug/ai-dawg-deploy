@@ -1,7 +1,7 @@
 /**
  * Module Registry
  *
- * Central registry for all AI Dawg modules
+ * Central registry for all DAWG AI modules
  * Manages module lifecycle, discovery, and execution
  */
 

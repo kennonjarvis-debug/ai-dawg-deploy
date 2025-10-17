@@ -1,5 +1,5 @@
 /**
- * AI DAWG Chat Assistant
+ * DAWG AI Chat Assistant
  * Main chatbot logic for onboarding and generation assistance
  */
 
@@ -113,7 +113,7 @@ export class ChatAssistant {
     switch (intent) {
       case ChatIntent.GREETING:
         return this.createResponse(
-          `Hey there! 👋 I'm your AI DAWG assistant. I can help you:\n\n` +
+          `Hey there! 👋 I'm your DAWG AI assistant. I can help you:\n\n` +
           `• Generate lyrics, melodies, and songs\n` +
           `• Clone your voice for singing\n` +
           `• Answer questions about features\n• Show examples and demos\n\n` +
@@ -192,7 +192,7 @@ export class ChatAssistant {
       .join('\n\n');
 
     return this.createResponse(
-      `Here's what AI DAWG can do:\n\n${allFeatures}\n\n` +
+      `Here's what DAWG AI can do:\n\n${allFeatures}\n\n` +
       `Ask me about any specific feature for more details!`
     );
   }

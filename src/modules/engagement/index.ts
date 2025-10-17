@@ -1,5 +1,5 @@
 /**
- * AI Dawg Engagement Module
+ * DAWG AI Engagement Module
  *
  * Handles user engagement, sentiment analysis, churn detection,
  * and proactive re-engagement automation.

@@ -1,7 +1,7 @@
 /**
  * Music Production Domain Agent
  *
- * Specialized agent for AI DAWG music production tasks.
+ * Specialized agent for DAWG AI music production tasks.
  * Handles beat generation, vocal coaching, mixing, and production workflows.
  */
 
@@ -65,7 +65,7 @@ export class MusicProductionDomain extends BaseDomainAgent {
     const tasks: AutonomousTask[] = [];
 
     try {
-      // Check AI DAWG health
+      // Check DAWG AI health
       const aiDawgHealth = await this.checkAIDawgHealth();
       if (!aiDawgHealth.healthy) {
         tasks.push(this.createHealthCheckTask(aiDawgHealth));
@@ -170,7 +170,7 @@ export class MusicProductionDomain extends BaseDomainAgent {
     } catch (error) {
       return {
         healthy: false,
-        issues: ['AI DAWG backend unreachable']
+        issues: ['DAWG AI backend unreachable']
       };
     }
   }
@@ -230,7 +230,7 @@ export class MusicProductionDomain extends BaseDomainAgent {
       id: this.generateTaskId(),
       domain: this.domain,
       type: 'health_check',
-      description: `AI DAWG health issues detected: ${health.issues.join(', ')}`,
+      description: `DAWG AI health issues detected: ${health.issues.join(', ')}`,
       priority: 8,
       clearanceRequired: ClearanceLevel.SUGGEST,
       params: health,

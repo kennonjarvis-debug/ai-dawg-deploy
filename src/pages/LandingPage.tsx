@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Scissors, AlignCenter, Music, Sliders, Volume2, Wand2, Check, ArrowRight, Zap } from 'lucide-react';
 import Logo from '@/components/Logo';
-import { ChatbotWidget } from '@/ui/chatbot/ChatbotWidget';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -348,7 +347,7 @@ export const LandingPage: React.FC = () => {
             Ready to Create Amazing Music?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join other users using AI DAWG to make professional tracks
+            Join other users using DAWG AI to make professional tracks
           </p>
           <button
             onClick={() => navigate('/register')}
@@ -396,7 +395,7 @@ export const LandingPage: React.FC = () => {
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} AI DAWG. All rights reserved.
+              © {new Date().getFullYear()} DAWG AI. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
@@ -405,9 +404,6 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
-
-      {/* AI Chatbot Widget */}
-      <ChatbotWidget />
     </div>
   );
 };

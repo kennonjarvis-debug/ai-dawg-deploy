@@ -2,7 +2,7 @@
  * Music Generator Panel
  *
  * Unified interface for AI music generation.
- * Integrates Producer AI (chords/melody) + AI DAWG (full music generation).
+ * Integrates Producer AI (chords/melody) + DAWG AI (full music generation).
  */
 
 import React, { useState } from 'react';
@@ -37,7 +37,7 @@ export const MusicGeneratorPanel: React.FC<MusicGeneratorPanelProps> = ({
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
   /**
-   * Generate full music track using AI DAWG endpoint
+   * Generate full music track using DAWG AI endpoint
    */
   const handleGenerateMusic = async () => {
     if (!prompt.trim() && style === 'full-production') {

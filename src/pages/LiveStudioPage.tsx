@@ -8,7 +8,7 @@
  * - Live visualizations
  * - Backing track playback
  *
- * Merged from Freestyle Studio into AI DAWG
+ * Merged from Freestyle Studio into DAWG AI
  */
 
 import React, { useState, useEffect, useRef } from 'react';

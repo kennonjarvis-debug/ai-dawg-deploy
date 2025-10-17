@@ -1,7 +1,7 @@
 /**
  * Module Loader
  *
- * Loads and registers all AI Dawg modules with the module registry
+ * Loads and registers all DAWG AI modules with the module registry
  * This replaces the old Jarvis controller module loading system
  */
 
@@ -19,7 +19,7 @@ import musicModule from './music';
  * Initialize and register all modules
  */
 export async function loadModules(): Promise<void> {
-  logger.info('Loading AI Dawg modules...');
+  logger.info('Loading DAWG AI modules...');
 
   const modules = [
     marketingModule,

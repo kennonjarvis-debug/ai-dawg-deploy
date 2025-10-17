@@ -3,7 +3,7 @@ import { Play, Pause, SkipForward, Mic, Music, Activity, Zap, Users, Download } 
 
 /**
  * Live Demo Showcase Page - Complete End-to-End User Journey
- * Demonstrates ALL AI DAWG features from sign-up to export
+ * Demonstrates ALL DAWG AI features from sign-up to export
  * Perfect for screen recording and product demos
  */
 
@@ -23,13 +23,13 @@ export const LiveDemoPage: React.FC = () => {
   const demoSteps: DemoStep[] = [
     {
       id: 'welcome',
-      title: 'Welcome to AI DAWG',
+      title: 'Welcome to DAWG AI',
       description: 'The AI-Powered Digital Audio Workstation',
       duration: 4000,
       component: (
         <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-purple-900 via-blue-900 to-gray-900">
           <div className="text-center">
-            <h1 className="text-8xl font-bold text-white mb-6 animate-fade-in">AI DAWG</h1>
+            <h1 className="text-8xl font-bold text-white mb-6 animate-fade-in">DAWG AI</h1>
             <p className="text-4xl text-gray-300 animate-slide-up mb-4">Professional Music Production</p>
             <p className="text-2xl text-blue-400 animate-slide-up" style={{ animationDelay: '0.3s' }}>Powered by AI</p>
           </div>
@@ -299,7 +299,7 @@ export const LiveDemoPage: React.FC = () => {
                 <h3 className="text-2xl font-bold text-purple-300">Lyrics Widget</h3>
               </div>
               <div className="space-y-2">
-                {['Yeah I am flowing on the beat', 'AI DAWG keeping it sweet', 'Recording vocals with no delay', 'Making hits every single day'].map((line, i) => (
+                {['Yeah I am flowing on the beat', 'DAWG AI keeping it sweet', 'Recording vocals with no delay', 'Making hits every single day'].map((line, i) => (
                   <div
                     key={i}
                     className="text-lg text-gray-300 animate-fade-in-up bg-purple-900/30 p-2 rounded"
@@ -539,7 +539,7 @@ export const LiveDemoPage: React.FC = () => {
                 <div className="bg-black/30 backdrop-blur rounded-lg p-6 border border-blue-500">
                   <h3 className="text-white font-bold text-xl mb-4">Real-Time Lyrics</h3>
                   <div className="space-y-3">
-                    {['Yeah I am flowing on the beat', 'AI DAWG keeping it sweet', 'Recording vocals with no delay', 'Making hits every single day'].map((line, i) => (
+                    {['Yeah I am flowing on the beat', 'DAWG AI keeping it sweet', 'Recording vocals with no delay', 'Making hits every single day'].map((line, i) => (
                       <div
                         key={i}
                         className="text-lg text-gray-300 animate-fade-in-up bg-blue-900/30 p-2 rounded"
@@ -760,7 +760,7 @@ export const LiveDemoPage: React.FC = () => {
             <p className="text-3xl text-gray-300 mb-8 animate-slide-up">No credit card required • Free forever plan</p>
 
             <button className="px-16 py-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-3xl rounded-lg hover:scale-105 transition-transform shadow-2xl animate-pulse-slow mb-12">
-              Try AI DAWG Now
+              Try DAWG AI Now
             </button>
 
             <div className="grid grid-cols-4 gap-8 mt-12">
@@ -819,9 +819,9 @@ export const LiveDemoPage: React.FC = () => {
           </div>
         </div>
 
-        {/* AI DAWG watermark */}
+        {/* DAWG AI watermark */}
         <div className="absolute bottom-6 left-6 bg-black/60 backdrop-blur rounded-lg px-4 py-2">
-          <div className="text-white font-bold text-xl">AI DAWG</div>
+          <div className="text-white font-bold text-xl">DAWG AI</div>
           <div className="text-purple-400 text-xs">Live Demo</div>
         </div>
       </div>

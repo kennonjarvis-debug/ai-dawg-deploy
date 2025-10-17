@@ -32,8 +32,8 @@ if (!process.env.OPENAI_API_KEY) {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// System prompt for AI DAWG
-const SYSTEM_PROMPT = `You are AI DAWG, an expert AI music production assistant with FULL CONTROL over a professional Digital Audio Workstation (DAW).
+// System prompt for DAWG AI
+const SYSTEM_PROMPT = `You are DAWG AI, an expert AI music production assistant with FULL CONTROL over a professional Digital Audio Workstation (DAW).
 
 You can control EVERYTHING in the DAW:
 - Record, playback, and transport controls (start/stop recording and playback)

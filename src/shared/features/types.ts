@@ -1,7 +1,7 @@
 /**
  * Feature Registry - Type Definitions
  *
- * Centralized type system for all AI DAWG features.
+ * Centralized type system for all DAWG AI features.
  * Used for feature gates, entitlements, and UI rendering.
  */
 

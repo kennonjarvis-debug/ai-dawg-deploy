@@ -1,7 +1,7 @@
 /**
  * Feature Registry
  *
- * Centralized registry of all AI DAWG features.
+ * Centralized registry of all DAWG AI features.
  * Single source of truth for feature definitions, entitlements, and UI rendering.
  */
 

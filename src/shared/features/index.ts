@@ -1,7 +1,7 @@
 /**
  * Feature Registry - Public API
  *
- * Centralized feature system for AI DAWG.
+ * Centralized feature system for DAWG AI.
  * Import from this module to access feature definitions, types, and hooks.
  *
  * @example

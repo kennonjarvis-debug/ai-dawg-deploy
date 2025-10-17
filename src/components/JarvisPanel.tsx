@@ -83,7 +83,7 @@ export function JarvisPanel() {
   async function rejectAction(actionId: string) {
     try {
       await apiClient.post(`/jarvis/actions/${actionId}/reject`, {
-        reason: 'Rejected by user via AI DAWG UI'
+        reason: 'Rejected by user via DAWG AI UI'
       });
       await fetchJarvisData(); // Refresh
     } catch (err) {

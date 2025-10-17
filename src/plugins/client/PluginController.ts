@@ -357,6 +357,176 @@ export class PluginController {
     return Object.values(GENRE_PRESETS);
   }
 
+  // ============================================
+  // REAL-TIME LIVE MONITORING CONTROL
+  // ============================================
+
+  /**
+   * Adjust brightness (high frequencies) on live monitoring
+   */
+  async adjustLiveMonitoringBrightness(trackId: string, amount: 'subtle' | 'moderate' | 'aggressive'): Promise<void> {
+    const boosts = {
+      subtle: { freq: 10000, gain: 2 },
+      moderate: { freq: 8000, gain: 4 },
+      aggressive: { freq: 6000, gain: 6 }
+    };
+
+    const boost = boosts[amount];
+
+    // Find or add Pro-Q 4 to track's input monitoring chain
+    const eqInstance = await this.ensurePluginInChain(trackId, 'vst3-fabfilter-pro-q-4', 4);
+
+    // Add high shelf boost
+    await this.setParameter(eqInstance, 'band_5_type', 'high_shelf');
+    await this.setParameter(eqInstance, 'band_5_freq', boost.freq / 20000); // Normalize to 0-1
+    await this.setParameter(eqInstance, 'band_5_gain', (boost.gain + 12) / 24); // Normalize to 0-1
+    await this.setParameter(eqInstance, 'band_5_enabled', 1);
+
+    console.log(`[PLUGIN-CONTROLLER] Brightness adjusted: ${amount} (+${boost.gain}dB @ ${boost.freq}Hz)`);
+  }
+
+  /**
+   * Adjust compression on live monitoring
+   */
+  async adjustLiveMonitoringCompression(trackId: string, amount: 'light' | 'medium' | 'heavy'): Promise<void> {
+    const settings = {
+      light: { threshold: -18, ratio: 2.5 },
+      medium: { threshold: -15, ratio: 4 },
+      heavy: { threshold: -12, ratio: 6 }
+    };
+
+    const setting = settings[amount];
+
+    // Find or add Pro-C 2 to track's input monitoring chain
+    const compInstance = await this.ensurePluginInChain(trackId, 'vst3-fabfilter-pro-c-2', 5);
+
+    await this.setParameter(compInstance, 'threshold', (setting.threshold + 60) / 60); // Normalize to 0-1
+    await this.setParameter(compInstance, 'ratio', setting.ratio / 20); // Normalize to 0-1
+    await this.setParameter(compInstance, 'attack', 0.1); // 10ms
+    await this.setParameter(compInstance, 'release', 0.5); // 100ms
+
+    console.log(`[PLUGIN-CONTROLLER] Compression adjusted: ${amount} (${setting.ratio}:1 @ ${setting.threshold}dB)`);
+  }
+
+  /**
+   * Adjust warmth (low-mid frequencies) on live monitoring
+   */
+  async adjustLiveMonitoringWarmth(trackId: string, amount: 'subtle' | 'moderate' | 'heavy'): Promise<void> {
+    const settings = {
+      subtle: { freq: 200, gain: 2, addNeve: false },
+      moderate: { freq: 150, gain: 3, addNeve: false },
+      heavy: { freq: 110, gain: 4, addNeve: true }
+    };
+
+    const setting = settings[amount];
+
+    // Add EQ for warmth boost
+    const eqInstance = await this.ensurePluginInChain(trackId, 'vst3-fabfilter-pro-q-4', 4);
+
+    await this.setParameter(eqInstance, 'band_1_type', 'bell');
+    await this.setParameter(eqInstance, 'band_1_freq', setting.freq / 20000); // Normalize to 0-1
+    await this.setParameter(eqInstance, 'band_1_gain', (setting.gain + 12) / 24); // Normalize to 0-1
+    await this.setParameter(eqInstance, 'band_1_q', 0.7); // Wide Q
+    await this.setParameter(eqInstance, 'band_1_enabled', 1);
+
+    // Add Neve 1073 for heavy warmth
+    if (setting.addNeve) {
+      await this.ensurePluginInChain(trackId, 'au-uad-neve-1073', 3);
+    }
+
+    console.log(`[PLUGIN-CONTROLLER] Warmth adjusted: ${amount} (+${setting.gain}dB @ ${setting.freq}Hz${setting.addNeve ? ' + Neve 1073' : ''})`);
+  }
+
+  /**
+   * Add autotune to live monitoring
+   */
+  async addLiveMonitoringAutotune(trackId: string, speed: 'natural' | 'moderate' | 'tpain'): Promise<void> {
+    const speeds = {
+      natural: { retune: 25, humanize: 70 },
+      moderate: { retune: 15, humanize: 40 },
+      tpain: { retune: 0, humanize: 0 }
+    };
+
+    const setting = speeds[speed];
+
+    // Add Auto-Tune Pro
+    const autotuneInstance = await this.ensurePluginInChain(trackId, 'vst3-auto-tune-pro', 2);
+
+    await this.setParameter(autotuneInstance, 'retune_speed', setting.retune / 100);
+    await this.setParameter(autotuneInstance, 'humanize', setting.humanize / 100);
+
+    console.log(`[PLUGIN-CONTROLLER] Auto-Tune enabled: ${speed} (${setting.retune}ms retune)`);
+  }
+
+  /**
+   * Add reverb to live monitoring
+   */
+  async addLiveMonitoringReverb(trackId: string, amount: number, type: 'plate' | 'room' | 'hall'): Promise<void> {
+    // Add Nectar 4 Reverb
+    const reverbInstance = await this.ensurePluginInChain(trackId, 'vst3-nectar-4-reverb', 9);
+
+    await this.setParameter(reverbInstance, 'type', type);
+    await this.setParameter(reverbInstance, 'mix', amount / 100);
+
+    console.log(`[PLUGIN-CONTROLLER] Reverb added: ${amount}% ${type}`);
+  }
+
+  /**
+   * Remove harshness (de-ess) on live monitoring
+   */
+  async removeLiveMonitoringHarshness(trackId: string, amount: 'light' | 'moderate' | 'heavy'): Promise<void> {
+    const settings = {
+      light: { threshold: -8, range: 4 },
+      moderate: { threshold: -12, range: 6 },
+      heavy: { threshold: -16, range: 8 }
+    };
+
+    const setting = settings[amount];
+
+    // Add De-Esser
+    const deesserInstance = await this.ensurePluginInChain(trackId, 'vst3-vocal-de-esser', 7);
+
+    await this.setParameter(deesserInstance, 'frequency', 7000 / 20000); // 7kHz
+    await this.setParameter(deesserInstance, 'threshold', (setting.threshold + 60) / 60);
+    await this.setParameter(deesserInstance, 'range', setting.range / 20);
+
+    console.log(`[PLUGIN-CONTROLLER] Harshness reduced: ${amount}`);
+  }
+
+  /**
+   * Reset all live monitoring effects to bypass
+   */
+  async resetLiveMonitoringEffects(trackId: string): Promise<void> {
+    const chain = this.chains.get(trackId);
+    if (!chain) return;
+
+    // Bypass all plugins in chain
+    for (const plugin of chain.plugins) {
+      await this.bypassPlugin(plugin.instanceId, true);
+    }
+
+    console.log(`[PLUGIN-CONTROLLER] All effects reset for track ${trackId}`);
+  }
+
+  /**
+   * Helper: Ensure plugin exists in chain, add if missing
+   */
+  private async ensurePluginInChain(trackId: string, pluginId: string, slotIndex: number): Promise<string> {
+    const chain = this.chains.get(trackId);
+
+    if (chain) {
+      // Check if plugin already exists in slot
+      const existing = chain.plugins.find(p => p.slotIndex === slotIndex && p.pluginId === pluginId);
+      if (existing) {
+        return existing.instanceId;
+      }
+    }
+
+    // Plugin doesn't exist, load it
+    const instance = await this.loadPlugin(pluginId, trackId, slotIndex);
+    return instance.instanceId;
+  }
+
   /**
    * Disconnect from bridge server
    */

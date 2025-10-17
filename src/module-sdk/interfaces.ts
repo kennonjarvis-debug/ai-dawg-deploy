@@ -1,7 +1,7 @@
 /**
  * Module SDK Interfaces
  *
- * Clean, Jarvis-agnostic interfaces for AI Dawg modules
+ * Clean, Jarvis-agnostic interfaces for DAWG AI modules
  * This SDK allows modules to run independently without Jarvis controller
  */
 
@@ -9,7 +9,7 @@ import { Router } from 'express';
 
 /**
  * Core Module Interface
- * All AI Dawg modules must implement this interface
+ * All DAWG AI modules must implement this interface
  */
 export interface Module {
   /** Unique module identifier */

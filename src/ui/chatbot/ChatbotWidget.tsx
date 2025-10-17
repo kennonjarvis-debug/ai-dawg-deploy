@@ -1,5 +1,5 @@
 /**
- * AI DAWG Chatbot Widget
+ * DAWG AI Chatbot Widget
  * React component for the onboarding assistant chatbot with subscription-based features
  */
 
@@ -140,7 +140,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
         return {
           id: 'welcome',
           role: 'assistant',
-          content: `Hey! 👋 I'm your AI DAWG assistant.\n\nPlease log in to access AI features:\n• Generate lyrics, melodies, and songs\n• Clone your voice\n• AI Producer assistance\n\nFor now, I can answer questions about our features!`,
+          content: `Hey! 👋 I'm your DAWG AI assistant.\n\nPlease log in to access AI features:\n• Generate lyrics, melodies, and songs\n• Clone your voice\n• AI Producer assistance\n\nFor now, I can answer questions about our features!`,
           timestamp: new Date(),
           metadata: {
             suggestions: ['What is AutoTopline?', 'Tell me about pricing', 'How does voice cloning work?'],
@@ -155,7 +155,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
       return {
         id: 'welcome',
         role: 'assistant',
-        content: `Hey! 👋 I'm your AI DAWG assistant.\n\nI can help you:\n${features.map(f => `• ${f}`).join('\n')}\n\n${subscriptionTier === 'free' ? `⚡ ${remaining}/${limit} messages remaining today (Free tier)` : `✨ ${remaining}/${limit} operations remaining today`}`,
+        content: `Hey! 👋 I'm your DAWG AI assistant.\n\nI can help you:\n${features.map(f => `• ${f}`).join('\n')}\n\n${subscriptionTier === 'free' ? `⚡ ${remaining}/${limit} messages remaining today (Free tier)` : `✨ ${remaining}/${limit} operations remaining today`}`,
         timestamp: new Date(),
         metadata: {
           suggestions: subscriptionTier === 'free'
@@ -370,7 +370,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
       feedbackList.push({
         id: `fb-${Date.now()}-3`,
         type: 'tip',
-        message: 'Consider using AI DAWG\'s AutoTopline feature to generate melodies from your lyrics!',
+        message: 'Consider using DAWG AI\'s AutoTopline feature to generate melodies from your lyrics!',
         timestamp: Date.now(),
         priority: 'medium'
       });
@@ -471,7 +471,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
           {/* Header */}
           <div className="chatbot-header">
             <div className="chatbot-header-content">
-              <span className="chatbot-title">AI DAWG Assistant</span>
+              <span className="chatbot-title">DAWG AI Assistant</span>
               <span className="chatbot-status">● Online</span>
             </div>
             <div className="chatbot-header-actions">

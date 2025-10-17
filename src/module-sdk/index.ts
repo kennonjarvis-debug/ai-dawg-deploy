@@ -1,7 +1,7 @@
 /**
  * Module SDK
  *
- * Clean, Jarvis-agnostic SDK for building AI Dawg modules
+ * Clean, Jarvis-agnostic SDK for building DAWG AI modules
  *
  * This SDK allows modules to run independently without the Jarvis controller,
  * while maintaining compatibility with the Jarvis control plane.

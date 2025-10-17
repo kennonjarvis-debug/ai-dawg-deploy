@@ -19,6 +19,7 @@ export { AIDawgMenu } from './AIDawgMenu';
 export { AIProcessingModal } from './AIProcessingModal';
 export type { AIProcessingJob } from './AIProcessingModal';
 export { AIChatWidget } from './AIChatWidget';
+export { RealtimeVoiceWidget } from './RealtimeVoiceWidget';
 export { UpsellModal } from './UpsellModal';
 export { GenreSelector } from './GenreSelector';
 export { ProjectSettingsModal } from './ProjectSettingsModal';

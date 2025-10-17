@@ -1,5 +1,5 @@
 /**
- * Intent Recognition for AI DAWG Chatbot
+ * Intent Recognition for DAWG AI Chatbot
  * Detects user intentions from natural language input
  */
 

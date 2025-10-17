@@ -1,7 +1,7 @@
 /**
  * Base Module
  *
- * Abstract base class for all AI Dawg modules
+ * Abstract base class for all DAWG AI modules
  * Provides common functionality and enforces module interface
  *
  * This is extracted from Jarvis core to be Jarvis-agnostic

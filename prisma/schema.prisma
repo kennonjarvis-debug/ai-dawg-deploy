@@ -60,6 +60,113 @@ model Generation {
 }
 
 // ============================================
+// USER AUTHENTICATION & PROFILES
+// ============================================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String?   // Nullable for OAuth-only users
+  name          String?
+  profileImage  String?
+
+  // OAuth providers
+  googleId      String?   @unique
+  googleEmail   String?
+
+  // Account status
+  emailVerified Boolean   @default(false)
+  isActive      Boolean   @default(true)
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
+  sessions      Session[]
+  aiMemories    AIMemory[]
+  projects      Project[]
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================
+// AI PERSISTENT MEMORY SYSTEM
+// ============================================
+
+model AIMemory {
+  id           String   @id @default(uuid())
+  userId       String
+
+  // Memory content
+  type         String   // preference | fact | context | interaction
+  category     String?  // music_production | mixing | workflow | personal
+  content      String   // The actual memory content
+  metadata     String?  // JSON: { confidence, source, tags, etc. }
+
+  // Memory importance and retrieval
+  importance   Int      @default(5) // 1-10 scale
+  accessCount  Int      @default(0)
+  lastAccessed DateTime @default(now())
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  expiresAt    DateTime? // Optional expiration for temporary memories
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([importance])
+  @@index([lastAccessed])
+}
+
+// ============================================
+// PROJECTS & RECORDINGS
+// ============================================
+
+model Project {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+
+  // Project settings
+  tempo       Int      @default(120)
+  key         String   @default("C")
+  timeSignature String @default("4/4")
+
+  // Project data
+  tracks      String   // JSON: Track configuration
+  metadata    String?  // JSON: Additional project metadata
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
 // EXISTING MODELS (if any)
 // Add your existing models below
 // ============================================

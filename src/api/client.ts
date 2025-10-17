@@ -507,7 +507,7 @@ export class APIClient {
     return this.request('POST', '/ai/producer/generate', data);
   }
 
-  // AI DAWG Auto Features
+  // DAWG AI Auto Features
   async autoComp(audioFileIds: string[], options?: { segmentDuration?: number; crossfadeDuration?: number }): Promise<any> {
     return this.request('POST', '/ai/autocomp', {
       audioFileIds,

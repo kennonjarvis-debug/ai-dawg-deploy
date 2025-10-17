@@ -1,5 +1,5 @@
 /**
- * Prompt Templates for AI DAWG Chatbot
+ * Prompt Templates for DAWG AI Chatbot
  * Templates for generating lyrics, melodies, and compositions
  */
 
@@ -225,7 +225,7 @@ export const FEATURE_INFO = {
  * Help templates for common questions
  */
 export const HELP_TEMPLATES = {
-  getting_started: `Welcome to AI DAWG! 🎵
+  getting_started: `Welcome to DAWG AI! 🎵
 
 I can help you:
 - Generate lyrics, melodies, and complete songs

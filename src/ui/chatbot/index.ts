@@ -1,5 +1,5 @@
 /**
- * AI DAWG Chatbot Module
+ * DAWG AI Chatbot Module
  * Exports all chatbot components and utilities
  */
 

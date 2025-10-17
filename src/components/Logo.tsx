@@ -13,13 +13,13 @@ const sizeMap = {
   lg: { img: 'w-10 h-10', text: 'text-3xl' },
 } as const;
 
-export const Logo: React.FC<LogoProps> = ({ size = 'md', showText = true, text = 'AI DAWG', className }) => {
+export const Logo: React.FC<LogoProps> = ({ size = 'md', showText = true, text = 'DAWG AI', className }) => {
   const classes = sizeMap[size] || sizeMap.md;
   return (
     <div className={["flex items-center gap-2", className || ''].filter(Boolean).join(' ')}>
       <img
         src="/assets/ai-dawg-logo.svg"
-        alt="AI DAWG logo"
+        alt="DAWG AI logo"
         className={classes.img}
         decoding="async"
         loading="eager"

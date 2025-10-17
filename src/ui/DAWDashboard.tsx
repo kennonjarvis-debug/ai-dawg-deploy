@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard } from 'lucide-react';
+import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum } from 'lucide-react';
 import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub } from './components';
 import { apiClient } from '../api/client';
 import { wsClient } from '../api/websocket';
@@ -35,11 +35,13 @@ export const DAWDashboard: React.FC = () => {
   const [upsell, setUpsell] = useState<{ open: boolean; feature?: string; plan?: string; upgrade_url?: string | null }>({ open: false });
   const [planBadge, setPlanBadge] = useState<string>('');
   const [genre, setGenre] = useState<string>('pop');
-  const [showAIChat, setShowAIChat] = useState(false);
+  // showAIChat removed - chat is now embedded in DAWG AI panel
   const [showSettings, setShowSettings] = useState(false);
   const [showAIHub, setShowAIHub] = useState(false);
+  const [lyrics, setLyrics] = useState('');
+  const [expandedWidget, setExpandedWidget] = useState<'ai' | 'lyrics' | 'balanced'>('balanced');
   const { isPlaying, currentTime, setCurrentTime } = useTransportStore();
-  const { addTrack, selectedClipIds, tracks } = useTimelineStore();
+  const { addTrack, updateTrack, selectedClipIds, tracks } = useTimelineStore();
   const selectedTrackIds = React.useMemo(() => getSelectedTrackIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
   const selectedAudioFileIds = React.useMemo(() => getSelectedAudioFileIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
   const fileMenuRef = useRef<HTMLDivElement>(null);
@@ -360,7 +362,7 @@ export const DAWDashboard: React.FC = () => {
     setAiJobs(prev => prev.map(job => job.id === id ? { ...job, ...updates } : job));
   };
 
-  // AI DAWG Handlers
+  // DAWG AI Handlers
   const handleAutoComp = async () => {
     if (selectedClipIds.length < 2) {
       toast.error('Select at least 2 clips for auto-comp');
@@ -536,60 +538,86 @@ export const DAWDashboard: React.FC = () => {
     }
   };
 
-  const handleAutoMusic = async () => {
-    const jobId = addAiJob('chord-generation', 'Generating chords and melody...');
+  const handleAutoMusic = async (prompt: string, genre?: string, tempo?: number, duration?: number) => {
+    const jobId = addAiJob('music-generation', `Generating music: "${prompt}"...`);
 
     try {
-      updateAiJob(jobId, { status: 'processing', progress: 30 });
+      updateAiJob(jobId, { status: 'processing', progress: 20 });
 
-      // Generate chords
-      const chordsResult = await apiClient.generateContent({
-        type: 'chords',
-        params: {
-          mood: 'happy',
-          genre: 'pop',
-          key: currentProject?.key || 'C',
-          progressionLength: 4,
+      // Call full music generation API
+      const response = await fetch('/api/v1/ai/dawg', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        credentials: 'include',
+        body: JSON.stringify({
+          prompt,
+          genre: genre || 'pop',
+          mood: 'energetic',
+          tempo: tempo || 120,
+          duration: duration || 30,
+          style: 'full-production',
+          project_id: currentProject?.id,
+        }),
       });
 
-      updateAiJob(jobId, { progress: 60, message: 'Chords generated, creating melody...' });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate music');
+      }
 
-      // Generate melody
-      const melodyResult = await apiClient.generateContent({
-        type: 'melody',
-        params: {
-          chords: chordsResult.data?.chords || [],
-          key: currentProject?.key || 'C',
-          scale: 'major',
-        },
-      });
+      const data = await response.json();
+
+      updateAiJob(jobId, { progress: 80, message: 'Creating track...' });
+
+      // If track was created with audio, add it to the timeline
+      if (data.audio_url) {
+        const trackName = `AI Music: ${prompt.substring(0, 30)}...`;
+        const newTrack = addTrack(trackName);
+
+        // Create clip with the generated audio
+        setTimeout(() => {
+          const allTracks = useTimelineStore.getState().tracks;
+          const latestTrack = allTracks[allTracks.length - 1];
+          if (latestTrack) {
+            addClip(latestTrack.id, {
+              name: trackName,
+              startTime: 0,
+              duration: duration || 30,
+              color: latestTrack.color,
+              audioUrl: data.audio_url,
+            });
+            console.log(`Created track with AI-generated music: ${trackName}`);
+          }
+        }, 100);
+      }
 
       updateAiJob(jobId, {
         status: 'completed',
         progress: 100,
         message: 'Music generation completed!',
-        result: { chords: chordsResult, melody: melodyResult }
+        result: data
       });
 
-      toast.success('Music generation completed!');
+      toast.success(`🎵 Generated: ${prompt}`);
     } catch (error: any) {
       updateAiJob(jobId, {
         status: 'error',
         error: error.message || 'Music generation failed',
         message: 'Music generation failed'
       });
-      toast.error('Music generation failed');
+      toast.error('Music generation failed: ' + error.message);
     }
   };
 
   const handleAIDawg = async () => {
     if (selectedClipIds.length === 0) {
-      toast.error('Select clips for AI DAWG full production');
+      toast.error('Select clips for DAWG AI full production');
       return;
     }
 
-    const jobId = addAiJob('vocal-analysis', 'Starting AI DAWG full production pipeline...');
+    const jobId = addAiJob('vocal-analysis', 'Starting DAWG AI full production pipeline...');
 
     try {
       updateAiJob(jobId, { status: 'processing', progress: 20 });
@@ -603,18 +631,18 @@ export const DAWDashboard: React.FC = () => {
       updateAiJob(jobId, {
         status: 'completed',
         progress: 100,
-        message: 'AI DAWG production completed!',
+        message: 'DAWG AI production completed!',
         result
       });
 
-      toast.success('AI DAWG production completed!');
+      toast.success('DAWG AI production completed!');
     } catch (error: any) {
       updateAiJob(jobId, {
         status: 'error',
-        error: error.message || 'AI DAWG failed',
-        message: 'AI DAWG production failed'
+        error: error.message || 'DAWG AI failed',
+        message: 'DAWG AI production failed'
       });
-      toast.error('AI DAWG failed');
+      toast.error('DAWG AI failed');
     }
   };
 
@@ -768,16 +796,16 @@ export const DAWDashboard: React.FC = () => {
               className="flex items-center gap-2 text-text-base hover:bg-bg-surface-hover rounded transition-colors p-2 -ml-2"
             >
               <Music2 className="w-5 h-5 text-primary" />
-              <span className="font-bold">AI Dawg</span>
+              <span className="font-bold">DAWG AI</span>
               <ChevronDown className="w-4 h-4" />
             </button>
             {openMenu === 'ai-dawg' && (
               <div className="absolute top-full left-0 mt-1 w-72 bg-bg-surface-2 backdrop-blur-xl border border-border-strong rounded-lg shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto">
-                {/* AI DAWG AUTO FEATURES */}
+                {/* DAWG AI AUTO FEATURES */}
                 <div className="border-b border-border-base">
                   <div className="px-4 py-2 bg-bg-surface">
                     <span className="text-xs font-semibold text-text-dim uppercase tracking-wider">
-                      ⚡ AI Features
+                      ⚡ DAWG AI AUTO FEATURES
                     </span>
                   </div>
                   <div className="py-1">
@@ -792,10 +820,19 @@ export const DAWDashboard: React.FC = () => {
                     >
                       <Zap className={`w-5 h-5 ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-primary'}`} />
                       <span className={`flex-1 text-left text-sm ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-text-base'}`}>
-                        🚀 AI DAWG (Full Auto)
+                        🎸 Dawg AI (Full Auto)
                       </span>
                       <span className="text-xs text-text-dim">
                         {selectedClipIds.length > 0 ? `${selectedClipIds.length} clip${selectedClipIds.length > 1 ? 's' : ''}` : 'Select clips'}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => { toast.info('AI Voice Memo - Record voice notes!'); setOpenMenu(null); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary-hover/20 hover:text-text-base transition-all"
+                    >
+                      <Mic className="w-5 h-5 text-primary" />
+                      <span className="flex-1 text-left text-sm text-text-base">
+                        AI Voice Memo
                       </span>
                     </button>
                     <button
@@ -809,7 +846,7 @@ export const DAWDashboard: React.FC = () => {
                     >
                       <Scissors className={`w-5 h-5 ${selectedClipIds.length < 2 ? 'text-text-dim' : 'text-primary'}`} />
                       <span className={`flex-1 text-left text-sm ${selectedClipIds.length < 2 ? 'text-text-dim' : 'text-text-base'}`}>
-                        Auto Comp
+                        AI Comp
                       </span>
                       <span className="text-xs text-text-dim">
                         {selectedClipIds.length >= 2 ? `${selectedClipIds.length} clips` : 'Select 2+ clips'}
@@ -826,7 +863,7 @@ export const DAWDashboard: React.FC = () => {
                     >
                       <AlignCenter className={`w-5 h-5 ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-primary'}`} />
                       <span className={`flex-1 text-left text-sm ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-text-base'}`}>
-                        Auto Time Align
+                        AI Tune
                       </span>
                       <span className="text-xs text-text-dim">
                         {selectedClipIds.length > 0 ? `${selectedClipIds.length} clip${selectedClipIds.length > 1 ? 's' : ''}` : 'Select clips'}
@@ -843,7 +880,7 @@ export const DAWDashboard: React.FC = () => {
                     >
                       <Music className={`w-5 h-5 ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-primary'}`} />
                       <span className={`flex-1 text-left text-sm ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-text-base'}`}>
-                        Auto Pitch Correct
+                        AI Pitch
                       </span>
                       <span className="text-xs text-text-dim">
                         {selectedClipIds.length > 0 ? `${selectedClipIds.length} clip${selectedClipIds.length > 1 ? 's' : ''}` : 'Select clips'}
@@ -860,7 +897,7 @@ export const DAWDashboard: React.FC = () => {
                     >
                       <Sliders className={`w-5 h-5 ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-primary'}`} />
                       <span className={`flex-1 text-left text-sm ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-text-base'}`}>
-                        Auto Mix
+                        AI Mix
                       </span>
                       <span className="text-xs text-text-dim">
                         {selectedClipIds.length > 0 ? `${selectedClipIds.length} clip${selectedClipIds.length > 1 ? 's' : ''}` : 'Select clips'}
@@ -877,19 +914,25 @@ export const DAWDashboard: React.FC = () => {
                     >
                       <Volume2 className={`w-5 h-5 ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-primary'}`} />
                       <span className={`flex-1 text-left text-sm ${selectedClipIds.length === 0 ? 'text-text-dim' : 'text-text-base'}`}>
-                        Auto Master
+                        AI Master
                       </span>
                       <span className="text-xs text-text-dim">
                         {selectedClipIds.length > 0 ? `${selectedClipIds.length} clip${selectedClipIds.length > 1 ? 's' : ''}` : 'Select clips'}
                       </span>
                     </button>
                     <button
-                      onClick={() => { handleAutoMusic(); setOpenMenu(null); }}
+                      onClick={() => {
+                        const prompt = window.prompt('What kind of music would you like to generate?', 'Energetic pop beat with 808s');
+                        if (prompt) {
+                          handleAutoMusic(prompt);
+                        }
+                        setOpenMenu(null);
+                      }}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary-hover/20 hover:text-text-base transition-all"
                     >
                       <Sparkles className="w-5 h-5 text-primary" />
                       <span className="flex-1 text-left text-sm text-text-base">
-                        Auto Music Generation
+                        AI Music Gen
                       </span>
                     </button>
                   </div>
@@ -905,13 +948,6 @@ export const DAWDashboard: React.FC = () => {
                     <CreditCard className="w-4 h-4" />
                     Billing
                   </a>
-                </div>
-
-                {/* Footer */}
-                <div className="px-4 py-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-t border-border-base">
-                  <p className="text-xs text-text-muted text-center">
-                    ✨ Powered by AI • {selectedClipIds.length > 0 ? 'Ready to process' : 'Select clips to begin'}
-                  </p>
                 </div>
               </div>
             )}
@@ -1056,13 +1092,10 @@ export const DAWDashboard: React.FC = () => {
 
       {/* Responsive Layout */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Transport Bar - Floating Widget */}
-        <div className="flex justify-center p-4 border-b border-border-base">
-          <div className="bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-2xl">
-            <TransportBar />
-          </div>
+        {/* Transport Bar - Full Width */}
+        <div className="w-full bg-bg-surface backdrop-blur-xl border-b border-border-strong shadow-lg">
+          <TransportBar />
         </div>
-
         {/* Main Content - Responsive Layout */}
         <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2 overflow-hidden">
           {/* Left Column - Timeline + Mixer */}
@@ -1080,83 +1113,136 @@ export const DAWDashboard: React.FC = () => {
 
           {/* Right Column - AI Chat + Lyrics */}
           <div className="w-full lg:w-96 flex flex-col gap-2 min-h-0">
-            {/* AI DAWG Widget */}
-            <div className="flex-1 bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-2xl flex flex-col overflow-hidden min-h-[250px]">
-                <div className="p-3 border-b border-border-base">
-                  <h3 className="text-sm font-semibold text-text-base flex items-center gap-2">
-                    <Music2 className="w-4 h-4 text-primary" />
-                    AI DAWG
-                  </h3>
-                  {/* AI progress indicator */}
-                  {aiJobs.some(j => j.status === 'processing') && (
-                    <div className="flex items-center gap-2 mt-2 text-xs text-primary">
-                      <span>Processing</span>
-                      <div className="flex-1 h-2 bg-bg-surface-2 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-secondary"
-                          style={{ width: `${Math.round(aiJobs.filter(j=>j.status==='processing').reduce((a,b)=>a+(b.progress||0),0)/Math.max(1,aiJobs.filter(j=>j.status==='processing').length))}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="bg-gradient-to-br from-primary/20 to-transparent border border-primary/30 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-text-muted mb-3">
-                      Hey! I'm AI Dawg, your AI music production and vocal coaching assistant.
-                    </p>
-                    <p className="text-xs text-text-dim mb-2">
-                      🎤 **Vocal Coaching**: Ask me about pitch, breathing, tone, timing, or warm-up exercises
-                    </p>
-                    <p className="text-xs text-text-dim mb-2">
-                      🎹 **Production**: Control the DAW, get mixing advice, and arrangement tips
-                    </p>
-                    <p className="text-sm text-text-muted mt-3">
-                      The pitch monitor above shows your real-time pitch accuracy. What are we working on today?
-                    </p>
-                    <p className="text-xs text-text-dim mt-2">{new Date().toLocaleTimeString()}</p>
-                  </div>
-                </div>
-                <div className="p-4 border-t border-border-base">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowAIChat(true)}
-                      className="p-2 bg-bg-surface-2 hover:bg-bg-surface-hover border border-border-base rounded"
-                      title="Open full AI Chat"
-                    >
-                      +
-                    </button>
-                    <input
-                      type="text"
-                      placeholder="Ask anything"
-                      onClick={() => setShowAIChat(true)}
-                      className="flex-1 px-4 py-2 bg-bg-surface-2 border border-border-base rounded text-text-base placeholder-text-muted text-sm cursor-pointer"
-                      readOnly
-                    />
-                    <button
-                      onClick={() => setShowAIChat(true)}
-                      className="p-2 bg-bg-surface-2 hover:bg-bg-surface-hover border border-border-base rounded"
-                      title="Voice chat"
-                    >
-                      🎤
-                    </button>
-                    <button
-                      onClick={() => setShowAIChat(true)}
-                      className="p-2 bg-primary hover:bg-primary-hover rounded"
-                    >
-                      →
-                    </button>
-                  </div>
-                </div>
+            {/* DAWG AI Widget */}
+            <div className={`${
+              expandedWidget === 'ai' ? 'flex-[3]' :
+              expandedWidget === 'lyrics' ? 'flex-[0.5]' :
+              'flex-1'
+            } min-h-[150px] transition-all duration-300`}>
+              <AIChatWidget
+                  isOpen={true}
+                  onClose={() => {}}
+                  projectContext={{
+                    tempo: currentProject?.bpm,
+                    key: currentProject?.key,
+                    time_signature: "4/4",
+                    selected_clips: selectedClipIds.length,
+                    track_count: currentProject?.tracks?.length || 0,
+                    project_name: currentProject?.name,
+                    lyrics: lyrics
+                  }}
+                  aiJobs={aiJobs}
+                  isExpanded={expandedWidget === 'ai'}
+                  onToggleExpand={() => setExpandedWidget(expandedWidget === 'ai' ? 'balanced' : 'ai')}
+                  onUpdateLyrics={(text, append) => {
+                    if (append) {
+                      setLyrics(prev => prev ? `${prev}\n${text}` : text);
+                    } else {
+                      setLyrics(text);
+                    }
+                  }}
+                  onAutoComp={handleAutoComp}
+                  onQuantize={handleAutoTimeAlign}
+                  onAutotune={handleAutoPitch}
+                  onSmartMix={handleAutoMix}
+                  onMaster={handleAutoMaster}
+                  onGenerateMusic={handleAutoMusic}
+                  onAIDawg={handleAIDawg}
+                  onStartRecording={() => {
+                    // Check if any tracks are armed for recording
+                    const armedTracks = tracks.filter(t => t.isArmed);
+
+                    if (armedTracks.length === 0) {
+                      // No armed tracks - create a new track and arm it
+                      const trackName = `Vocal ${tracks.length + 1}`;
+                      const newTrack = addTrack(trackName);
+
+                      // Arm the newly created track
+                      // We need to wait a bit for the track to be added to the store
+                      setTimeout(() => {
+                        const allTracks = useTimelineStore.getState().tracks;
+                        const latestTrack = allTracks[allTracks.length - 1];
+                        if (latestTrack) {
+                          updateTrack(latestTrack.id, { isArmed: true });
+                          console.log(`Created and armed track: ${trackName}`);
+                        }
+                        // Start playback AND recording (Pro Tools/Logic style)
+                        useTransportStore.setState({ isPlaying: true, isRecording: true });
+                        toast.success(`🔴 Recording on ${trackName}`);
+                      }, 100);
+                    } else {
+                      // Tracks already armed, start playback AND recording
+                      useTransportStore.setState({ isPlaying: true, isRecording: true });
+                      toast.success(`🔴 Recording on ${armedTracks.length} track(s)`);
+                    }
+                  }}
+                  onStopRecording={() => {
+                    // Stop recording
+                    useTransportStore.setState({ isRecording: false });
+                    toast.info('⏹️ Recording stopped');
+                  }}
+                  onPlay={() => {
+                    // Play project
+                    useTransportStore.setState({ isPlaying: true });
+                    toast.success('Playing');
+                  }}
+                  onStop={() => {
+                    // Stop playback
+                    useTransportStore.setState({ isPlaying: false });
+                    toast.info('Stopped');
+                  }}
+                  onSetTempo={(bpm: number) => {
+                    // Set project tempo
+                    if (currentProject?.id) {
+                      handleSaveSettings({ bpm });
+                    }
+                  }}
+                  onSetKey={(key: string) => {
+                    // Set project key
+                    if (currentProject?.id) {
+                      handleSaveSettings({ key });
+                    }
+                  }}
+                  onNewTrack={() => {
+                    handleNewTrack();
+                  }}
+                  onSaveProject={() => {
+                    handleSaveProject();
+                  }}
+                  onExportProject={() => {
+                    handleExportProject();
+                  }}
+                />
             </div>
 
             {/* Lyrics & Notes Widget */}
-            <div className="flex-1 bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-2xl flex flex-col overflow-hidden min-h-[150px]">
+            <div className={`${
+              expandedWidget === 'lyrics' ? 'flex-[3]' :
+              expandedWidget === 'ai' ? 'flex-[0.5]' :
+              'flex-1'
+            } bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-2xl flex flex-col overflow-hidden min-h-[150px] transition-all duration-300`}>
               <div className="p-3 border-b border-border-base flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-text-base">📝 Lyrics & Notes</h3>
+                <button
+                  onClick={() => setExpandedWidget(expandedWidget === 'lyrics' ? 'balanced' : 'lyrics')}
+                  className="p-1 hover:bg-bg-surface-hover rounded transition-colors"
+                  title={expandedWidget === 'lyrics' ? 'Collapse' : 'Expand'}
+                >
+                  {expandedWidget === 'lyrics' ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  )}
+                </button>
               </div>
               <div className="flex-1 p-4">
                 <textarea
+                  value={lyrics}
+                  onChange={(e) => setLyrics(e.target.value)}
                   placeholder="Write your lyrics and composition notes here..."
                   className="w-full h-full bg-transparent border-none text-sm text-text-muted placeholder-text-dim resize-none focus:outline-none"
                 />
@@ -1188,19 +1274,6 @@ export const DAWDashboard: React.FC = () => {
         onSave={handleSaveSettings}
       />
 
-      {/* AI Chat Widget */}
-      <AIChatWidget
-        isOpen={showAIChat}
-        onClose={() => setShowAIChat(false)}
-        projectContext={{
-          tempo: currentProject?.bpm,
-          key: currentProject?.key,
-          time_signature: "4/4",
-          selected_clips: selectedClipIds.length,
-          track_count: currentProject?.tracks?.length || 0,
-          project_name: currentProject?.name
-        }}
-      />
 
       {/* AI Feature Hub */}
       <AIFeatureHub

@@ -1,5 +1,5 @@
 /**
- * Integration Example: AI DAWG Chatbot with Backend APIs
+ * Integration Example: DAWG AI Chatbot with Backend APIs
  * Shows how to connect the chatbot to AutoTopline and Lyric Engine
  */
 
