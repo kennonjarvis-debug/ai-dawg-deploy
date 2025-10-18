@@ -3,7 +3,6 @@ import { useTimelineStore, useTransportStore } from '@/stores';
 import { TimeRuler } from './TimeRuler';
 import { Track } from './Track';
 import { SectionMarkers } from './SectionMarkers';
-import { ZoomIn, ZoomOut } from 'lucide-react';
 
 export const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,7 +23,7 @@ export const Timeline: React.FC = () => {
     updateSectionMarker,
   } = useTimelineStore();
 
-  const { currentTime, isPlaying, setCurrentTime } = useTransportStore();
+  const { currentTime, isPlaying, isRecording, setCurrentTime } = useTransportStore();
 
   // Update viewport width on resize
   useEffect(() => {
@@ -39,9 +38,9 @@ export const Timeline: React.FC = () => {
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  // Auto-scroll to follow playhead
+  // Auto-scroll to follow playhead during playback and recording
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying && !isRecording) return;
 
     const playheadX = currentTime * zoom;
     const viewportEnd = scrollPosition + viewportWidth;
@@ -54,7 +53,7 @@ export const Timeline: React.FC = () => {
     else if (playheadX < scrollPosition * zoom) {
       setScrollPosition(Math.max(0, currentTime - 2));
     }
-  }, [currentTime, isPlaying, zoom, scrollPosition, viewportWidth, setScrollPosition]);
+  }, [currentTime, isPlaying, isRecording, zoom, scrollPosition, viewportWidth, setScrollPosition]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const scrollLeft = e.currentTarget.scrollLeft;
@@ -97,40 +96,21 @@ export const Timeline: React.FC = () => {
         onSeekToMarker={(time) => setCurrentTime(time)}
       />
 
-      {/* Toolbar */}
-      <div className="h-12 bg-bg-surface border-b border-border-base flex items-center px-4 gap-4 shadow-lg">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleZoomOut}
-            className="p-2 hover:bg-bg-surface-hover rounded-lg transition-all ring-1 ring-border-base hover:ring-border-strong"
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4 text-text-muted" />
-          </button>
-          <div className="px-3 py-1.5 rounded-lg bg-bg-base ring-1 ring-border-base text-xs text-text-muted font-semibold min-w-[60px] text-center">
-            {Math.round(zoom)}px/s
-          </div>
-          <button
-            onClick={handleZoomIn}
-            className="p-2 hover:bg-bg-surface-hover rounded-lg transition-all ring-1 ring-border-base hover:ring-border-strong"
-            title="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4 text-text-muted" />
-          </button>
-        </div>
-
-        <div className="px-3 py-1.5 rounded-lg bg-bg-base ring-1 ring-border-base text-xs text-text-dim">
-          {tracks.length} track{tracks.length !== 1 ? 's' : ''}
-        </div>
-      </div>
-
       {/* Timeline container */}
       <div className="flex-1 flex flex-col" style={{ overflow: 'hidden' }} ref={containerRef}>
-        {/* Time ruler */}
-        <div className="flex">
-          <div className="w-56 flex-shrink-0 bg-bg-surface border-r border-border-base" />
-          <div className="flex-1 overflow-hidden">
-            <TimeRuler width={viewportWidth} />
+        {/* Time Ruler - Always visible */}
+        <div className="flex-shrink-0">
+          <div className="flex">
+            {/* Track name header spacer */}
+            <div className="w-56 bg-bg-surface border-b border-border-base" />
+            {/* Time ruler */}
+            <div className="flex-1">
+              <TimeRuler
+                width={viewportWidth || 800}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+              />
+            </div>
           </div>
         </div>
 
@@ -150,10 +130,30 @@ export const Timeline: React.FC = () => {
               />
             ))}
 
-            {/* Empty state */}
+            {/* Empty state with timeline grid */}
             {tracks.length === 0 && (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center p-8 rounded-2xl bg-bg-surface ring-1 ring-border-base">
+              <div className="relative flex-1 flex items-center justify-center min-h-[200px]">
+                {/* Timeline grid background */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="flex h-full">
+                    {/* Track name area */}
+                    <div className="w-56 bg-bg-surface border-r border-border-base" />
+                    {/* Grid area */}
+                    <div className="flex-1 relative" style={{ width: `${timelineWidth}px` }}>
+                      {/* Vertical grid lines */}
+                      {Array.from({ length: Math.ceil(30) }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute top-0 bottom-0 w-px bg-border-base/30"
+                          style={{ left: `${i * zoom}px` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Empty state message */}
+                <div className="relative z-10 text-center p-8 rounded-2xl bg-bg-surface/80 backdrop-blur-sm ring-1 ring-border-base">
                   <div className="text-text-muted text-sm font-medium">No tracks yet</div>
                   <div className="text-text-dim text-xs mt-1">Click "Add Track" to get started</div>
                 </div>
@@ -161,9 +161,9 @@ export const Timeline: React.FC = () => {
             )}
           </div>
 
-          {/* Playhead - Glowing red line */}
+          {/* Playhead - Professional cursor */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none z-20"
+            className="absolute top-0 bottom-0 pointer-events-none z-20"
             style={{
               left: `${224 + (currentTime - scrollPosition) * zoom}px`,
               display:
@@ -171,11 +171,27 @@ export const Timeline: React.FC = () => {
                 currentTime * zoom <= (scrollPosition + viewportWidth / zoom) * zoom
                   ? 'block'
                   : 'none',
-              boxShadow: '0 0 10px rgba(239, 68, 68, 0.7), 0 0 20px rgba(239, 68, 68, 0.5)',
             }}
           >
-            {/* Playhead handle */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-500 rounded-sm shadow-lg ring-2 ring-white/50" />
+            {/* Playhead handle - Pro Tools style triangle */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0"
+              style={{
+                borderLeft: '6px solid transparent',
+                borderRight: '6px solid transparent',
+                borderTop: '8px solid #60a5fa',
+                filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4))'
+              }}
+            />
+            {/* Playhead line - Subtle and thin */}
+            <div
+              className="absolute top-10 w-px bg-blue-400/80"
+              style={{
+                left: '50%',
+                transform: 'translateX(-50%)',
+                height: 'calc(100% - 40px)',
+                boxShadow: '0 0 4px rgba(96, 165, 250, 0.4)',
+              }}
+            />
           </div>
         </div>
       </div>
