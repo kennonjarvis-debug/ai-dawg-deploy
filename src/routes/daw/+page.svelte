@@ -14,7 +14,8 @@ import {
 	TransportControls,
 	Mixer,
 	BrowserPanel,
-	InspectorPanel
+	InspectorPanel,
+	Timeline
 } from '$lib/design-system';
 import AuthModal from '$lib/components/cloud/AuthModal.svelte';
 import FileUploader from '$lib/components/cloud/FileUploader.svelte';
@@ -34,6 +35,12 @@ let recording = $state(false);
 let looping = $state(false);
 let tempo = $state(120);
 let position = $state('00:00:00');
+
+// Timeline state
+let currentTime = $state(0);
+let projectDuration = $state(180); // 3 minutes default
+let timelineZoom = $state(1);
+let timelineUpdateInterval: number | null = null;
 
 // View state
 let currentView = $state<'arrangement' | 'mixer' | 'browser'>('arrangement');
@@ -80,6 +87,10 @@ onDestroy(() => {
 	if (typeof window !== 'undefined') {
 		window.removeEventListener('beforeunload', handleBeforeUnload);
 	}
+	// Clear timeline update interval
+	if (timelineUpdateInterval !== null) {
+		clearInterval(timelineUpdateInterval);
+	}
 });
 
 function setupKeyboardShortcuts() {
@@ -121,15 +132,33 @@ function togglePlayback() {
 	if (playing) {
 		appStore.stop();
 		playing = false;
+		// Stop timeline updates
+		if (timelineUpdateInterval !== null) {
+			clearInterval(timelineUpdateInterval);
+			timelineUpdateInterval = null;
+		}
 	} else {
 		appStore.play();
 		playing = true;
+		// Start timeline updates (60fps)
+		timelineUpdateInterval = setInterval(() => {
+			currentTime += 1/60; // Increment by ~1 frame (assuming 60fps)
+			if (currentTime >= projectDuration) {
+				handleStop(); // Auto-stop at end
+			}
+		}, 1000/60) as unknown as number;
 	}
 }
 
 function handleStop() {
 	appStore.stop();
 	playing = false;
+	currentTime = 0; // Reset playhead to start
+	// Stop timeline updates
+	if (timelineUpdateInterval !== null) {
+		clearInterval(timelineUpdateInterval);
+		timelineUpdateInterval = null;
+	}
 }
 
 function handleRecord() {
@@ -375,16 +404,38 @@ function handleAuthSuccess() {
 			<!-- Center - Arrangement/Mixer View -->
 			<div class="flex-1 glass-subtle overflow-auto">
 				{#if currentView === 'arrangement'}
-					<div class="p-8" data-testid="arrangement-view">
-						<h2 class="text-2xl font-bold mb-4">Arrangement View</h2>
-						<p class="text-white/70 mb-4">Timeline and track arrangement view coming soon...</p>
+					<div class="p-4 flex flex-col gap-4 h-full" data-testid="arrangement-view">
+						<!-- Timeline with full playback controls -->
+						<Timeline
+							duration={projectDuration}
+							bind:currentTime
+							{playing}
+							bind:zoom={timelineZoom}
+							onSeek={(time) => {
+								currentTime = time;
+								// TODO: Seek audio engine to this position
+								console.log('Seeking to:', time);
+							}}
+							onZoomChange={(zoom) => {
+								console.log('Zoom changed to:', zoom);
+							}}
+						/>
 
-						<!-- Placeholder for arrangement view -->
-						<div class="glass-strong rounded-panel p-8 text-center">
-							<Icon name="music" size="xl" />
-							<p class="mt-4 text-white/50">
-								Drag audio files here or add tracks to get started
-							</p>
+						<!-- Track arrangement area -->
+						<div class="glass-strong rounded-panel p-4 flex-1 overflow-auto">
+							<div class="flex items-center justify-between mb-4">
+								<h3 class="text-lg font-semibold">Track Arrangement</h3>
+								<Button variant="secondary" size="sm" onclick={handleAddTrack}>
+									<Icon name="plus" size="sm" />
+									Add Track
+								</Button>
+							</div>
+							<div class="text-center py-12">
+								<Icon name="music" size="xl" class="opacity-30 mb-4" />
+								<p class="text-white/50 text-sm">
+									Drag audio files or add tracks to see them here
+								</p>
+							</div>
 						</div>
 					</div>
 				{:else if currentView === 'mixer'}
@@ -401,6 +452,10 @@ function handleAuthSuccess() {
 
 			<!-- Right Sidebar - Inspector & AI -->
 			<div class="w-80 glass border-l border-white/10 overflow-y-auto flex flex-col">
+				<div class="p-4 mb-2">
+					<AIPanel />
+				</div>
+				<div class="border-t border-white/10"></div>
 				<div class="p-4 flex-1 min-h-0">
 					<AIFeaturesPanel />
 				</div>
