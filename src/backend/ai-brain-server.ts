@@ -12,9 +12,10 @@ import { Readable } from 'stream';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { audioConverter } from './services/audio-converter';
+import { generateMusic, generateBeat } from './services/musicgen-service';
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '8002', 10);
+const PORT = parseInt(process.env.AI_BRAIN_PORT || '8002', 10);
 const httpServer = createServer(app);
 
 // Initialize OpenAI
@@ -33,7 +34,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // System prompt for DAWG AI
-const SYSTEM_PROMPT = `You are DAWG AI, an expert AI music production assistant with FULL CONTROL over a professional Digital Audio Workstation (DAW).
+const SYSTEM_PROMPT = `You are DAWG AI, an expert AI music production assistant with FULL CONTROL over a professional Digital Audio Workstation (DAW) modeled after Logic Pro X.
 
 You can control EVERYTHING in the DAW:
 - Record, playback, and transport controls (start/stop recording and playback)
@@ -47,21 +48,75 @@ You can control EVERYTHING in the DAW:
 - Change tempo (BPM) and musical key
 - Full project management
 
-Available functions:
-- startRecording/stopRecording: Control recording
-- playProject/stopPlayback: Control playback
-- moveClip: Move clips around the timeline
-- deleteClip: Remove clips
-- autoComp: Automatically comp vocal takes
-- quantize: Time align clips to grid
-- autotune: Apply pitch correction
-- smartMix: Apply intelligent mixing
-- master: Professional mastering
-- generateChords/Melody/Drums: Generate musical elements
-- generateBeats: Create complete beats
-- setTempo/setKey: Change project settings
+## Logic Pro X-Style Mixer & Routing (YOUR SUPERPOWER!)
 
-When a user asks you to do something, respond conversationally like a professional music producer and execute the appropriate function. Be concise, friendly, and encouraging. You can control the DAW like a producer's assistant.`;
+You have COMPLETE control over the mixer and routing, just like Logic Pro X:
+
+### Creating Tracks & Aux Channels
+- **createAuxTrack**: Create aux tracks (mono or stereo) for effects like reverb, delay, compression
+- **createAudioTrack**: Create audio tracks (mono or stereo)
+- When users ask for a "reverb bus" or "delay send", create an aux track with that name
+
+### Routing & Sends (Logic Pro X Style)
+- **createSend**: Route tracks to aux channels using sends (like Logic's bus sends)
+  - Pre-fader sends: Signal sent before track fader (for monitoring)
+  - Post-fader sends: Signal sent after track fader (most common for effects)
+- **setTrackOutput**: Route track outputs to master or other aux tracks
+- **setSendLevel**: Control how much signal goes to each send (0-1, like Logic's send knobs)
+
+### Mixer Controls
+- **setTrackVolume**: Adjust track faders (0-1, where 1 = 0dB)
+- **setTrackPan**: Pan tracks left/right (-1 to 1, where 0 = center)
+- **muteTrack/soloTrack**: Mute or solo tracks
+
+### Intelligent Mixing Workflows
+
+When users ask for professional mixing setups, create them automatically:
+
+**Reverb Setup:**
+1. Create stereo aux track named "Reverb"
+2. Create post-fader sends from vocal/instrument tracks to Reverb aux
+3. Set send levels appropriately (vocals: 20-30%, instruments: 10-20%)
+
+**Delay Setup:**
+1. Create stereo aux track named "Delay"
+2. Create post-fader sends to Delay aux
+3. Adjust send levels based on genre
+
+**Parallel Compression:**
+1. Create stereo aux track named "Parallel Comp"
+2. Create post-fader sends from tracks needing compression
+3. Set higher send levels (40-60%) for parallel effect
+
+**Headphone Mix:**
+1. Create stereo aux track named "Headphone Mix"
+2. Create pre-fader sends from all tracks (so performer hears independent mix)
+3. Adjust send levels for performer's preference
+
+### Smart Mixing Examples
+
+When user says:
+- "Set up reverb for vocals" → Create Reverb aux, create send from vocal tracks, set 25% level
+- "Add delay to the guitar" → Create Delay aux if needed, create send from guitar track
+- "Create a mix for this recording" → Analyze tracks, create appropriate aux channels (Reverb, Delay, Compression), route intelligently
+- "Set up parallel compression on drums" → Create Parallel Comp aux, route drum tracks
+
+Always name aux tracks descriptively (Reverb, Delay, Vocal Reverb, Drum Bus, etc.)
+
+Available functions:
+[ALL PREVIOUS FUNCTIONS...]
+- createAuxTrack: Create aux/bus track (mono/stereo)
+- createAudioTrack: Create audio track (mono/stereo)
+- createSend: Create send from track to aux (pre/post fader)
+- removeSend: Remove a send
+- setSendLevel: Adjust send amount (0-1)
+- setTrackOutput: Route track output (master or aux ID)
+- setTrackVolume: Adjust track fader (0-1)
+- setTrackPan: Pan track (-1 to 1)
+- muteTrack/soloTrack: Mute or solo tracks
+- getTracks: Get current track list to analyze project
+
+When a user asks you to do something, respond conversationally like a professional music producer and execute the appropriate functions. Think like a Logic Pro X expert. Be concise, friendly, and encouraging.`;
 
 // DAW function definitions - Complete control
 const DAW_FUNCTIONS = [
@@ -273,7 +328,197 @@ const DAW_FUNCTIONS = [
       required: ['text'],
     },
   },
+  // ===== LOGIC PRO X-STYLE MIXER & ROUTING FUNCTIONS =====
+  {
+    name: 'getTracks',
+    description: 'Get information about all tracks in the project to analyze routing, track names, and types',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'createAuxTrack',
+    description: 'Create an aux/bus track for effects routing (like Logic Pro X aux channels)',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name for the aux track (e.g., "Reverb", "Delay", "Vocal Reverb")' },
+        channels: { type: 'string', enum: ['mono', 'stereo'], description: 'Mono or stereo configuration', default: 'stereo' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'createAudioTrack',
+    description: 'Create a new audio track',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name for the audio track' },
+        channels: { type: 'string', enum: ['mono', 'stereo'], description: 'Mono or stereo', default: 'stereo' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'createSend',
+    description: 'Create a send from a source track to an aux track (Logic Pro X-style bus routing)',
+    parameters: {
+      type: 'object',
+      properties: {
+        sourceTrackId: { type: 'string', description: 'ID of the source track to send from' },
+        destinationTrackId: { type: 'string', description: 'ID of the destination aux track' },
+        preFader: { type: 'boolean', description: 'Pre-fader (true) or post-fader (false) send', default: false },
+        level: { type: 'number', description: 'Send level (0-1), default 0.8', minimum: 0, maximum: 1, default: 0.8 },
+      },
+      required: ['sourceTrackId', 'destinationTrackId'],
+    },
+  },
+  {
+    name: 'removeSend',
+    description: 'Remove a send from a track',
+    parameters: {
+      type: 'object',
+      properties: {
+        sourceTrackId: { type: 'string', description: 'ID of the track with the send' },
+        sendId: { type: 'string', description: 'ID of the send to remove' },
+      },
+      required: ['sourceTrackId', 'sendId'],
+    },
+  },
+  {
+    name: 'setSendLevel',
+    description: 'Adjust the level of a send',
+    parameters: {
+      type: 'object',
+      properties: {
+        sourceTrackId: { type: 'string', description: 'ID of the track with the send' },
+        sendId: { type: 'string', description: 'ID of the send' },
+        level: { type: 'number', description: 'Send level (0-1)', minimum: 0, maximum: 1 },
+      },
+      required: ['sourceTrackId', 'sendId', 'level'],
+    },
+  },
+  {
+    name: 'setTrackOutput',
+    description: 'Route a track\'s output to master or an aux track',
+    parameters: {
+      type: 'object',
+      properties: {
+        trackId: { type: 'string', description: 'ID of the track to route' },
+        outputDestination: { type: 'string', description: 'Destination: "master" or aux track ID' },
+      },
+      required: ['trackId', 'outputDestination'],
+    },
+  },
+  {
+    name: 'setTrackVolume',
+    description: 'Set the volume fader of a track',
+    parameters: {
+      type: 'object',
+      properties: {
+        trackId: { type: 'string', description: 'ID of the track' },
+        volume: { type: 'number', description: 'Volume level (0-1, where 1 = 0dB)', minimum: 0, maximum: 1 },
+      },
+      required: ['trackId', 'volume'],
+    },
+  },
+  {
+    name: 'setTrackPan',
+    description: 'Set the pan position of a track',
+    parameters: {
+      type: 'object',
+      properties: {
+        trackId: { type: 'string', description: 'ID of the track' },
+        pan: { type: 'number', description: 'Pan position (-1 = left, 0 = center, 1 = right)', minimum: -1, maximum: 1 },
+      },
+      required: ['trackId', 'pan'],
+    },
+  },
+  {
+    name: 'muteTrack',
+    description: 'Mute or unmute a track',
+    parameters: {
+      type: 'object',
+      properties: {
+        trackId: { type: 'string', description: 'ID of the track' },
+        mute: { type: 'boolean', description: 'true to mute, false to unmute' },
+      },
+      required: ['trackId', 'mute'],
+    },
+  },
+  {
+    name: 'soloTrack',
+    description: 'Solo or unsolo a track',
+    parameters: {
+      type: 'object',
+      properties: {
+        trackId: { type: 'string', description: 'ID of the track' },
+        solo: { type: 'boolean', description: 'true to solo, false to unsolo' },
+      },
+      required: ['trackId', 'solo'],
+    },
+  },
 ];
+
+// Music generation endpoint for DAW AI (MusicGen integration)
+app.post('/api/v1/ai/dawg', async (req, res) => {
+  try {
+    const { prompt, genre, mood, tempo, duration, style, project_id } = req.body;
+
+    if (!prompt && style !== 'beat') {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    console.log('🎵 Music generation request with MusicGen:', { prompt, genre, tempo, duration, style });
+
+    // Use beat-specific generation if style is 'beat' or 'drums'
+    let result;
+    if (style === 'beat' || style === 'drums') {
+      result = await generateBeat({
+        genre: genre || 'hip-hop',
+        tempo: tempo || 120,
+        duration: duration || 15,
+      });
+    } else {
+      result = await generateMusic({
+        prompt,
+        genre,
+        mood,
+        tempo,
+        duration,
+        style,
+      });
+    }
+
+    if (!result.success) {
+      return res.status(500).json({
+        error: result.error || 'Failed to generate music',
+        message: result.message,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: result.message || 'Music generated successfully with MusicGen',
+      audio_url: result.audio_url,
+      job_id: result.job_id,
+      prompt,
+      genre,
+      tempo,
+      duration,
+    });
+
+    console.log('✅ MusicGen generation complete:', result.audio_url);
+  } catch (error: any) {
+    console.error('❌ Music generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate music',
+      message: error.message,
+    });
+  }
+});
 
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {

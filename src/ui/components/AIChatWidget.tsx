@@ -114,7 +114,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   const isPlayingRef = useRef(false);
   const isLiveRef = useRef(false);
 
-  const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || 'http://localhost:3100';
+  const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || 'http://localhost:8002';
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -594,6 +594,158 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     }
   }, [flashFeature]);
 
+  // Execute function call
+  const executeFunction = (name: string, args: any): any => {
+    let result: any = { success: false, message: 'Function not implemented' };
+
+    switch (name) {
+      case 'getTracks':
+        if (onGetTracks) {
+          const tracks = onGetTracks();
+          result = { success: true, message: 'Got tracks', data: tracks };
+        }
+        break;
+
+      case 'createAuxTrack':
+        if (onCreateAuxTrack && args.name) {
+          const trackId = onCreateAuxTrack(args.name, args.channels || 'stereo');
+          result = { success: true, message: `Aux track created: ${args.name}`, trackId };
+          toast.success(`Created ${args.channels || 'stereo'} aux track: ${args.name}`);
+        }
+        break;
+
+      case 'createAudioTrack':
+        if (onCreateAudioTrack && args.name) {
+          const trackId = onCreateAudioTrack(args.name, args.channels || 'stereo');
+          result = { success: true, message: `Audio track created: ${args.name}`, trackId };
+          toast.success(`Created ${args.channels || 'stereo'} audio track: ${args.name}`);
+        }
+        break;
+
+      case 'createSend':
+        if (onCreateSend && args.sourceTrackId && args.destinationTrackId) {
+          onCreateSend(
+            args.sourceTrackId,
+            args.destinationTrackId,
+            args.preFader || false,
+            args.level !== undefined ? args.level : 0.8
+          );
+          result = { success: true, message: `Created ${args.preFader ? 'pre-fader' : 'post-fader'} send` };
+        }
+        break;
+
+      case 'removeSend':
+        if (onRemoveSend && args.sourceTrackId && args.sendId) {
+          onRemoveSend(args.sourceTrackId, args.sendId);
+          result = { success: true, message: 'Send removed' };
+        }
+        break;
+
+      case 'setSendLevel':
+        if (onSetSendLevel && args.sourceTrackId && args.sendId) {
+          onSetSendLevel(args.sourceTrackId, args.sendId, args.level || 0.8);
+          result = { success: true, message: `Send level set to ${Math.round((args.level || 0.8) * 100)}%` };
+        }
+        break;
+
+      case 'setTrackOutput':
+        if (onSetTrackOutput && args.trackId && args.outputDestination) {
+          onSetTrackOutput(args.trackId, args.outputDestination);
+          result = { success: true, message: `Track output set to ${args.outputDestination}` };
+        }
+        break;
+
+      case 'setTrackVolume':
+        if (onSetTrackVolume && args.trackId) {
+          onSetTrackVolume(args.trackId, args.volume || 1.0);
+          result = { success: true, message: `Volume set to ${Math.round((args.volume || 1.0) * 100)}%` };
+        }
+        break;
+
+      case 'setTrackPan':
+        if (onSetTrackPan && args.trackId) {
+          onSetTrackPan(args.trackId, args.pan || 0);
+          result = { success: true, message: `Pan set to ${args.pan > 0 ? 'right' : args.pan < 0 ? 'left' : 'center'}` };
+        }
+        break;
+
+      case 'muteTrack':
+        if (onMuteTrack && args.trackId) {
+          onMuteTrack(args.trackId, args.mute !== false);
+          result = { success: true, message: args.mute !== false ? 'Track muted' : 'Track unmuted' };
+        }
+        break;
+
+      case 'soloTrack':
+        if (onSoloTrack && args.trackId) {
+          onSoloTrack(args.trackId, args.solo !== false);
+          result = { success: true, message: args.solo !== false ? 'Track soloed' : 'Solo disabled' };
+        }
+        break;
+
+      case 'start_recording':
+      case 'startRecording':
+        if (onStartRecording) {
+          onStartRecording();
+          result = { success: true, message: 'Recording started' };
+        }
+        break;
+
+      case 'stop_recording':
+      case 'stopRecording':
+        if (onStopRecording) {
+          onStopRecording();
+          result = { success: true, message: 'Recording stopped' };
+        }
+        break;
+
+      case 'play':
+      case 'playProject':
+        if (onPlay) {
+          onPlay();
+          result = { success: true, message: 'Playback started' };
+        }
+        break;
+
+      case 'stop':
+      case 'stopPlayback':
+        if (onStop) {
+          onStop();
+          result = { success: true, message: 'Playback stopped' };
+        }
+        break;
+
+      case 'set_tempo':
+      case 'setTempo':
+        if (onSetTempo && args.bpm) {
+          onSetTempo(args.bpm);
+          result = { success: true, message: `Tempo set to ${args.bpm} BPM` };
+        }
+        break;
+
+      case 'set_key':
+      case 'setKey':
+        if (onSetKey && args.key) {
+          onSetKey(args.key);
+          result = { success: true, message: `Key set to ${args.key}` };
+        }
+        break;
+
+      case 'create_track':
+      case 'createTrack':
+        if (onNewTrack) {
+          onNewTrack();
+          result = { success: true, message: 'Track created' };
+        }
+        break;
+
+      default:
+        console.warn(`Unknown function: ${name}`);
+    }
+
+    return result;
+  };
+
   // Send text message
   const sendMessage = async () => {
     if (!inputText.trim() || isProcessing) return;
@@ -606,6 +758,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const originalMessage = inputText;
     setInputText('');
     setIsProcessing(true);
 
@@ -614,19 +767,36 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: inputText,
+          message: originalMessage,
           project_context: projectContext
         })
       });
 
       const data = await response.json();
 
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        type: 'assistant',
-        content: data.response,
-        timestamp: new Date()
-      }]);
+      // Check if AI wants to call a function
+      if (data.function_call) {
+        console.log('AI requested function call:', data.function_call);
+
+        // Execute the function
+        const functionResult = executeFunction(data.function_call.name, data.function_call.arguments);
+
+        // Show AI's response
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          type: 'assistant',
+          content: data.response || functionResult.message || `✓ Executed ${data.function_call.name}`,
+          timestamp: new Date()
+        }]);
+      } else {
+        // Just a text response, no function call
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          type: 'assistant',
+          content: data.response,
+          timestamp: new Date()
+        }]);
+      }
 
     } catch (error: any) {
       toast.error('Failed to send message');

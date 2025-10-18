@@ -50,7 +50,7 @@ export const DAWDashboard: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number; step: string } | null>(null);
   const [flashFeature, setFlashFeature] = useState<'voice-memo' | 'music-gen' | null>(null);
   const { isPlaying, currentTime, setCurrentTime, bpm: projectBPM, key: projectKey } = useTransportStore();
-  const { addTrack, updateTrack, selectedClipIds, tracks, updateClip } = useTimelineStore();
+  const { addTrack, updateTrack, selectedClipIds, tracks, updateClip, addClip } = useTimelineStore();
   const selectedTrackIds = React.useMemo(() => getSelectedTrackIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
   const selectedAudioFileIds = React.useMemo(() => getSelectedAudioFileIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
   const fileMenuRef = useRef<HTMLDivElement>(null);
@@ -945,6 +945,117 @@ export const DAWDashboard: React.FC = () => {
     setAiJobs([]);
   };
 
+  // ===== LOGIC PRO X-STYLE ROUTING HANDLERS =====
+
+  const handleGetTracks = () => {
+    return tracks.map(track => ({
+      id: track.id,
+      name: track.name,
+      trackType: track.trackType,
+      channels: track.channels,
+      sends: track.sends || [],
+      outputDestination: track.outputDestination,
+      volume: track.volume,
+      pan: track.pan,
+      isMuted: track.isMuted,
+      isSolo: track.isSolo,
+    }));
+  };
+
+  const handleAICreateAuxTrack = (name: string, channels: 'mono' | 'stereo') => {
+    const newTrack = addTrack(name, { trackType: 'aux', channels });
+    return newTrack.id;
+  };
+
+  const handleAICreateAudioTrack = (name: string, channels: 'mono' | 'stereo') => {
+    const newTrack = addTrack(name, { trackType: 'audio', channels });
+    return newTrack.id;
+  };
+
+  const handleCreateSend = (sourceTrackId: string, destinationTrackId: string, preFader: boolean, level?: number) => {
+    const sourceTrack = tracks.find(t => t.id === sourceTrackId);
+    const destTrack = tracks.find(t => t.id === destinationTrackId);
+
+    if (!sourceTrack || !destTrack) {
+      toast.error('Invalid track IDs for send creation');
+      return;
+    }
+
+    const newSend = {
+      id: `send-${Date.now()}`,
+      destination: destinationTrackId,
+      level: level !== undefined ? level : 0.8,
+      pan: 0,
+      preFader,
+      enabled: true,
+    };
+
+    const updatedSends = [...(sourceTrack.sends || []), newSend];
+    updateTrack(sourceTrackId, { sends: updatedSends });
+
+    toast.success(`Send created: ${sourceTrack.name} → ${destTrack.name} (${preFader ? 'pre' : 'post'}-fader)`);
+  };
+
+  const handleRemoveSend = (sourceTrackId: string, sendId: string) => {
+    const sourceTrack = tracks.find(t => t.id === sourceTrackId);
+    if (!sourceTrack) return;
+
+    const updatedSends = (sourceTrack.sends || []).filter(s => s.id !== sendId);
+    updateTrack(sourceTrackId, { sends: updatedSends });
+    toast.info('Send removed');
+  };
+
+  const handleSetSendLevel = (sourceTrackId: string, sendId: string, level: number) => {
+    const sourceTrack = tracks.find(t => t.id === sourceTrackId);
+    if (!sourceTrack) return;
+
+    const updatedSends = (sourceTrack.sends || []).map(s =>
+      s.id === sendId ? { ...s, level } : s
+    );
+    updateTrack(sourceTrackId, { sends: updatedSends });
+  };
+
+  const handleSetTrackOutput = (trackId: string, outputDestination: string) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    updateTrack(trackId, { outputDestination });
+
+    const destName = outputDestination === 'master' ? 'Master' :
+      tracks.find(t => t.id === outputDestination)?.name || 'Unknown';
+    toast.info(`${track.name} output → ${destName}`);
+  };
+
+  const handleSetTrackVolume = (trackId: string, volume: number) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    updateTrack(trackId, { volume });
+  };
+
+  const handleSetTrackPan = (trackId: string, pan: number) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    updateTrack(trackId, { pan });
+  };
+
+  const handleMuteTrack = (trackId: string, mute: boolean) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    updateTrack(trackId, { isMuted: mute });
+    toast.info(`${track.name} ${mute ? 'muted' : 'unmuted'}`);
+  };
+
+  const handleSoloTrack = (trackId: string, solo: boolean) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    updateTrack(trackId, { isSolo: solo });
+    toast.info(`${track.name} ${solo ? 'solo on' : 'solo off'}`);
+  };
+
   // WebSocket-driven AI job progress (server emits ai:processing/completed/failed with taskId)
   useEffect(() => {
     const onProcessing = (data: { taskId: string; status: string }) => {
@@ -1609,6 +1720,17 @@ export const DAWDashboard: React.FC = () => {
                   onMaster={handleAutoMaster}
                   onGenerateMusic={handleAutoMusic}
                   onAIDawg={handleAIDawg}
+                  onGetTracks={handleGetTracks}
+                  onCreateAuxTrack={handleAICreateAuxTrack}
+                  onCreateAudioTrack={handleAICreateAudioTrack}
+                  onCreateSend={handleCreateSend}
+                  onRemoveSend={handleRemoveSend}
+                  onSetSendLevel={handleSetSendLevel}
+                  onSetTrackOutput={handleSetTrackOutput}
+                  onSetTrackVolume={handleSetTrackVolume}
+                  onSetTrackPan={handleSetTrackPan}
+                  onMuteTrack={handleMuteTrack}
+                  onSoloTrack={handleSoloTrack}
                   onStartRecording={async () => {
                     // Check if any tracks are armed for recording
                     const armedTracks = tracks.filter(t => t.isArmed);

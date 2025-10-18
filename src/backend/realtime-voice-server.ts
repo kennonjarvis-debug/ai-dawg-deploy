@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import WebSocket from 'ws';
 import dotenv from 'dotenv';
+import { generateMusic, generateBeat } from './services/musicgen-service';
 
 dotenv.config();
 
@@ -348,6 +349,695 @@ io.on('connection', (socket) => {
                 name: 'reset_effects',
                 description: 'Reset all live monitoring effects to bypass/neutral. Use when user asks for "remove all effects", "dry signal", "no effects", "reset", etc. during recording.',
                 parameters: { type: 'object', properties: {}, required: [] }
+              },
+              // AI VOCAL PROCESSING
+              {
+                type: 'function',
+                name: 'analyze_vocal',
+                description: 'Analyze a vocal recording using AI to detect characteristics like brightness, warmth, sibilance, room tone, dynamic range. Use when user asks to "analyze my voice", "check this vocal", "what do you hear", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track containing the vocal recording to analyze'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'get_vocal_recommendations',
+                description: 'Get AI-recommended effects chain for a vocal recording based on genre and vocal characteristics. Use when user asks "what effects should I use", "how should I process this vocal", "recommend settings for country/pop/rock", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track containing the vocal recording'
+                    },
+                    genre: {
+                      type: 'string',
+                      enum: ['country', 'pop', 'rock', 'rnb', 'hip-hop', 'indie', 'folk', 'jazz'],
+                      description: 'Musical genre for tailored recommendations'
+                    },
+                    naturalSound: {
+                      type: 'boolean',
+                      description: 'Whether to prefer natural, minimal processing (default: false)'
+                    }
+                  },
+                  required: ['trackId', 'genre']
+                }
+              },
+              {
+                type: 'function',
+                name: 'apply_vocal_preset',
+                description: 'Apply a professional vocal effects preset to a track. Use when user asks for "clean vocal sound", "broadcast quality", "warm vocal", "modern pop vocal", "lofi effect", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to apply the preset to'
+                    },
+                    preset: {
+                      type: 'string',
+                      enum: ['clean', 'broadcast', 'warm', 'pop', 'lofi'],
+                      description: 'Preset to apply - clean (minimal), broadcast (professional), warm (rich), pop (modern/bright), lofi (vintage)'
+                    }
+                  },
+                  required: ['trackId', 'preset']
+                }
+              },
+              // AI NOISE REDUCTION
+              {
+                type: 'function',
+                name: 'learn_noise_profile',
+                description: 'Learn noise profile from a silent section or noise sample in the audio. Use when user says "learn the noise", "sample the background noise", "capture noise profile", etc. This must be done before noise reduction.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track containing audio to learn from'
+                    },
+                    startTime: {
+                      type: 'number',
+                      description: 'Start time in seconds for noise sample (optional, will auto-detect if not provided)'
+                    },
+                    duration: {
+                      type: 'number',
+                      description: 'Duration in seconds of noise sample (default 1 second)'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'apply_noise_reduction',
+                description: 'Apply AI-powered noise reduction to remove background noise, clicks, pops, and artifacts. Use when user asks to "clean up the audio", "remove noise", "reduce background sound", "fix the hiss", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    },
+                    preset: {
+                      type: 'string',
+                      enum: ['light', 'moderate', 'aggressive', 'voice', 'music'],
+                      description: 'Noise reduction preset - light (subtle), moderate (balanced), aggressive (maximum), voice (speech optimized), music (harmonic preservation)'
+                    },
+                    autoLearn: {
+                      type: 'boolean',
+                      description: 'Automatically detect and learn from silent sections (default: true)'
+                    }
+                  },
+                  required: ['trackId', 'preset']
+                }
+              },
+              {
+                type: 'function',
+                name: 'remove_clicks_pops',
+                description: 'Remove clicks, pops, and digital artifacts from audio using intelligent interpolation. Use when user mentions "remove clicks", "fix pops", "clean up artifacts", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    },
+                    sensitivity: {
+                      type: 'string',
+                      enum: ['low', 'medium', 'high'],
+                      description: 'Detection sensitivity - low (only obvious clicks), medium (balanced), high (aggressive)'
+                    }
+                  },
+                  required: ['trackId', 'sensitivity']
+                }
+              },
+              // AI STEM SEPARATION
+              {
+                type: 'function',
+                name: 'separate_stems',
+                description: 'Separate audio into individual stems: vocals, drums, bass, and other instruments using AI. Use when user asks to "separate the stems", "split the tracks", "isolate instruments", "break down the audio", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to separate into stems'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'isolate_vocals',
+                description: 'Extract and isolate only the vocals from audio. Use when user says "isolate vocals", "extract vocals", "get the vocals", "create acapella", "vocals only", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to extract vocals from'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'remove_vocals',
+                description: 'Remove vocals from audio to create instrumental version. Use when user asks for "remove vocals", "make instrumental", "karaoke version", "no vocals", "instrumental only", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to remove vocals from'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'isolate_drums',
+                description: 'Extract and isolate only the drums from audio. Use when user says "isolate drums", "extract drums", "get the drums", "drums only", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to extract drums from'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'remove_drums',
+                description: 'Remove drums from audio. Use when user asks to "remove drums", "no drums", "without drums", "mute drums", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to remove drums from'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'isolate_bass',
+                description: 'Extract and isolate only the bass from audio. Use when user says "isolate bass", "extract bass", "get the bass", "bass only", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to extract bass from'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'isolate_instruments',
+                description: 'Extract and isolate other instruments (everything except vocals, drums, bass). Use when user asks for "isolate instruments", "get the instruments", "other instruments", "melody only", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to extract instruments from'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              // BEAT DETECTION & ANALYSIS
+              {
+                type: 'function',
+                name: 'detect_bpm',
+                description: 'Detect the BPM (tempo) of an audio track using AI beat detection. Use when user asks "what\'s the BPM", "find the tempo", "analyze the beat", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to analyze'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'analyze_beats',
+                description: 'Comprehensive beat analysis including BPM, beat positions, time signature, downbeats, and measures. Use when user asks for detailed rhythm analysis, "where are the beats", "find downbeats", "what time signature", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to analyze'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'quantize_to_grid',
+                description: 'Quantize audio to the tempo grid with time-stretching. Use when user asks to "quantize", "align to grid", "fix timing", "tighten up the performance", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to quantize'
+                    },
+                    strength: {
+                      type: 'number',
+                      minimum: 0,
+                      maximum: 100,
+                      description: 'Quantization strength percentage (0-100). 0=no quantization, 100=perfect grid alignment'
+                    },
+                    gridDivision: {
+                      type: 'number',
+                      enum: [4, 8, 16, 32],
+                      description: 'Grid division - 4=quarter notes, 8=eighth notes, 16=sixteenth notes, 32=thirty-second notes'
+                    },
+                    swing: {
+                      type: 'number',
+                      minimum: 0,
+                      maximum: 100,
+                      description: 'Swing amount percentage (0-100). 0=straight, 50=triplet feel'
+                    }
+                  },
+                  required: ['trackId', 'strength', 'gridDivision']
+                }
+              },
+              {
+                type: 'function',
+                name: 'extract_midi',
+                description: 'Extract MIDI notes from monophonic audio (like vocals, bass, lead). Use when user asks to "convert to MIDI", "extract melody", "get the notes", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to extract MIDI from (must be monophonic)'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'detect_key',
+                description: 'Detect the musical key of an audio track. Use when user asks "what key is this in", "find the key", "analyze harmony", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to analyze'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              // AI MASTERING ENGINE
+              {
+                type: 'function',
+                name: 'analyze_mix',
+                description: 'Analyze the mix for mastering - measure LUFS loudness, dynamic range, stereo width, frequency balance, and detect issues. Use when user asks to "analyze the mix", "check the master", "how does it sound", "what needs fixing", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to analyze'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'auto_master',
+                description: 'Apply intelligent AI mastering to make track ready for distribution. Automatically analyzes and applies multi-band EQ, compression, stereo enhancement, and limiting. Use when user asks to "master this", "make it sound professional", "prepare for streaming", "make it louder", "master for Spotify", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to master'
+                    },
+                    targetStandard: {
+                      type: 'string',
+                      enum: ['streaming', 'club', 'aggressive'],
+                      description: 'Target loudness standard - streaming (-14 LUFS for Spotify/Apple Music), club (-9 LUFS for EDM/club play), aggressive (-6 LUFS for maximum loudness)'
+                    }
+                  },
+                  required: ['trackId', 'targetStandard']
+                }
+              },
+              {
+                type: 'function',
+                name: 'match_reference',
+                description: 'Master track to match the tone and loudness of a reference track. Analyzes both tracks and applies processing to make them sound similar. Use when user says "match this reference", "make it sound like [track]", "copy this tone", "sound like [artist]", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to master'
+                    },
+                    referenceTrackId: {
+                      type: 'string',
+                      description: 'ID of the reference track to match'
+                    }
+                  },
+                  required: ['trackId', 'referenceTrackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'apply_mastering_preset',
+                description: 'Apply a professional mastering preset (quick mastering without analysis). Use when user asks for specific mastering style like "bright master", "warm master", "loud master", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to master'
+                    },
+                    preset: {
+                      type: 'string',
+                      enum: ['streaming', 'club', 'aggressive', 'warm', 'bright', 'transparent'],
+                      description: 'Mastering preset - streaming (Spotify ready), club (EDM/loud), aggressive (maximum loudness), warm (analog sound), bright (modern/clear), transparent (minimal processing)'
+                    }
+                  },
+                  required: ['trackId', 'preset']
+                }
+              },
+              // ADAPTIVE EQ AI ENGINE
+              {
+                type: 'function',
+                name: 'analyze_eq',
+                description: 'Analyze audio and get intelligent EQ recommendations. Detects resonances, mud, harshness, and suggests corrective EQ. Use when user asks to "analyze the EQ", "check for problems", "what frequencies need fixing", "detect resonances", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to analyze'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'auto_eq_clarity',
+                description: 'Automatically apply EQ for maximum clarity and balance. Removes masking frequencies, enhances fundamentals, adds air. Use when user asks for "auto EQ", "make it clearer", "balance the frequencies", "EQ for clarity", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'match_eq_reference',
+                description: 'Match the EQ of a track to a reference track. Analyzes spectral differences and creates matching EQ. Use when user says "match this to [reference]", "EQ like [song]", "copy the tone from", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    sourceTrackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    },
+                    referenceTrackId: {
+                      type: 'string',
+                      description: 'ID of the reference track to match'
+                    }
+                  },
+                  required: ['sourceTrackId', 'referenceTrackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'apply_genre_eq',
+                description: 'Apply genre-specific EQ template designed by professionals. Use when user asks for "pop EQ", "rock sound", "hip-hop EQ", "make it sound like [genre]", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    },
+                    genre: {
+                      type: 'string',
+                      enum: ['pop', 'rock', 'hiphop', 'electronic', 'jazz', 'classical', 'country', 'metal', 'indie', 'rnb'],
+                      description: 'Genre style to apply'
+                    }
+                  },
+                  required: ['trackId', 'genre']
+                }
+              },
+              {
+                type: 'function',
+                name: 'fix_resonance',
+                description: 'Automatically detect and fix problematic resonances and ringing frequencies. Use when user mentions "fix the resonance", "remove ringing", "sounds boxy", "too harsh at [frequency]", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'remove_muddiness',
+                description: 'Remove low-mid muddiness (200-500Hz) for clarity. Use when user says "remove mud", "sounds muddy", "clean up the low mids", "too thick", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    },
+                    amount: {
+                      type: 'string',
+                      enum: ['light', 'moderate', 'heavy'],
+                      description: 'How much mud to remove'
+                    }
+                  },
+                  required: ['trackId', 'amount']
+                }
+              },
+              {
+                type: 'function',
+                name: 'add_air_presence',
+                description: 'Add high-frequency air and upper-mid presence for clarity and openness. Use when user asks to "add air", "more sparkle", "brighter", "more presence", "open up the sound", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to process'
+                    },
+                    airAmount: {
+                      type: 'number',
+                      minimum: 0,
+                      maximum: 5,
+                      description: 'Amount of high-frequency air to add (dB), typically 1-3'
+                    },
+                    presenceAmount: {
+                      type: 'number',
+                      minimum: 0,
+                      maximum: 5,
+                      description: 'Amount of upper-mid presence to add (dB), typically 1-3'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'dynamic_eq_analyze',
+                description: 'Analyze and apply dynamic EQ that adapts to loud vs quiet sections. Use when user wants "dynamic EQ", "EQ that adapts", "different EQ for loud parts", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: {
+                      type: 'string',
+                      description: 'ID of the track to analyze and process'
+                    }
+                  },
+                  required: ['trackId']
+                }
+              },
+              // ===== LOGIC PRO X-STYLE MIXER & ROUTING =====
+              {
+                type: 'function',
+                name: 'getTracks',
+                description: 'Get information about all tracks in the project for analysis and routing decisions',
+                parameters: { type: 'object', properties: {}, required: [] }
+              },
+              {
+                type: 'function',
+                name: 'createAuxTrack',
+                description: 'Create an aux/bus track for effects routing (like Logic Pro X). Use when user asks to "create a reverb bus", "add a delay aux", "set up parallel compression", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Name for the aux track (e.g., "Reverb", "Delay", "Parallel Comp")' },
+                    channels: { type: 'string', enum: ['mono', 'stereo'], description: 'Mono or stereo', default: 'stereo' }
+                  },
+                  required: ['name']
+                }
+              },
+              {
+                type: 'function',
+                name: 'createAudioTrack',
+                description: 'Create a new audio track',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Name for the track' },
+                    channels: { type: 'string', enum: ['mono', 'stereo'], description: 'Mono or stereo', default: 'stereo' }
+                  },
+                  required: ['name']
+                }
+              },
+              {
+                type: 'function',
+                name: 'createSend',
+                description: 'Create a send from a track to an aux track (Logic Pro X bus routing). Use when user asks to "route to reverb", "add send to delay", "send vocals to reverb bus", etc.',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    sourceTrackId: { type: 'string', description: 'ID of source track' },
+                    destinationTrackId: { type: 'string', description: 'ID of destination aux track' },
+                    preFader: { type: 'boolean', description: 'Pre-fader (for monitoring) or post-fader (for effects)', default: false },
+                    level: { type: 'number', description: 'Send level 0-1', minimum: 0, maximum: 1, default: 0.8 }
+                  },
+                  required: ['sourceTrackId', 'destinationTrackId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'removeSend',
+                description: 'Remove a send from a track',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    sourceTrackId: { type: 'string', description: 'ID of the track' },
+                    sendId: { type: 'string', description: 'ID of the send' }
+                  },
+                  required: ['sourceTrackId', 'sendId']
+                }
+              },
+              {
+                type: 'function',
+                name: 'setSendLevel',
+                description: 'Adjust the level of a send',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    sourceTrackId: { type: 'string', description: 'ID of the track' },
+                    sendId: { type: 'string', description: 'ID of the send' },
+                    level: { type: 'number', description: 'Send level 0-1', minimum: 0, maximum: 1 }
+                  },
+                  required: ['sourceTrackId', 'sendId', 'level']
+                }
+              },
+              {
+                type: 'function',
+                name: 'setTrackOutput',
+                description: 'Route track output to master or aux track',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: { type: 'string', description: 'ID of the track' },
+                    outputDestination: { type: 'string', description: 'Destination: "master" or aux track ID' }
+                  },
+                  required: ['trackId', 'outputDestination']
+                }
+              },
+              {
+                type: 'function',
+                name: 'setTrackVolume',
+                description: 'Set track volume fader',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: { type: 'string', description: 'ID of the track' },
+                    volume: { type: 'number', description: 'Volume 0-1 (1 = 0dB)', minimum: 0, maximum: 1 }
+                  },
+                  required: ['trackId', 'volume']
+                }
+              },
+              {
+                type: 'function',
+                name: 'setTrackPan',
+                description: 'Set track pan position',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: { type: 'string', description: 'ID of the track' },
+                    pan: { type: 'number', description: 'Pan -1 (left) to 1 (right)', minimum: -1, maximum: 1 }
+                  },
+                  required: ['trackId', 'pan']
+                }
+              },
+              {
+                type: 'function',
+                name: 'muteTrack',
+                description: 'Mute or unmute a track',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: { type: 'string', description: 'ID of the track' },
+                    mute: { type: 'boolean', description: 'true to mute, false to unmute' }
+                  },
+                  required: ['trackId', 'mute']
+                }
+              },
+              {
+                type: 'function',
+                name: 'soloTrack',
+                description: 'Solo or unsolo a track',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    trackId: { type: 'string', description: 'ID of the track' },
+                    solo: { type: 'boolean', description: 'true to solo, false to unsolo' }
+                  },
+                  required: ['trackId', 'solo']
+                }
               }
             ],
             tool_choice: 'auto'
@@ -527,6 +1217,67 @@ io.on('connection', (socket) => {
       openaiWs = null;
     }
   });
+});
+
+// Add Express middleware for JSON
+app.use(express.json());
+
+// MusicGen API endpoint
+app.post('/api/v1/ai/dawg', async (req, res) => {
+  try {
+    const { prompt, genre, mood, tempo, duration, style, project_id } = req.body;
+
+    if (!prompt && style !== 'beat') {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    console.log('🎵 Music generation request with MusicGen:', { prompt, genre, tempo, duration, style });
+
+    // Use beat-specific generation if style is 'beat' or 'drums'
+    let result;
+    if (style === 'beat' || style === 'drums') {
+      result = await generateBeat({
+        genre: genre || 'hip-hop',
+        tempo: tempo || 120,
+        duration: duration || 15,
+      });
+    } else {
+      result = await generateMusic({
+        prompt,
+        genre,
+        mood,
+        tempo,
+        duration,
+        style,
+      });
+    }
+
+    if (!result.success) {
+      return res.status(500).json({
+        error: result.error || 'Failed to generate music',
+        message: result.message,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: result.message || 'Music generated successfully with MusicGen',
+      audio_url: result.audio_url,
+      job_id: result.job_id,
+      prompt,
+      genre,
+      tempo,
+      duration,
+    });
+
+    console.log('✅ MusicGen generation complete:', result.audio_url);
+  } catch (error: any) {
+    console.error('❌ Music generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate music',
+      message: error.message,
+    });
+  }
 });
 
 server.listen(PORT, () => {
