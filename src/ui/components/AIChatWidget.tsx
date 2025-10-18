@@ -38,6 +38,18 @@ interface AIChatWidgetProps {
   onCreateHeadphoneMix?: () => void;
   onUpdateTrackName?: (trackId: string, name: string) => void;
   onUpdateClipName?: (clipId: string, name: string) => void;
+  // Logic Pro X-style Mixer & Routing Control
+  onCreateAuxTrack?: (name: string, channels: 'mono' | 'stereo') => string; // Returns track ID
+  onCreateAudioTrack?: (name: string, channels: 'mono' | 'stereo') => string; // Returns track ID
+  onCreateSend?: (sourceTrackId: string, destinationTrackId: string, preFader: boolean, level?: number) => void;
+  onRemoveSend?: (sourceTrackId: string, sendId: string) => void;
+  onSetSendLevel?: (sourceTrackId: string, sendId: string, level: number) => void;
+  onSetTrackOutput?: (trackId: string, outputDestination: string) => void; // 'master' or aux track ID
+  onSetTrackVolume?: (trackId: string, volume: number) => void;
+  onSetTrackPan?: (trackId: string, pan: number) => void;
+  onMuteTrack?: (trackId: string, mute: boolean) => void;
+  onSoloTrack?: (trackId: string, solo: boolean) => void;
+  onGetTracks?: () => any[]; // Returns current tracks for AI to inspect
   flashFeature?: 'voice-memo' | 'music-gen' | null;
 }
 
@@ -64,6 +76,17 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   onNewTrack,
   onSaveProject,
   onExportProject,
+  onGetTracks,
+  onCreateAuxTrack,
+  onCreateAudioTrack,
+  onCreateSend,
+  onRemoveSend,
+  onSetSendLevel,
+  onSetTrackOutput,
+  onSetTrackVolume,
+  onSetTrackPan,
+  onMuteTrack,
+  onSoloTrack,
   flashFeature
 }) => {
   const [messages, setMessages] = useState<Message[]>([
@@ -418,6 +441,84 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
             result = { success: true, message: 'All effects reset' };
             break;
 
+          // ===== LOGIC PRO X-STYLE ROUTING FUNCTIONS =====
+          case 'getTracks':
+            if (onGetTracks) {
+              const tracks = onGetTracks();
+              result = { success: true, message: 'Got tracks', data: tracks };
+            }
+            break;
+
+          case 'createAuxTrack':
+            if (onCreateAuxTrack && args.name) {
+              const trackId = onCreateAuxTrack(args.name, args.channels || 'stereo');
+              result = { success: true, message: `Aux track created: ${args.name}`, trackId };
+            }
+            break;
+
+          case 'createAudioTrack':
+            if (onCreateAudioTrack && args.name) {
+              const trackId = onCreateAudioTrack(args.name, args.channels || 'stereo');
+              result = { success: true, message: `Audio track created: ${args.name}`, trackId };
+            }
+            break;
+
+          case 'createSend':
+            if (onCreateSend && args.sourceTrackId && args.destinationTrackId) {
+              onCreateSend(args.sourceTrackId, args.destinationTrackId, args.preFader || false, args.level);
+              result = { success: true, message: 'Send created' };
+            }
+            break;
+
+          case 'removeSend':
+            if (onRemoveSend && args.sourceTrackId && args.sendId) {
+              onRemoveSend(args.sourceTrackId, args.sendId);
+              result = { success: true, message: 'Send removed' };
+            }
+            break;
+
+          case 'setSendLevel':
+            if (onSetSendLevel && args.sourceTrackId && args.sendId && args.level !== undefined) {
+              onSetSendLevel(args.sourceTrackId, args.sendId, args.level);
+              result = { success: true, message: `Send level set to ${args.level}` };
+            }
+            break;
+
+          case 'setTrackOutput':
+            if (onSetTrackOutput && args.trackId && args.outputDestination) {
+              onSetTrackOutput(args.trackId, args.outputDestination);
+              result = { success: true, message: 'Track output routed' };
+            }
+            break;
+
+          case 'setTrackVolume':
+            if (onSetTrackVolume && args.trackId && args.volume !== undefined) {
+              onSetTrackVolume(args.trackId, args.volume);
+              result = { success: true, message: `Volume set to ${args.volume}` };
+            }
+            break;
+
+          case 'setTrackPan':
+            if (onSetTrackPan && args.trackId && args.pan !== undefined) {
+              onSetTrackPan(args.trackId, args.pan);
+              result = { success: true, message: `Pan set to ${args.pan}` };
+            }
+            break;
+
+          case 'muteTrack':
+            if (onMuteTrack && args.trackId && args.mute !== undefined) {
+              onMuteTrack(args.trackId, args.mute);
+              result = { success: true, message: args.mute ? 'Track muted' : 'Track unmuted' };
+            }
+            break;
+
+          case 'soloTrack':
+            if (onSoloTrack && args.trackId && args.solo !== undefined) {
+              onSoloTrack(args.trackId, args.solo);
+              result = { success: true, message: args.solo ? 'Track solo on' : 'Track solo off' };
+            }
+            break;
+
           default:
             result = { success: false, message: `Unknown function: ${data.name}` };
         }
@@ -742,6 +843,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
 
   return (
     <div
+      data-testid="ai-chat-widget"
       className="flex flex-col h-full bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-lg transition-all duration-300"
       style={{
         animation: isFlashing ? 'yellowFlash 0.5s ease-in-out 6' : undefined,
