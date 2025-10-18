@@ -45,6 +45,8 @@ export type EventType =
 	| 'ai:beat-generated'
 	| 'ai:mix-analyzed'
 	| 'ai:master-complete'
+	| 'ai:prompt-user'
+	| 'ai:feature-selected'
 
 	// Project events
 	| 'project:saved'

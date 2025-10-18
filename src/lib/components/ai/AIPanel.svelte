@@ -6,13 +6,20 @@
 
 import { api, type MIDIGenerationParams } from '$lib/api';
 import { Button, Icon } from '$lib/design-system';
-import { onMount } from 'svelte';
+import { onMount, onDestroy } from 'svelte';
+import { EventBus } from '$lib/events/eventBus';
 
 // AI status
 let isHealthy = $state(false);
 let isProcessing = $state(false);
 let statusMessage = $state('');
 let error = $state<string | null>(null);
+
+// Flash animation state
+let shouldFlash = $state(false);
+let promptMessage = $state('');
+
+const eventBus = EventBus.getInstance();
 
 // Generation parameters
 let selectedStyle: 'drums' | 'melody' | 'bass' = $state('drums');
@@ -27,6 +34,31 @@ let mixingSuggestions = $state<any>(null);
 
 onMount(async () => {
 	await checkHealth();
+
+	// Listen for AI prompt events
+	const unsubscribe = eventBus.on('ai:prompt-user', (event: any) => {
+		console.log('AI prompt event received:', event.payload);
+		promptMessage = event.payload.message;
+		shouldFlash = true;
+
+		// Stop flashing after 3 seconds
+		setTimeout(() => {
+			shouldFlash = false;
+		}, 3000);
+
+		// Clear message after 10 seconds
+		setTimeout(() => {
+			promptMessage = '';
+		}, 10000);
+	});
+
+	return () => {
+		unsubscribe();
+	};
+});
+
+onDestroy(() => {
+	// Cleanup is handled by the unsubscribe function
 });
 
 async function checkHealth() {
@@ -169,13 +201,20 @@ async function autoLevel() {
 }
 </script>
 
-<div class="ai-panel">
+<div class="ai-panel" class:flash-animation={shouldFlash}>
 	<div class="ai-header">
 		<h3>AI Assistant</h3>
 		<div class="status-indicator" class:healthy={isHealthy} class:offline={!isHealthy}>
 			{isHealthy ? '●' : '○'} {isHealthy ? 'Online' : 'Offline'}
 		</div>
 	</div>
+
+	{#if promptMessage}
+		<div class="prompt-message">
+			<Icon name="zap" size="sm" />
+			<span>{promptMessage}</span>
+		</div>
+	{/if}
 
 	{#if error}
 		<div class="error-message">{error}</div>
@@ -391,5 +430,65 @@ async function autoLevel() {
 
 .suggestions li {
 	margin-bottom: 4px;
+}
+
+/* Yellow flash animation */
+.flash-animation {
+	animation: flashYellow 0.5s ease-in-out 6;
+	box-shadow: 0 0 20px rgba(255, 235, 59, 0.5);
+}
+
+@keyframes flashYellow {
+	0%, 100% {
+		border-color: rgba(255, 255, 255, 0.1);
+		box-shadow: 0 0 5px rgba(255, 235, 59, 0.2);
+	}
+	50% {
+		border-color: #ffeb3b;
+		box-shadow: 0 0 30px rgba(255, 235, 59, 0.8),
+		            0 0 60px rgba(255, 235, 59, 0.4),
+		            inset 0 0 20px rgba(255, 235, 59, 0.2);
+	}
+}
+
+/* Prompt message */
+.prompt-message {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: linear-gradient(135deg, rgba(255, 235, 59, 0.2), rgba(255, 193, 7, 0.2));
+	border: 2px solid #ffeb3b;
+	border-radius: 8px;
+	padding: 12px;
+	margin-bottom: 12px;
+	font-size: 13px;
+	color: #ffeb3b;
+	font-weight: 600;
+	animation: slideIn 0.3s ease-out, pulse 2s ease-in-out infinite;
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes pulse {
+	0%, 100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.02);
+	}
+}
+
+.prompt-message span {
+	flex: 1;
+	line-height: 1.4;
 }
 </style>
