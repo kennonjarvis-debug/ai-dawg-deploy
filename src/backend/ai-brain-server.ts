@@ -12,7 +12,8 @@ import { Readable } from 'stream';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { audioConverter } from './services/audio-converter';
-import { generateMusic, generateBeat } from './services/musicgen-service';
+import { generateMusic, generateBeat } from './services/udio-service';
+import { generateExpertMusic, isExpertMusicAvailable } from './services/expert-music-service';
 
 const app = express();
 const PORT = parseInt(process.env.AI_BRAIN_PORT || '8002', 10);
@@ -41,12 +42,13 @@ You can control EVERYTHING in the DAW:
 - Move, delete, and arrange clips/tracks
 - Auto-comp vocal takes (combine best parts from multiple takes)
 - Time alignment to grid (quantize)
-- Pitch correction (Auto-Tune style)
+- Pitch correction (Auto-Tune style) and pitch shifting (change pitch without tempo)
 - Smart mixing (EQ, compression, reverb in various artist styles like Drake, Pop, etc.)
 - Professional mastering
 - Generate chords, melodies, drums, and complete beats
 - Change tempo (BPM) and musical key
 - Full project management
+- Voice memo recording (live voice chat to control DAW)
 
 ## Logic Pro X-Style Mixer & Routing (YOUR SUPERPOWER!)
 
@@ -216,6 +218,18 @@ const DAW_FUNCTIONS = [
         strength: { type: 'number', description: 'Correction strength 0-100', minimum: 0, maximum: 100 },
       },
       required: ['clipIds', 'key'],
+    },
+  },
+  {
+    name: 'pitchShift',
+    description: 'Shift pitch of audio clips up or down without changing tempo',
+    parameters: {
+      type: 'object',
+      properties: {
+        clipIds: { type: 'array', items: { type: 'string' }, description: 'Clip IDs to pitch shift' },
+        semitones: { type: 'number', description: 'Number of semitones to shift (-12 to +12)', minimum: -12, maximum: 12 },
+      },
+      required: ['clipIds', 'semitones'],
     },
   },
   {
@@ -462,16 +476,67 @@ const DAW_FUNCTIONS = [
   },
 ];
 
-// Music generation endpoint for DAW AI (MusicGen integration)
+// Music generation endpoint for DAW AI (Expert Music + Suno integration)
 app.post('/api/v1/ai/dawg', async (req, res) => {
   try {
-    const { prompt, genre, mood, tempo, duration, style, project_id } = req.body;
+    const { prompt, genre, mood, tempo, duration, style, project_id, include_vocals, custom_lyrics, instruments } = req.body;
 
     if (!prompt && style !== 'beat') {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    console.log('🎵 Music generation request with MusicGen:', { prompt, genre, tempo, duration, style });
+    // Check if Expert Music AI should be used (when specific instruments are requested)
+    const useExpertMusic = instruments && instruments.length > 0 && await isExpertMusicAvailable();
+
+    if (useExpertMusic) {
+      console.log('🎸 Using Expert Music AI with specialized models:', {
+        prompt,
+        instruments,
+        tempo,
+        duration,
+        include_vocals,
+      });
+
+      // Use Expert Music AI with custom models
+      const expertResult = await generateExpertMusic({
+        prompt,
+        instruments,
+        style,
+        include_vocals,
+        custom_lyrics,
+        duration: duration || 30,
+        bpm: tempo,
+        key: undefined,
+      });
+
+      if (!expertResult.success) {
+        console.warn('Expert Music AI failed, falling back to Suno');
+        // Continue to Suno fallback below
+      } else {
+        return res.json({
+          success: true,
+          message: expertResult.message || 'Music generated with Expert Music AI',
+          audio_url: expertResult.audio_url,
+          job_id: expertResult.prediction_id,
+          prompt,
+          genre,
+          tempo,
+          duration: expertResult.duration,
+          model_used: expertResult.model_used,
+          provider: 'expert_music_ai',
+        });
+      }
+    }
+
+    console.log('🎵 Music generation request with Suno V5:', {
+      prompt,
+      genre,
+      tempo,
+      duration,
+      style,
+      include_vocals,
+      has_custom_lyrics: !!custom_lyrics
+    });
 
     // Use beat-specific generation if style is 'beat' or 'drums'
     let result;
@@ -489,6 +554,8 @@ app.post('/api/v1/ai/dawg', async (req, res) => {
         tempo,
         duration,
         style,
+        instrumental: !include_vocals, // Pass instrumental flag (inverse of include_vocals)
+        lyrics: custom_lyrics, // Pass custom lyrics if provided
       });
     }
 
@@ -501,7 +568,7 @@ app.post('/api/v1/ai/dawg', async (req, res) => {
 
     res.json({
       success: true,
-      message: result.message || 'Music generated successfully with MusicGen',
+      message: result.message || 'Music generated successfully with Suno V5',
       audio_url: result.audio_url,
       job_id: result.job_id,
       prompt,
@@ -510,7 +577,7 @@ app.post('/api/v1/ai/dawg', async (req, res) => {
       duration,
     });
 
-    console.log('✅ MusicGen generation complete:', result.audio_url);
+    console.log('✅ Suno V5 generation complete:', result.audio_url);
   } catch (error: any) {
     console.error('❌ Music generation error:', error);
     res.status(500).json({
@@ -519,6 +586,77 @@ app.post('/api/v1/ai/dawg', async (req, res) => {
     });
   }
 });
+
+// Organize lyrics endpoint - uses Claude to structure freestyle lyrics
+app.post('/api/v1/ai/organize-lyrics', async (req, res) => {
+  try {
+    const { lyrics, projectId } = req.body;
+
+    if (!lyrics) {
+      return res.status(400).json({ error: 'Lyrics text is required' });
+    }
+
+    console.log('🎤 Organizing lyrics for project:', projectId);
+
+    const prompt = `You are a professional music producer and lyricist. Analyze and organize the following freestyle rap lyrics.
+
+Raw lyrics (transcribed from freestyle recording):
+${lyrics}
+
+Please organize these lyrics into a structured format with:
+1. Verses (identify distinct verse sections)
+2. Chorus/Hook (if any repeated patterns exist)
+3. Bridge (if applicable)
+4. Suggested improvements (rhyme scheme, flow, wordplay)
+
+Format your response as JSON with the following structure:
+{
+  "verses": ["verse 1 text", "verse 2 text", ...],
+  "chorus": "chorus text or null if none identified",
+  "bridge": "bridge text or null",
+  "suggestions": ["suggestion 1", "suggestion 2", ...],
+  "structure": "recommended song structure like Verse-Chorus-Verse-Chorus-Bridge-Chorus"
+}`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    });
+
+    const organized = response.content[0].type === 'text' ? response.content[0].text : '';
+
+    // Try to parse JSON response, fallback to raw text if parsing fails
+    let result;
+    try {
+      result = JSON.parse(organized);
+    } catch (e) {
+      result = {
+        organized: organized,
+        raw: true
+      };
+    }
+
+    res.json({
+      success: true,
+      organized: result,
+      originalLyrics: lyrics
+    });
+
+  } catch (error) {
+    console.error('Failed to organize lyrics:', error);
+    res.status(500).json({
+      error: 'Failed to organize lyrics',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Conversation history for HTTP chat endpoint (stores last 10 messages)
+const httpChatHistory: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [];
 
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
@@ -543,13 +681,22 @@ app.post('/api/chat', async (req, res) => {
       if (project_context.lyrics) contextMessage += `Lyrics:\n${project_context.lyrics}\n`;
     }
 
-    // Call OpenAI with function calling
+    // Add user message to conversation history
+    httpChatHistory.push({ role: 'user', content: `${contextMessage}\n${message}` });
+
+    // Keep only last 10 messages to prevent token overflow
+    if (httpChatHistory.length > 10) {
+      httpChatHistory.splice(0, httpChatHistory.length - 10);
+    }
+
+    console.log(`📚 Conversation history length: ${httpChatHistory.length} messages`);
+
+    // Call OpenAI with conversation history
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: contextMessage },
-        { role: 'user', content: message },
+        ...httpChatHistory, // Include conversation history
       ],
       functions: DAW_FUNCTIONS,
       function_call: 'auto',
@@ -570,8 +717,12 @@ app.post('/api/chat', async (req, res) => {
       console.log('Function called:', functionCall);
     }
 
+    // Add assistant response to conversation history
+    const assistantResponse = responseMessage.content || `Executing ${functionCall?.name}...`;
+    httpChatHistory.push({ role: 'assistant', content: assistantResponse });
+
     res.json({
-      response: responseMessage.content || `Executing ${functionCall?.name}...`,
+      response: assistantResponse,
       function_call: functionCall,
       timestamp: new Date().toISOString(),
     });

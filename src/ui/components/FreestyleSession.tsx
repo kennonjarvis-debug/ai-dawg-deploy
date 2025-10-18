@@ -60,28 +60,36 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string>('');
 
+  // Playback state
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+
   // Refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const beatAudioRef = useRef<HTMLAudioElement | null>(null);
+  const beatSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const beatGainNodeRef = useRef<GainNode | null>(null);
+  const playbackAudioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const recordingStartTimeRef = useRef<number>(0);
   const beatStartTimeRef = useRef<number>(0);
+  const timerIntervalRef = useRef<number | null>(null);
 
   /**
-   * Initialize audio context and beat playback
+   * Initialize beat playback with Web Audio API integration
    */
   useEffect(() => {
     const initializeAudio = async () => {
       try {
-        // Create audio context
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-
         // Load beat if URL provided
         if (beatUrl) {
+          // Create HTML audio element
           beatAudioRef.current = new Audio(beatUrl);
+          beatAudioRef.current.crossOrigin = 'anonymous'; // Allow Web Audio routing
+
           beatAudioRef.current.addEventListener('loadedmetadata', () => {
             setBeatDuration(beatAudioRef.current?.duration || 0);
           });
@@ -110,6 +118,18 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
       if (beatAudioRef.current) {
         beatAudioRef.current.pause();
         beatAudioRef.current = null;
+      }
+      if (beatSourceNodeRef.current) {
+        beatSourceNodeRef.current.disconnect();
+        beatSourceNodeRef.current = null;
+      }
+      if (beatGainNodeRef.current) {
+        beatGainNodeRef.current.disconnect();
+        beatGainNodeRef.current = null;
+      }
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -259,6 +279,26 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
    */
   const startRecording = async (playBeatToo: boolean = false) => {
     try {
+      // Create AudioContext on user gesture (recording button click)
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+
+      // Resume AudioContext if suspended
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+
+      // Route beat through Web Audio API for synchronization
+      if (beatAudioRef.current && !beatSourceNodeRef.current) {
+        beatSourceNodeRef.current = audioContextRef.current.createMediaElementSource(beatAudioRef.current);
+        beatGainNodeRef.current = audioContextRef.current.createGain();
+
+        // Connect: beatSource → gain → destination
+        beatSourceNodeRef.current.connect(beatGainNodeRef.current);
+        beatGainNodeRef.current.connect(audioContextRef.current.destination);
+      }
+
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -286,6 +326,18 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
 
+        // Create URL for playback
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setRecordedAudioUrl(audioUrl);
+
+        // Initialize playback audio element
+        if (!playbackAudioRef.current) {
+          playbackAudioRef.current = new Audio(audioUrl);
+          playbackAudioRef.current.onended = () => setIsPlayingRecording(false);
+        } else {
+          playbackAudioRef.current.src = audioUrl;
+        }
+
         // Callback with complete session data
         if (onSessionComplete) {
           onSessionComplete(lyrics, audioBlob);
@@ -312,15 +364,13 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
       }
 
       // Start recording timer
-      const timerInterval = setInterval(() => {
+      timerIntervalRef.current = window.setInterval(() => {
         if (!isPaused) {
           setRecordingDuration(prev => prev + 0.1);
         }
       }, 100);
 
       toast.success(playBeatToo ? 'Recording started with beat!' : 'Recording started!');
-
-      return () => clearInterval(timerInterval);
     } catch (error) {
       console.error('Failed to start recording:', error);
       toast.error('Failed to start recording. Please check microphone permissions.');
@@ -349,8 +399,15 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
         stopBeat();
       }
 
+      // Clear timer interval
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+
       setIsRecording(false);
       setIsPaused(false);
+      setRecordingDuration(0);
 
       toast.success('Recording stopped! Processing...');
 
@@ -370,6 +427,10 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
     setIsPaused(newPausedState);
 
     if (newPausedState) {
+      // Pause MediaRecorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.pause();
+      }
       // Pause recognition
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -380,6 +441,10 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
       }
       toast.info('Recording paused');
     } else {
+      // Resume MediaRecorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+        mediaRecorderRef.current.resume();
+      }
       // Resume recognition
       if (recognitionRef.current) {
         recognitionRef.current.start();
@@ -416,6 +481,42 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
       beatAudioRef.current.currentTime = 0;
       setIsBeatPlaying(false);
       toast.info('Beat stopped');
+    }
+  };
+
+  /**
+   * Play recorded vocal
+   */
+  const playRecording = () => {
+    if (playbackAudioRef.current) {
+      playbackAudioRef.current.play();
+      setIsPlayingRecording(true);
+      toast.success('Playing recording');
+    } else {
+      toast.error('No recording available');
+    }
+  };
+
+  /**
+   * Pause recorded vocal playback
+   */
+  const pauseRecording = () => {
+    if (playbackAudioRef.current) {
+      playbackAudioRef.current.pause();
+      setIsPlayingRecording(false);
+      toast.info('Playback paused');
+    }
+  };
+
+  /**
+   * Stop recorded vocal playback
+   */
+  const stopRecordingPlayback = () => {
+    if (playbackAudioRef.current) {
+      playbackAudioRef.current.pause();
+      playbackAudioRef.current.currentTime = 0;
+      setIsPlayingRecording(false);
+      toast.info('Playback stopped');
     }
   };
 
@@ -615,6 +716,47 @@ export const FreestyleSession: React.FC<FreestyleSessionProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Recorded Vocal Playback */}
+          {recordedAudioUrl && (
+            <div className="bg-black/30 rounded-lg p-4 border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Mic className="w-5 h-5 text-green-400" />
+                  <span className="text-sm font-medium text-white">Recorded Vocal</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-3">
+                {!isPlayingRecording ? (
+                  <button
+                    onClick={playRecording}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors"
+                  >
+                    <Play className="w-4 h-4" />
+                    Play Recording
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={pauseRecording}
+                      className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold transition-colors"
+                    >
+                      <Pause className="w-4 h-4" />
+                      Pause
+                    </button>
+                    <button
+                      onClick={stopRecordingPlayback}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"
+                    >
+                      <Square className="w-4 h-4" />
+                      Stop
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Side - Lyrics Widget */}
