@@ -410,6 +410,141 @@ export const DAWDashboard: React.FC = () => {
     setOpenMenu(null);
   };
 
+  // Wrapper for AIChatWidget file upload (accepts File directly)
+  const handleUploadAudioFile = async (file: File) => {
+    // Reuse the same upload logic from handleAudioFileSelect
+    const startTime = Date.now();
+
+    try {
+      setUploadProgress({ fileName: file.name, progress: 5, step: 'Starting upload...' });
+
+      // Try backend upload first with SHORT timeout (5 seconds)
+      if (currentProject?.id) {
+        try {
+          setUploadProgress({ fileName: file.name, progress: 10, step: 'Uploading to server...' });
+
+          const uploadPromise = apiClient.uploadAudio(currentProject.id, file);
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Backend timeout')), 5000)
+          );
+
+          const result = await Promise.race([uploadPromise, timeoutPromise]) as any;
+
+          // Dispatch event to trigger clip creation
+          window.dispatchEvent(new CustomEvent('audio-uploaded', {
+            detail: { file: result.audioFile }
+          }));
+
+          setUploadProgress(null);
+          return; // Success
+        } catch (uploadError) {
+          console.warn('Backend upload failed/timeout, falling back to local import:', uploadError);
+          setUploadProgress({ fileName: file.name, progress: 15, step: 'Backend unavailable, processing locally...' });
+        }
+      }
+
+      // Fallback: Import file directly using Web Audio API
+      console.log(`[Upload] Starting decode for ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+      setUploadProgress({ fileName: file.name, progress: 20, step: 'Reading audio file...' });
+
+      const engine = getAudioEngine();
+      const audioContext = await engine.getOrCreateAudioContext();
+
+      const playbackEngine = getPlaybackEngine();
+      const metronomeEngine = getMetronomeEngine();
+      playbackEngine.initialize(audioContext);
+      metronomeEngine.initialize(audioContext);
+
+      const arrayBuffer = await file.arrayBuffer();
+      setUploadProgress({ fileName: file.name, progress: 35, step: 'Decoding audio...' });
+
+      const decodePromise = audioContext.decodeAudioData(arrayBuffer);
+      const timeoutPromise = new Promise<AudioBuffer>((_, reject) =>
+        setTimeout(() => reject(new Error('Audio decode timeout')), 30000)
+      );
+
+      const audioBuffer = await Promise.race([decodePromise, timeoutPromise])
+        .catch(err => {
+          setUploadProgress(null);
+          throw new Error(`Failed to decode audio: ${err.message}`);
+        });
+
+      setUploadProgress({ fileName: file.name, progress: 55, step: 'Analyzing audio properties...' });
+
+      let detectedBPM: number | undefined = 120;
+      let detectedKey: string | undefined = 'C';
+      let detectedScale: string | undefined = 'major';
+
+      // Quick BPM/key detection
+      try {
+        const maxSampleDuration = 5;
+        const sampleDuration = Math.min(audioBuffer.duration, maxSampleDuration);
+        const sampleSize = Math.floor(audioBuffer.sampleRate * sampleDuration);
+
+        const sampleBuffer = audioContext.createBuffer(
+          audioBuffer.numberOfChannels,
+          sampleSize,
+          audioBuffer.sampleRate
+        );
+
+        for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+          const sourceData = audioBuffer.getChannelData(channel);
+          const sampleData = sampleBuffer.getChannelData(channel);
+          for (let i = 0; i < sampleSize; i++) {
+            sampleData[i] = sourceData[i];
+          }
+        }
+
+        const bpmPromise = engine.detectBPM(sampleBuffer);
+        const bpmTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('BPM timeout')), 3000)
+        );
+
+        const bpmResult = await Promise.race([bpmPromise, bpmTimeout]) as any;
+        if (bpmResult?.bpm) {
+          detectedBPM = Math.round(bpmResult.bpm);
+        }
+      } catch (analysisError) {
+        console.log('[Upload] Quick analysis timeout/failed, using defaults');
+      }
+
+      setUploadProgress({ fileName: file.name, progress: 75, step: 'Generating waveform...' });
+      const waveformData = engine.getWaveformData(audioBuffer, 1000);
+
+      setUploadProgress({ fileName: file.name, progress: 85, step: 'Preparing audio data...' });
+      const blob = engine.exportAsWAV(audioBuffer);
+      const audioUrl = URL.createObjectURL(blob);
+
+      setUploadProgress({ fileName: file.name, progress: 90, step: 'Adding to timeline...' });
+      const trackName = file.name.replace(/\.[^/.]+$/, '');
+      const createdTrack = addTrack(trackName);
+
+      const { addClip } = useTimelineStore.getState();
+      addClip(createdTrack.id, {
+        name: file.name,
+        startTime: 0,
+        duration: audioBuffer.duration,
+        audioBuffer,
+        waveformData,
+        audioUrl,
+        color: createdTrack.color,
+        detectedBPM,
+        detectedKey,
+        originalBuffer: audioBuffer,
+      });
+
+      setUploadProgress({ fileName: file.name, progress: 100, step: 'Complete!' });
+      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      setTimeout(() => setUploadProgress(null), 1500);
+
+    } catch (error) {
+      console.error('[Upload] Error:', error);
+      setUploadProgress(null);
+      throw error;
+    }
+  };
+
   const handleAudioFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -1827,6 +1962,7 @@ export const DAWDashboard: React.FC = () => {
                   onExportProject={() => {
                     handleExportProject();
                   }}
+                  onUploadAudio={handleUploadAudioFile}
                   flashFeature={flashFeature}
                 />
           </div>

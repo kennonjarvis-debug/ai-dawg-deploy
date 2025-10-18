@@ -106,15 +106,18 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   const [isFlashing, setIsFlashing] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(null); // For text chat (port 8002)
+  const voiceSocketRef = useRef<Socket | null>(null); // For realtime voice (port 3100)
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const audioQueueRef = useRef<Int16Array[]>([]);
   const isPlayingRef = useRef(false);
   const isLiveRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || 'http://localhost:8002';
+  const REALTIME_VOICE_URL = 'http://localhost:3100'; // Realtime voice server
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -1086,12 +1089,39 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
       <div className="p-4 border-t border-border-base">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => toast.info('Coming soon!')}
+            onClick={() => fileInputRef.current?.click()}
             className="p-3 rounded-xl bg-bg-surface-2 hover:bg-bg-surface-hover text-text-dim transition-colors"
             disabled={isProcessing}
+            title="Upload audio file"
           >
             <Plus className="w-5 h-5" />
           </button>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*"
+            multiple
+            style={{ display: 'none' }}
+            onChange={async (e) => {
+              const files = Array.from(e.target.files || []);
+              if (files.length === 0 || !onUploadAudio) return;
+
+              for (const file of files) {
+                try {
+                  await onUploadAudio(file);
+                  toast.success(`Uploaded ${file.name}`);
+                } catch (error) {
+                  console.error('Upload error:', error);
+                  toast.error(`Failed to upload ${file.name}`);
+                }
+              }
+
+              // Reset input so same file can be uploaded again
+              e.target.value = '';
+            }}
+          />
 
           <input
             type="text"
