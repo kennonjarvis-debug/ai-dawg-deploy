@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum } from 'lucide-react';
-import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub } from './components';
+import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum, Upload } from 'lucide-react';
+import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub, Widget, AuxTrackDialog } from './components';
 import { apiClient } from '../api/client';
 import { wsClient } from '../api/websocket';
 import { parseStepProgressFromStatus } from './utils/aiProgress';
@@ -16,6 +16,12 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Project, User } from '../api/types';
 import type { AIProcessingJob } from './components/AIProcessingModal';
 import { toast } from 'sonner';
+import { beatAnalyzer } from '../audio/ai/BeatAnalyzer';
+import { timeStretcher } from '../audio/ai/TimeStretcher';
+import { pitchShifter } from '../audio/ai/PitchShifter';
+import { getAudioEngine } from '../audio/AudioEngine';
+import { getPlaybackEngine } from '../audio/PlaybackEngine';
+import { getMetronomeEngine } from '../audio/MetronomeEngine';
 
 export const DAWDashboard: React.FC = () => {
   const location = useLocation();
@@ -38,16 +44,20 @@ export const DAWDashboard: React.FC = () => {
   // showAIChat removed - chat is now embedded in DAWG AI panel
   const [showSettings, setShowSettings] = useState(false);
   const [showAIHub, setShowAIHub] = useState(false);
+  const [showAuxTrackDialog, setShowAuxTrackDialog] = useState(false);
   const [lyrics, setLyrics] = useState('');
   const [expandedWidget, setExpandedWidget] = useState<'ai' | 'lyrics' | 'balanced'>('balanced');
-  const { isPlaying, currentTime, setCurrentTime } = useTransportStore();
-  const { addTrack, updateTrack, selectedClipIds, tracks } = useTimelineStore();
+  const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number; step: string } | null>(null);
+  const [flashFeature, setFlashFeature] = useState<'voice-memo' | 'music-gen' | null>(null);
+  const { isPlaying, currentTime, setCurrentTime, bpm: projectBPM, key: projectKey } = useTransportStore();
+  const { addTrack, updateTrack, selectedClipIds, tracks, updateClip } = useTimelineStore();
   const selectedTrackIds = React.useMemo(() => getSelectedTrackIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
   const selectedAudioFileIds = React.useMemo(() => getSelectedAudioFileIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const editMenuRef = useRef<HTMLDivElement>(null);
   const trackMenuRef = useRef<HTMLDivElement>(null);
   const aiDawgMenuRef = useRef<HTMLDivElement>(null);
+  const importAudioInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize audio engine for recording
   const { isInitialized: audioEngineReady, hasPermission: hasMicPermission } = useAudioEngine();
@@ -125,9 +135,99 @@ export const DAWDashboard: React.FC = () => {
         if (!currentUser) return;
         const ent = await apiClient.getEntitlements();
         setPlanBadge(ent?.plan || 'FREE');
-      } catch {}
+      } catch {
+        setPlanBadge('FREE');
+      }
     })();
   }, [currentUser]);
+
+  // Auto-adjust clips when project BPM or key changes
+  useEffect(() => {
+    const processedClips = new Set<string>();
+
+    const processClips = async () => {
+      for (const track of tracks) {
+        for (const clip of track.clips) {
+          // Skip clips without detected values or original buffer
+          if (!clip.detectedBPM || !clip.detectedKey || !clip.originalBuffer) continue;
+
+          // Skip if already processed in this cycle
+          if (processedClips.has(clip.id)) continue;
+
+          const needsTimeStretch = Math.abs(clip.detectedBPM - projectBPM) > 0.5;
+          const needsPitchShift = clip.detectedKey !== projectKey;
+
+          // Skip if no processing needed
+          if (!needsTimeStretch && !needsPitchShift) {
+            // Reset flags if clip now matches project settings
+            if ((clip.isTimeStretched || clip.isPitchShifted) && clip.audioBuffer !== clip.originalBuffer) {
+              updateClip(clip.id, {
+                audioBuffer: clip.originalBuffer,
+                duration: clip.originalBuffer.duration,
+                isTimeStretched: false,
+                isPitchShifted: false,
+              });
+            }
+            continue;
+          }
+
+          // Skip if already processed to these exact settings
+          const alreadyProcessed =
+            (needsTimeStretch === clip.isTimeStretched) &&
+            (needsPitchShift === clip.isPitchShifted) &&
+            clip.audioBuffer !== clip.originalBuffer;
+
+          if (alreadyProcessed) continue;
+
+          let processedBuffer = clip.originalBuffer;
+          processedClips.add(clip.id);
+
+          try {
+            // Time-stretch if needed
+            if (needsTimeStretch) {
+              console.log(`[AI] Time-stretching clip ${clip.name} from ${clip.detectedBPM} to ${projectBPM} BPM`);
+              const result = await timeStretcher.stretchToMatchBPM(
+                processedBuffer,
+                clip.detectedBPM,
+                projectBPM,
+                'standard'
+              );
+              processedBuffer = result.stretchedBuffer;
+            }
+
+            // Pitch-shift if needed
+            if (needsPitchShift) {
+              console.log(`[AI] Pitch-shifting clip ${clip.name} from ${clip.detectedKey} to ${projectKey}`);
+              const result = await pitchShifter.shiftToMatchKey(
+                processedBuffer,
+                clip.detectedKey,
+                projectKey,
+                'standard'
+              );
+              processedBuffer = result.shiftedBuffer;
+            }
+
+            // Update clip with processed audio
+            updateClip(clip.id, {
+              audioBuffer: processedBuffer,
+              duration: processedBuffer.duration,
+              isTimeStretched: needsTimeStretch,
+              isPitchShifted: needsPitchShift,
+            });
+
+            toast.success(`Adjusted ${clip.name} to match project settings`, {
+              duration: 3000,
+            });
+          } catch (error) {
+            console.error(`Failed to process clip ${clip.name}:`, error);
+            toast.error(`Failed to adjust ${clip.name}`);
+          }
+        }
+      }
+    };
+
+    processClips();
+  }, [projectBPM, projectKey]);
 
   // Simulate time progression when playing
   useEffect(() => {
@@ -252,20 +352,6 @@ export const DAWDashboard: React.FC = () => {
     };
   }, [currentProject, saveProject]);
 
-  // Manual save with Cmd+S / Ctrl+S
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        saveProject();
-        toast.success('Project saved!');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saveProject]);
-
   // Close AI panels with Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -302,15 +388,223 @@ export const DAWDashboard: React.FC = () => {
 
   // Menu handlers
   const handleNewTrack = () => {
-    addTrack('Audio Track');
+    addTrack('Audio Track', { trackType: 'audio', channels: 'stereo' });
     setOpenMenu(null);
     toast.success('New track added');
+  };
+
+  const handleCreateAuxTrack = (config: { name: string; channels: 'mono' | 'stereo' }) => {
+    addTrack(config.name, { trackType: 'aux', channels: config.channels });
+    setOpenMenu(null);
+    toast.success(`${config.channels === 'mono' ? 'Mono' : 'Stereo'} aux track created`);
   };
 
   const handleSaveProject = async () => {
     await saveProject();
     setOpenMenu(null);
     toast.success('Project saved!');
+  };
+
+  const handleImportAudio = () => {
+    importAudioInputRef.current?.click();
+    setOpenMenu(null);
+  };
+
+  const handleAudioFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      const startTime = Date.now();
+
+      try {
+        setUploadProgress({ fileName: file.name, progress: 5, step: 'Starting upload...' });
+
+        // Try backend upload first with SHORT timeout (5 seconds)
+        if (currentProject?.id) {
+          try {
+            setUploadProgress({ fileName: file.name, progress: 10, step: 'Uploading to server...' });
+
+            const uploadPromise = apiClient.uploadAudio(currentProject.id, file);
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Backend timeout')), 5000)
+            );
+
+            const result = await Promise.race([uploadPromise, timeoutPromise]) as any;
+
+            // Dispatch event to trigger clip creation
+            window.dispatchEvent(new CustomEvent('audio-uploaded', {
+              detail: { file: result.audioFile }
+            }));
+
+            setUploadProgress(null);
+            toast.success(`Imported ${file.name}`);
+            continue; // Success, move to next file
+          } catch (uploadError) {
+            console.warn('Backend upload failed/timeout, falling back to local import:', uploadError);
+            setUploadProgress({ fileName: file.name, progress: 15, step: 'Backend unavailable, processing locally...' });
+          }
+        }
+
+        // Fallback: Import file directly using Web Audio API (no backend needed)
+        console.log(`[Upload] Starting decode for ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        setUploadProgress({ fileName: file.name, progress: 20, step: 'Reading audio file...' });
+
+        // Use shared AudioContext from AudioEngine (required for playback compatibility!)
+        const engine = getAudioEngine();
+        const audioContext = await engine.getOrCreateAudioContext();
+        console.log(`[Upload] Using shared AudioContext (sample rate: ${audioContext.sampleRate}Hz)`);
+
+        // Initialize playback/metronome engines with AudioContext for playback to work
+        const playbackEngine = getPlaybackEngine();
+        const metronomeEngine = getMetronomeEngine();
+        playbackEngine.initialize(audioContext);
+        metronomeEngine.initialize(audioContext);
+        console.log(`[Upload] Playback engines initialized with AudioContext`);
+
+        console.log(`[Upload] Reading file as ArrayBuffer...`);
+        setUploadProgress({ fileName: file.name, progress: 25, step: 'Reading audio file...' });
+        const arrayBuffer = await file.arrayBuffer();
+        setUploadProgress({ fileName: file.name, progress: 35, step: 'Decoding audio...' });
+        console.log(`[Upload] ArrayBuffer loaded, decoding audio...`);
+
+        // Add timeout to decode operation (30 seconds max)
+        const decodePromise = audioContext.decodeAudioData(arrayBuffer);
+        const timeoutPromise = new Promise<AudioBuffer>((_, reject) =>
+          setTimeout(() => reject(new Error('Audio decode timeout')), 30000)
+        );
+
+        const audioBuffer = await Promise.race([decodePromise, timeoutPromise])
+          .catch(err => {
+            console.error('[Upload] Decode failed:', err);
+            setUploadProgress(null);
+            throw new Error(`Failed to decode audio: ${err.message}`);
+          });
+
+        console.log(`[Upload] Audio decoded successfully - Duration: ${audioBuffer.duration}s`);
+        setUploadProgress({ fileName: file.name, progress: 55, step: 'Analyzing audio properties...' });
+
+        // SKIP BPM/Key detection for now - it's blocking the main thread
+        // TODO: Move to Web Worker in the future
+        console.log(`[Upload] Skipping BPM/Key detection (blocks main thread)`);
+        setUploadProgress({ fileName: file.name, progress: 60, step: 'Detecting BPM and key...' });
+        let detectedBPM: number | undefined = 120; // Default BPM
+        let detectedKey: string | undefined = 'C'; // Default key
+        let detectedScale: string | undefined = 'major';
+
+        // Optional: Try quick detection with tiny sample and timeout
+        try {
+          // Only use 5 seconds and 3 second timeout
+          const maxSampleDuration = 5; // VERY SHORT
+          const sampleDuration = Math.min(audioBuffer.duration, maxSampleDuration);
+          const sampleSize = Math.floor(audioBuffer.sampleRate * sampleDuration);
+
+          console.log(`[Upload] Attempting quick analysis (${sampleDuration}s sample)...`);
+
+          // Create tiny sample
+          const sampleBuffer = audioContext.createBuffer(
+            audioBuffer.numberOfChannels,
+            sampleSize,
+            audioBuffer.sampleRate
+          );
+
+          for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+            const sourceData = audioBuffer.getChannelData(channel);
+            const sampleData = sampleBuffer.getChannelData(channel);
+            for (let i = 0; i < sampleSize; i++) {
+              sampleData[i] = sourceData[i];
+            }
+          }
+
+          // Try BPM with 3 second timeout
+          const bpmPromise = engine.detectBPM(sampleBuffer);
+          const bpmTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('BPM timeout')), 3000)
+          );
+
+          const bpmResult = await Promise.race([bpmPromise, bpmTimeout]) as any;
+          if (bpmResult?.bpm) {
+            detectedBPM = Math.round(bpmResult.bpm);
+            console.log(`[Upload] BPM detected: ${detectedBPM}`);
+          }
+        } catch (analysisError) {
+          console.log('[Upload] Quick analysis timeout/failed, using defaults');
+        }
+
+        setUploadProgress({ fileName: file.name, progress: 70, step: 'Analysis complete...' });
+
+        // Generate waveform data using AudioEngine
+        setUploadProgress({ fileName: file.name, progress: 75, step: 'Generating waveform...' });
+        console.log(`[Upload] Generating waveform...`);
+        // Use same engine instance from above
+        const waveformData = engine.getWaveformData(audioBuffer, 1000);
+        console.log(`[Upload] Waveform generated (${waveformData.length} points)`);
+        setUploadProgress({ fileName: file.name, progress: 80, step: 'Creating audio data...' });
+
+        // Create audio URL from WAV export
+        setUploadProgress({ fileName: file.name, progress: 85, step: 'Preparing audio data...' });
+        console.log(`[Upload] Exporting as WAV...`);
+        const blob = engine.exportAsWAV(audioBuffer);
+        const audioUrl = URL.createObjectURL(blob);
+        console.log(`[Upload] Audio URL created: ${audioUrl}`);
+
+        // Create new track for the imported audio
+        setUploadProgress({ fileName: file.name, progress: 90, step: 'Adding to timeline...' });
+        console.log(`[Upload] Adding to timeline...`);
+        const trackName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+        const createdTrack = addTrack(trackName);
+        console.log(`[Upload] Track created: ${createdTrack.id}`);
+
+        // Create clip immediately (no need to wait, addTrack is synchronous)
+        setUploadProgress({ fileName: file.name, progress: 95, step: 'Creating clip...' });
+
+        const { addClip } = useTimelineStore.getState();
+        addClip(createdTrack.id, {
+          name: file.name,
+          startTime: 0,
+          duration: audioBuffer.duration,
+          audioBuffer,
+          waveformData,
+          audioUrl,
+          color: createdTrack.color,
+          detectedBPM,
+          detectedKey,
+          originalBuffer: audioBuffer, // Store original for re-processing
+        });
+
+        // Verify clip was added correctly
+        const verifyClip = useTimelineStore.getState().tracks
+          .find(t => t.id === createdTrack.id)?.clips[0];
+
+        console.log(`[Upload] Clip created successfully:`, {
+          hasAudioBuffer: !!audioBuffer,
+          hasWaveform: !!waveformData,
+          hasAudioUrl: !!audioUrl,
+          duration: audioBuffer.duration,
+          clipInStore: !!verifyClip,
+          clipHasBuffer: !!verifyClip?.audioBuffer,
+        });
+
+        setUploadProgress({ fileName: file.name, progress: 100, step: 'Complete!' });
+        const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+        const displayInfo = detectedBPM && detectedKey
+          ? `🎵 ${detectedBPM.toFixed(0)} BPM, ${detectedKey} ${detectedScale} • ${elapsedTime}s`
+          : `• ${elapsedTime}s`;
+        toast.success(`Added ${file.name}! ${displayInfo}`, { duration: 3000 });
+
+        // Clear progress after a short delay
+        setTimeout(() => setUploadProgress(null), 1500);
+        console.log(`[Upload] Complete! Total time: ${elapsedTime}s`);
+
+      } catch (error) {
+        console.error('Import failed:', error);
+        setUploadProgress(null);
+        toast.error(`Failed to import ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    // Reset input
+    e.target.value = '';
   };
 
   const handleSaveSettings = async (settings: { bpm?: number; key?: string; timeSignature?: string }) => {
@@ -772,6 +1066,164 @@ export const DAWDashboard: React.FC = () => {
   useWebSocketEvent('ai:completed', handleAICompleted);
   useWebSocketEvent('ai:failed', handleAIFailed);
 
+  // Pro Tools keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const { isPlaying, isRecording, togglePlay, stop } = useTransportStore.getState();
+
+      // Ignore shortcuts if user is typing in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        // Allow Cmd+S and Cmd+Z even in inputs
+        if (!((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'z'))) {
+          return;
+        }
+      }
+
+      // Cmd/Ctrl+S: Save Project
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        saveProject();
+        toast.success('Project saved!');
+        return;
+      }
+
+      // Cmd/Ctrl+N: New Track
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        handleNewTrack();
+        return;
+      }
+
+      // Cmd/Ctrl+E: Export Project
+      if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+        e.preventDefault();
+        handleExportProject();
+        return;
+      }
+
+      // Cmd/Ctrl+I: Import Audio
+      if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+        e.preventDefault();
+        handleImportAudio();
+        return;
+      }
+
+      // Space: Play/Pause (Pro Tools standard)
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+        toast.info(isPlaying ? 'Paused' : 'Playing');
+        return;
+      }
+
+      // Enter (Numeric Keypad) or Cmd+.: Stop
+      if (e.code === 'NumpadEnter' || ((e.metaKey || e.ctrlKey) && e.key === '.')) {
+        e.preventDefault();
+        stop();
+        toast.info('Stopped');
+        return;
+      }
+
+      // 3 (Numeric Keypad): Toggle Record
+      if (e.code === 'Numpad3') {
+        e.preventDefault();
+        const { toggleRecord } = useTransportStore.getState();
+        toggleRecord();
+        toast.info(isRecording ? 'Recording stopped' : 'Recording started');
+        return;
+      }
+
+      // R: Toggle Record (alternative)
+      if (e.code === 'KeyR' && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        const { toggleRecord } = useTransportStore.getState();
+        toggleRecord();
+        return;
+      }
+
+      // L: Toggle Loop
+      if (e.code === 'KeyL' && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        const { toggleLoop, isLooping } = useTransportStore.getState();
+        toggleLoop();
+        toast.info(isLooping ? 'Loop off' : 'Loop on');
+        return;
+      }
+
+      // Cmd/Ctrl+D: Duplicate selected clips
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+        e.preventDefault();
+        if (selectedClipIds.length > 0) {
+          toast.info('Duplicate clips - feature coming soon');
+        }
+        return;
+      }
+
+      // Cmd/Ctrl+Delete or Backspace: Delete selected clips
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'Delete' || e.key === 'Backspace')) {
+        e.preventDefault();
+        if (selectedClipIds.length > 0) {
+          toast.info('Delete clips - feature coming soon');
+        }
+        return;
+      }
+
+      // Up/Down Arrow: Navigate tracks
+      if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+        if (!e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          toast.info('Track navigation - feature coming soon');
+        }
+        return;
+      }
+
+      // Left/Right Arrow: Move playhead
+      if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+        if (!e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          const { currentTime, setCurrentTime } = useTransportStore.getState();
+          const delta = e.shiftKey ? 5 : 1; // Shift for larger jumps
+          const newTime = e.code === 'ArrowLeft'
+            ? Math.max(0, currentTime - delta)
+            : currentTime + delta;
+          setCurrentTime(newTime);
+          return;
+        }
+      }
+
+      // 0 or Enter: Return to zero (Pro Tools style)
+      if ((e.code === 'Digit0' || e.code === 'Enter' || e.code === 'NumpadEnter') && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        const { setCurrentTime, stop } = useTransportStore.getState();
+        // Stop playback and return to beginning
+        if (isPlaying || isRecording) {
+          stop();
+        }
+        setCurrentTime(0);
+        toast.info('Returned to start');
+        return;
+      }
+
+      // Delete or Backspace: Delete selected clips (Pro Tools style)
+      if ((e.code === 'Delete' || e.code === 'Backspace') && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        const { removeClip } = useTimelineStore.getState();
+
+        if (selectedClipIds.length > 0) {
+          selectedClipIds.forEach(clipId => {
+            removeClip(clipId);
+          });
+          toast.success(`Deleted ${selectedClipIds.length} clip${selectedClipIds.length > 1 ? 's' : ''}`);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saveProject, handleNewTrack, handleExportProject, handleImportAudio, selectedClipIds]);
+
   // Show loading state while project loads
   if (isLoadingProject || !currentProject) {
     return (
@@ -827,7 +1279,12 @@ export const DAWDashboard: React.FC = () => {
                       </span>
                     </button>
                     <button
-                      onClick={() => { toast.info('AI Voice Memo - Record voice notes!'); setOpenMenu(null); }}
+                      onClick={() => {
+                        setFlashFeature('voice-memo');
+                        setOpenMenu(null);
+                        // Reset flash after component handles it
+                        setTimeout(() => setFlashFeature(null), 3100);
+                      }}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary-hover/20 hover:text-text-base transition-all"
                     >
                       <Mic className="w-5 h-5 text-primary" />
@@ -922,11 +1379,10 @@ export const DAWDashboard: React.FC = () => {
                     </button>
                     <button
                       onClick={() => {
-                        const prompt = window.prompt('What kind of music would you like to generate?', 'Energetic pop beat with 808s');
-                        if (prompt) {
-                          handleAutoMusic(prompt);
-                        }
+                        setFlashFeature('music-gen');
                         setOpenMenu(null);
+                        // Reset flash after component handles it
+                        setTimeout(() => setFlashFeature(null), 3100);
                       }}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary-hover/20 hover:text-text-base transition-all"
                     >
@@ -966,6 +1422,11 @@ export const DAWDashboard: React.FC = () => {
               </button>
               {openMenu === 'file' && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-bg-surface-2 backdrop-blur-xl border border-border-strong rounded-lg shadow-2xl overflow-hidden">
+                  <button onClick={handleImportAudio} className="w-full px-4 py-2 text-left text-sm text-text-muted hover:bg-primary-hover/20 hover:text-text-base flex items-center gap-3">
+                    <Upload className="w-4 h-4" />
+                    Import Audio
+                  </button>
+                  <div className="border-t border-border-base my-1" />
                   <button onClick={handleSaveProject} className="w-full px-4 py-2 text-left text-sm text-text-muted hover:bg-primary-hover/20 hover:text-text-base flex items-center gap-3">
                     <Save className="w-4 h-4" />
                     Save Project
@@ -974,6 +1435,7 @@ export const DAWDashboard: React.FC = () => {
                     <FolderOpen className="w-4 h-4" />
                     Export Project
                   </button>
+                  <div className="border-t border-border-base my-1" />
                   <button onClick={handleCloseProject} className="w-full px-4 py-2 text-left text-sm text-text-muted hover:bg-primary-hover/20 hover:text-text-base flex items-center gap-3">
                     <ArrowLeft className="w-4 h-4" />
                     Close Project
@@ -1033,11 +1495,11 @@ export const DAWDashboard: React.FC = () => {
                     <Plus className="w-4 h-4" />
                     New Audio Track
                   </button>
-                  <button onClick={() => { addTrack('MIDI Track'); setOpenMenu(null); toast.success('New MIDI track added'); }} className="w-full px-4 py-2 text-left text-sm text-text-muted hover:bg-primary-hover/20 hover:text-text-base flex items-center gap-3">
+                  <button onClick={() => { addTrack('MIDI Track', { trackType: 'midi', channels: 'stereo' }); setOpenMenu(null); toast.success('New MIDI track added'); }} className="w-full px-4 py-2 text-left text-sm text-text-muted hover:bg-primary-hover/20 hover:text-text-base flex items-center gap-3">
                     <Plus className="w-4 h-4" />
                     New MIDI Track
                   </button>
-                  <button onClick={() => { addTrack('Aux Track'); setOpenMenu(null); toast.success('New aux track added'); }} className="w-full px-4 py-2 text-left text-sm text-text-muted hover:bg-primary-hover/20 hover:text-text-base flex items-center gap-3">
+                  <button onClick={() => { setShowAuxTrackDialog(true); setOpenMenu(null); }} className="w-full px-4 py-2 text-left text-sm text-text-muted hover:bg-primary-hover/20 hover:text-text-base flex items-center gap-3">
                     <Plus className="w-4 h-4" />
                     New Aux Track
                   </button>
@@ -1092,34 +1554,33 @@ export const DAWDashboard: React.FC = () => {
 
       {/* Responsive Layout */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Transport Bar - Full Width */}
-        <div className="w-full bg-bg-surface backdrop-blur-xl border-b border-border-strong shadow-lg">
-          <TransportBar />
-        </div>
-        {/* Main Content - Responsive Layout */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2 overflow-hidden">
-          {/* Left Column - Timeline + Mixer */}
-          <div className="flex-1 flex flex-col gap-2 min-w-0">
-            {/* Timeline Widget */}
-            <div className="flex-1 bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-2xl overflow-hidden min-h-[300px]">
-              <Timeline />
-            </div>
-
-            {/* Mixer Panel */}
-            <div className="h-48 lg:h-60 bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-2xl overflow-hidden">
-              <MixerPanel />
-            </div>
+        {/* Responsive Grid Layout */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 overflow-auto bg-bg-base">
+          {/* Transport Widget - Full Width */}
+          <div className="lg:col-span-12">
+            <Widget
+              title="TRANSPORT"
+              defaultSize={{ width: '100%', height: 100 }}
+              minHeight={80}
+            >
+              <TransportBar />
+            </Widget>
           </div>
 
-          {/* Right Column - AI Chat + Lyrics */}
-          <div className="w-full lg:w-96 flex flex-col gap-2 min-h-0">
-            {/* DAWG AI Widget */}
-            <div className={`${
-              expandedWidget === 'ai' ? 'flex-[3]' :
-              expandedWidget === 'lyrics' ? 'flex-[0.5]' :
-              'flex-1'
-            } min-h-[150px] transition-all duration-300`}>
-              <AIChatWidget
+          {/* Timeline Widget - Large Left Section */}
+          <div className="lg:col-span-8">
+            <Widget
+              title="TIMELINE"
+              defaultSize={{ width: '100%', height: 450 }}
+              minHeight={300}
+            >
+              <Timeline />
+            </Widget>
+          </div>
+
+          {/* AI Chat Widget - Right Column */}
+          <div className="lg:col-span-4">
+            <AIChatWidget
                   isOpen={true}
                   onClose={() => {}}
                   projectContext={{
@@ -1148,7 +1609,7 @@ export const DAWDashboard: React.FC = () => {
                   onMaster={handleAutoMaster}
                   onGenerateMusic={handleAutoMusic}
                   onAIDawg={handleAIDawg}
-                  onStartRecording={() => {
+                  onStartRecording={async () => {
                     // Check if any tracks are armed for recording
                     const armedTracks = tracks.filter(t => t.isArmed);
 
@@ -1159,21 +1620,53 @@ export const DAWDashboard: React.FC = () => {
 
                       // Arm the newly created track
                       // We need to wait a bit for the track to be added to the store
-                      setTimeout(() => {
+                      setTimeout(async () => {
                         const allTracks = useTimelineStore.getState().tracks;
                         const latestTrack = allTracks[allTracks.length - 1];
                         if (latestTrack) {
                           updateTrack(latestTrack.id, { isArmed: true });
                           console.log(`Created and armed track: ${trackName}`);
+
+                          // Wait for microphone to be ready before starting recording
+                          toast.info('🎤 Requesting microphone access...');
+                          let attempts = 0;
+                          const checkMicReady = setInterval(() => {
+                            attempts++;
+                            if (microphoneActive || attempts > 50) { // Max 5 seconds
+                              clearInterval(checkMicReady);
+                              if (microphoneActive) {
+                                // Microphone is ready, start recording
+                                useTransportStore.setState({ isPlaying: true, isRecording: true });
+                                toast.success(`🔴 Recording on ${trackName}`);
+                              } else {
+                                toast.error('Microphone not available');
+                              }
+                            }
+                          }, 100);
                         }
-                        // Start playback AND recording (Pro Tools/Logic style)
-                        useTransportStore.setState({ isPlaying: true, isRecording: true });
-                        toast.success(`🔴 Recording on ${trackName}`);
                       }, 100);
                     } else {
-                      // Tracks already armed, start playback AND recording
-                      useTransportStore.setState({ isPlaying: true, isRecording: true });
-                      toast.success(`🔴 Recording on ${armedTracks.length} track(s)`);
+                      // Tracks already armed, check if mic is ready
+                      if (!microphoneActive) {
+                        toast.info('🎤 Waiting for microphone...');
+                        let attempts = 0;
+                        const checkMicReady = setInterval(() => {
+                          attempts++;
+                          if (microphoneActive || attempts > 50) {
+                            clearInterval(checkMicReady);
+                            if (microphoneActive) {
+                              useTransportStore.setState({ isPlaying: true, isRecording: true });
+                              toast.success(`🔴 Recording on ${armedTracks.length} track(s)`);
+                            } else {
+                              toast.error('Microphone not available');
+                            }
+                          }
+                        }, 100);
+                      } else {
+                        // Mic already active, start immediately
+                        useTransportStore.setState({ isPlaying: true, isRecording: true });
+                        toast.success(`🔴 Recording on ${armedTracks.length} track(s)`);
+                      }
                     }
                   }}
                   onStopRecording={() => {
@@ -1212,33 +1705,28 @@ export const DAWDashboard: React.FC = () => {
                   onExportProject={() => {
                     handleExportProject();
                   }}
+                  flashFeature={flashFeature}
                 />
-            </div>
+          </div>
 
-            {/* Lyrics & Notes Widget */}
-            <div className={`${
-              expandedWidget === 'lyrics' ? 'flex-[3]' :
-              expandedWidget === 'ai' ? 'flex-[0.5]' :
-              'flex-1'
-            } bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-2xl flex flex-col overflow-hidden min-h-[150px] transition-all duration-300`}>
-              <div className="p-3 border-b border-border-base flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-text-base">📝 Lyrics & Notes</h3>
-                <button
-                  onClick={() => setExpandedWidget(expandedWidget === 'lyrics' ? 'balanced' : 'lyrics')}
-                  className="p-1 hover:bg-bg-surface-hover rounded transition-colors"
-                  title={expandedWidget === 'lyrics' ? 'Collapse' : 'Expand'}
-                >
-                  {expandedWidget === 'lyrics' ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+          {/* Mixer Widget - Large Left Section */}
+          <div className="lg:col-span-8">
+            <Widget
+              title="MIXER"
+              defaultSize={{ width: '100%', height: 240 }}
+              minHeight={200}
+            >
+              <MixerPanel />
+            </Widget>
+          </div>
+
+          {/* Lyrics Widget - Right Column */}
+          <div className="lg:col-span-4">
+            <Widget
+              title="LYRICS"
+              defaultSize={{ width: '100%', height: 240 }}
+              minHeight={200}
+            >
               <div className="flex-1 p-4">
                 <textarea
                   value={lyrics}
@@ -1247,7 +1735,7 @@ export const DAWDashboard: React.FC = () => {
                   className="w-full h-full bg-transparent border-none text-sm text-text-muted placeholder-text-dim resize-none focus:outline-none"
                 />
               </div>
-            </div>
+            </Widget>
           </div>
         </div>
       </div>
@@ -1274,6 +1762,12 @@ export const DAWDashboard: React.FC = () => {
         onSave={handleSaveSettings}
       />
 
+      {/* Aux Track Dialog */}
+      <AuxTrackDialog
+        isOpen={showAuxTrackDialog}
+        onClose={() => setShowAuxTrackDialog(false)}
+        onCreate={handleCreateAuxTrack}
+      />
 
       {/* AI Feature Hub */}
       <AIFeatureHub
@@ -1310,6 +1804,50 @@ export const DAWDashboard: React.FC = () => {
                 <ProducerPanel projectId={currentProject.id} />
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file input for Import Audio */}
+      <input
+        ref={importAudioInputRef}
+        type="file"
+        accept="audio/*,.wav,.mp3,.aiff,.flac,.ogg,.m4a"
+        multiple
+        onChange={handleAudioFileSelect}
+        className="hidden"
+      />
+
+      {/* Upload Progress Bar */}
+      {uploadProgress && (
+        <div className="fixed top-20 right-4 w-96 bg-gradient-to-br from-gray-900 to-black border border-white/20 rounded-xl shadow-2xl overflow-hidden z-[100]">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-blue-400 animate-pulse" />
+                <span className="text-white font-semibold truncate max-w-[200px]">
+                  {uploadProgress.fileName}
+                </span>
+              </div>
+              <span className="text-blue-400 font-bold text-sm">
+                {uploadProgress.progress}%
+              </span>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="relative h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+              <div
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 ease-out"
+                style={{ width: `${uploadProgress.progress}%` }}
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+              </div>
+            </div>
+
+            {/* Status Text */}
+            <div className="text-sm text-gray-400">
+              {uploadProgress.step}
+            </div>
           </div>
         </div>
       )}

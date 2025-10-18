@@ -38,6 +38,7 @@ interface AIChatWidgetProps {
   onCreateHeadphoneMix?: () => void;
   onUpdateTrackName?: (trackId: string, name: string) => void;
   onUpdateClipName?: (clipId: string, name: string) => void;
+  flashFeature?: 'voice-memo' | 'music-gen' | null;
 }
 
 export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
@@ -62,7 +63,8 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   onSetKey,
   onNewTrack,
   onSaveProject,
-  onExportProject
+  onExportProject,
+  flashFeature
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -78,6 +80,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const [isFlashing, setIsFlashing] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -461,6 +464,35 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handle flash animation when feature is triggered
+  useEffect(() => {
+    if (flashFeature) {
+      setIsFlashing(true);
+
+      // Add guidance message
+      const guidanceMessages = {
+        'voice-memo': "🎤 Voice Memo Mode! Click the '+' button below to upload your voice memo, OR tell me what you want to create and I'll guide you through recording it!",
+        'music-gen': "🎵 Music Generation Mode! Click the '+' button to upload inspiration audio, OR describe the music you want and I'll help you create it!"
+      };
+
+      const message: Message = {
+        id: `flash-${Date.now()}`,
+        type: 'system',
+        content: guidanceMessages[flashFeature],
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, message]);
+
+      // Stop flashing after 3 seconds (6 pulses at 0.5s each)
+      const timer = setTimeout(() => {
+        setIsFlashing(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [flashFeature]);
+
   // Send text message
   const sendMessage = async () => {
     if (!inputText.trim() || isProcessing) return;
@@ -527,9 +559,15 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
 
       const source = audioContext.createMediaStreamSource(stream);
 
-      // Create processor to capture raw audio
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      // Create processor to capture raw audio with larger buffer to reduce crackling
+      // Using 8192 instead of 4096 for smoother audio processing
+      // NOTE: ScriptProcessorNode is deprecated but still functional. Migration to AudioWorkletNode
+      // requires additional setup with worklet processor files and is planned for future update.
+      const processor = audioContext.createScriptProcessor(8192, 1, 1);
       processorRef.current = processor;
+
+      let audioChunks: Int16Array[] = [];
+      let lastSendTime = Date.now();
 
       processor.onaudioprocess = (e) => {
         if (!isLiveRef.current || !socketRef.current?.connected) return;
@@ -543,9 +581,28 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
           pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
 
-        // Convert to base64 and send to backend
-        const base64 = int16ArrayToBase64(pcm16);
-        socketRef.current?.emit('audio-data', { audio: base64 });
+        // Buffer audio chunks and send in batches to reduce overhead
+        audioChunks.push(pcm16);
+        const now = Date.now();
+
+        // Send every 100ms or when we have 3+ chunks to reduce websocket overhead
+        if (now - lastSendTime >= 100 || audioChunks.length >= 3) {
+          // Combine chunks into single array
+          const totalLength = audioChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+          const combined = new Int16Array(totalLength);
+          let offset = 0;
+          for (const chunk of audioChunks) {
+            combined.set(chunk, offset);
+            offset += chunk.length;
+          }
+
+          // Convert to base64 and send to backend
+          const base64 = int16ArrayToBase64(combined);
+          socketRef.current?.emit('audio-data', { audio: base64 });
+
+          audioChunks = [];
+          lastSendTime = now;
+        }
       };
 
       source.connect(processor);
@@ -597,41 +654,60 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     toast.info('Voice stopped');
   };
 
-  // Play audio queue
+  // Play audio queue with improved buffering to reduce crackling
   const playAudioQueue = async () => {
     if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
+
+    // AudioContext must be created by user gesture (in startLiveVoice)
+    // Don't create it here to avoid autoplay policy violations
     if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      console.warn('[AIChatWidget] Cannot play audio: AudioContext not initialized. Start live voice first.');
+      return;
     }
 
     isPlayingRef.current = true;
 
-    while (audioQueueRef.current.length > 0) {
-      const audioData = audioQueueRef.current.shift();
-      if (!audioData) continue;
+    try {
+      let currentTime = audioContextRef.current.currentTime;
 
-      const audioBuffer = audioContextRef.current.createBuffer(
-        1,
-        audioData.length,
-        24000
-      );
+      while (audioQueueRef.current.length > 0) {
+        const audioData = audioQueueRef.current.shift();
+        if (!audioData) continue;
 
-      const channelData = audioBuffer.getChannelData(0);
-      for (let i = 0; i < audioData.length; i++) {
-        channelData[i] = audioData[i] / (audioData[i] < 0 ? 0x8000 : 0x7FFF);
+        // Create audio buffer with smooth transitions
+        const audioBuffer = audioContextRef.current.createBuffer(
+          1,
+          audioData.length,
+          24000
+        );
+
+        const channelData = audioBuffer.getChannelData(0);
+        for (let i = 0; i < audioData.length; i++) {
+          channelData[i] = audioData[i] / (audioData[i] < 0 ? 0x8000 : 0x7FFF);
+        }
+
+        // Create gain node for smooth volume transitions
+        const gainNode = audioContextRef.current.createGain();
+        gainNode.gain.value = 1.0;
+
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(gainNode);
+        gainNode.connect(audioContextRef.current.destination);
+
+        // Schedule playback with precise timing to avoid gaps/crackling
+        const bufferDuration = audioData.length / 24000;
+        source.start(Math.max(currentTime, audioContextRef.current.currentTime + 0.01));
+        currentTime += bufferDuration;
+
+        // Wait for this chunk to finish
+        await new Promise<void>((resolve) => {
+          source.onended = () => resolve();
+        });
       }
-
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-
-      await new Promise<void>((resolve) => {
-        source.onended = () => resolve();
-        source.start();
-      });
+    } finally {
+      isPlayingRef.current = false;
     }
-
-    isPlayingRef.current = false;
   };
 
   // Helper: Convert Int16Array to base64
@@ -665,22 +741,17 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col h-full bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-lg">
+    <div
+      className="flex flex-col h-full bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-lg transition-all duration-300"
+      style={{
+        animation: isFlashing ? 'yellowFlash 0.5s ease-in-out 6' : undefined,
+        borderColor: isFlashing ? '#FFD700' : undefined,
+        borderWidth: isFlashing ? '3px' : undefined
+      }}
+    >
       {/* Header */}
-      <div className="h-14 bg-gradient-to-r from-primary/20 to-primary/10 border-b border-border-base flex items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Sparkles className={`w-6 h-6 ${isLive ? 'text-red-500 animate-pulse' : 'text-primary'}`} />
-            <Zap className="w-3 h-3 text-blue-400 absolute -bottom-1 -right-1" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-text-base">DAWG AI</h3>
-            <p className="text-xs text-text-dim">
-              {isLive ? (isConnected ? '🔴 LIVE' : 'Connecting...') : 'Click mic for live voice'}
-            </p>
-          </div>
-        </div>
-
+      <div className="px-4 py-3 border-b border-border-base flex items-center justify-between">
+        <h3 className="text-xs font-medium tracking-wide text-text-dim uppercase">AI CHAT</h3>
         {isSpeaking && (
           <div className="flex items-center gap-1 text-xs text-blue-400">
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
@@ -781,6 +852,20 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
           </button>
         </div>
       </div>
+
+      {/* CSS Animation for yellow flash */}
+      <style>{`
+        @keyframes yellowFlash {
+          0%, 100% {
+            border-color: inherit;
+            box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+          }
+          50% {
+            border-color: #FFD700;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 60px rgba(255, 215, 0, 0.4);
+          }
+        }
+      `}</style>
     </div>
   );
 };
