@@ -8,6 +8,7 @@ export const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
+  // Force HMR refresh
 
   const {
     tracks,
@@ -84,25 +85,15 @@ export const Timeline: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-bg-base">
-      {/* Section Markers */}
-      <SectionMarkers
-        markers={sectionMarkers}
-        zoom={zoom}
-        scrollPosition={scrollPosition}
-        currentTime={currentTime}
-        onAddMarker={addSectionMarker}
-        onDeleteMarker={deleteSectionMarker}
-        onUpdateMarker={updateSectionMarker}
-        onSeekToMarker={(time) => setCurrentTime(time)}
-      />
-
       {/* Timeline container */}
       <div className="flex-1 flex flex-col" style={{ overflow: 'hidden' }} ref={containerRef}>
         {/* Time Ruler - Always visible */}
         <div className="flex-shrink-0">
           <div className="flex">
             {/* Track name header spacer */}
-            <div className="w-56 bg-bg-surface border-b border-border-base" />
+            <div className="w-56 bg-bg-surface border-b border-border-base flex items-center px-4">
+              <span className="text-xs text-text-muted uppercase tracking-wider">TIMELINE</span>
+            </div>
             {/* Time ruler */}
             <div className="flex-1">
               <TimeRuler
