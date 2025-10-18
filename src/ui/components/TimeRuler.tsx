@@ -1,14 +1,17 @@
 import React from 'react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useTimelineStore } from '../../stores/timelineStore';
 import { useTransportStore } from '../../stores/transportStore';
 
 interface TimeRulerProps {
   width: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
 }
 
-export const TimeRuler: React.FC<TimeRulerProps> = ({ width }) => {
+export const TimeRuler: React.FC<TimeRulerProps> = ({ width, onZoomIn, onZoomOut }) => {
   const { zoom, scrollPosition } = useTimelineStore();
-  const { bpm, timeSignature } = useTransportStore();
+  const { bpm, timeSignature, setCurrentTime } = useTransportStore();
 
   // Calculate time markers
   const getTimeMarkers = () => {
@@ -66,8 +69,19 @@ export const TimeRuler: React.FC<TimeRulerProps> = ({ width }) => {
 
   const markers = getTimeMarkers();
 
+  // Handle click on timeline to move playhead
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickedTime = scrollPosition + (clickX / zoom);
+    setCurrentTime(Math.max(0, clickedTime));
+  };
+
   return (
-    <div className="relative h-10 bg-black/40 backdrop-blur-md border-b border-white/10 select-none">
+    <div
+      className="relative h-10 bg-black/40 backdrop-blur-md border-b border-white/10 cursor-pointer group"
+      onClick={handleTimelineClick}
+    >
       {/* Time markers */}
       {markers.map((marker, index) => {
         const x = (marker.time - scrollPosition) * zoom;

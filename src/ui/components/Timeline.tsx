@@ -3,6 +3,7 @@ import { useTimelineStore, useTransportStore } from '@/stores';
 import { TimeRuler } from './TimeRuler';
 import { Track } from './Track';
 import { SectionMarkers } from './SectionMarkers';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 
 export const Timeline: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -90,9 +91,25 @@ export const Timeline: React.FC = () => {
         {/* Time Ruler - Always visible */}
         <div className="flex-shrink-0">
           <div className="flex">
-            {/* Track name header spacer */}
-            <div className="w-56 bg-bg-surface border-b border-border-base flex items-center px-4">
-              <span className="text-xs text-text-muted uppercase tracking-wider">TIMELINE</span>
+            {/* Zoom controls on the left */}
+            <div className="w-56 bg-bg-surface border-b border-border-base flex items-center justify-center gap-1 px-2">
+              <button
+                onClick={handleZoomOut}
+                className="p-1.5 hover:bg-bg-surface-hover rounded transition-all ring-1 ring-border-base hover:ring-border-strong bg-black/40"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5 text-text-muted" />
+              </button>
+              <div className="px-3 py-1 rounded bg-black/60 ring-1 ring-border-base text-xs text-text-muted font-semibold min-w-[60px] text-center">
+                {Math.round(zoom)}px/s
+              </div>
+              <button
+                onClick={handleZoomIn}
+                className="p-1.5 hover:bg-bg-surface-hover rounded transition-all ring-1 ring-border-base hover:ring-border-strong bg-black/40"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5 text-text-muted" />
+              </button>
             </div>
             {/* Time ruler */}
             <div className="flex-1">
@@ -112,7 +129,7 @@ export const Timeline: React.FC = () => {
           ref={contentRef}
         >
           <div className="flex flex-col" style={{ width: `${224 + timelineWidth}px` }}>
-            {tracks.map((track) => (
+            {tracks.filter(track => track.trackType !== 'aux').map((track) => (
               <Track
                 key={track.id}
                 track={track}
