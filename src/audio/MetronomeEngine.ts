@@ -14,11 +14,24 @@ export class MetronomeEngine {
   }
 
   /**
-   * Initialize with audio context
+   * Initialize metronome engine with audio context (optional, can defer)
    */
-  initialize(audioContext: AudioContext): void {
-    this.audioContext = audioContext;
-    console.log('[MetronomeEngine] Initialized');
+  initialize(audioContext?: AudioContext): void {
+    if (audioContext) {
+      this.audioContext = audioContext;
+    }
+    // Note: If audioContext is null, it will be created lazily on first use
+    console.log('[MetronomeEngine] Initialized (AudioContext will be created on first use)');
+  }
+
+  /**
+   * Ensure audio context is available (lazy initialization)
+   * @private
+   */
+  private ensureAudioContext(): void {
+    if (!this.audioContext) {
+      throw new Error('AudioContext not available. Metronome requires AudioContext.');
+    }
   }
 
   /**
@@ -65,6 +78,9 @@ export class MetronomeEngine {
    */
   playCountIn(bars: number, bpm: number, timeSignature: number, volume: number = 0.5): Promise<void> {
     return new Promise((resolve) => {
+      // Ensure audio context is available
+      this.ensureAudioContext();
+
       if (!this.audioContext || bars === 0) {
         resolve();
         return;
@@ -96,6 +112,9 @@ export class MetronomeEngine {
    * Start metronome
    */
   start(bpm: number, timeSignature: number, volume: number = 0.5): void {
+    // Ensure audio context is available
+    this.ensureAudioContext();
+
     if (!this.audioContext) return;
 
     this.stop(); // Stop any existing metronome

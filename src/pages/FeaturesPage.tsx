@@ -14,7 +14,7 @@ export const FeaturesPage: React.FC = () => {
       icon: <Scissors className="w-8 h-8" />,
       title: 'Auto-Comp',
       tagline: 'Best Takes, Automatically',
-      description: 'Stop wasting time manually comping vocals. AI DAW analyzes all your takes and creates the perfect comp in seconds.',
+      description: 'Stop wasting time manually comping vocals. DAWG AI analyzes all your takes and creates the perfect comp in seconds.',
       benefits: [
         'Analyzes pitch, timing, and tone quality',
         'Identifies best segments automatically',
@@ -331,7 +331,7 @@ export const FeaturesPage: React.FC = () => {
             Ready to Transform Your Music Production?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of producers using AI DAW to create professional music faster than ever
+            Join thousands of producers using DAWG AI to create professional music faster than ever
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
@@ -356,7 +356,7 @@ export const FeaturesPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <Logo size="sm" />
             <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} AI DAW. All rights reserved.
+              © {new Date().getFullYear()} DAWG AI. All rights reserved.
             </p>
           </div>
         </div>

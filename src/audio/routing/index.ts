@@ -18,8 +18,8 @@ export const initializeRoutingEngine = (audioContext: AudioContext): RoutingEngi
     pluginHostInstance = new PluginHost(audioContext);
   }
 
-  // Create routing engine
-  routingEngineInstance = new RoutingEngine(audioContext, pluginHostInstance);
+  // Create routing engine (pluginHost first, then audioContext)
+  routingEngineInstance = new RoutingEngine(pluginHostInstance, audioContext);
 
   console.log('[RoutingEngine] Singleton initialized');
   return routingEngineInstance;

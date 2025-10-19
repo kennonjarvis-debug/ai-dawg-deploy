@@ -103,7 +103,7 @@ export const Track: React.FC<TrackProps> = ({ track, isSelected, onSelectTrack }
     >
       {/* Track header */}
       <div
-        className={`w-56 flex-shrink-0 border-r border-border-base p-3 flex flex-col gap-2.5 cursor-pointer transition-all backdrop-blur-md ${
+        className={`w-56 flex-shrink-0 p-3 flex flex-col gap-2.5 cursor-pointer transition-all backdrop-blur-md ${
           isSelected
             ? 'bg-bg-surface-hover shadow-xl'
             : 'bg-bg-surface hover:bg-bg-surface-hover'
@@ -120,8 +120,32 @@ export const Track: React.FC<TrackProps> = ({ track, isSelected, onSelectTrack }
             }}
           />
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-text-base truncate">{track.name}</div>
+            <div
+              className="text-sm font-semibold text-text-base truncate cursor-text hover:bg-bg-surface-2 px-1 py-0.5 rounded transition-colors"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                const newName = prompt('Rename track:', track.name);
+                if (newName && newName.trim()) {
+                  updateTrack(track.id, { name: newName.trim() });
+                }
+              }}
+              title="Double-click to rename"
+            >
+              {track.name}
+            </div>
           </div>
+          {/* Mono/Stereo Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newChannels = track.channels === 'stereo' ? 'mono' : 'stereo';
+              updateTrack(track.id, { channels: newChannels });
+            }}
+            className="px-1.5 py-0.5 text-[10px] rounded-md bg-bg-surface-2 hover:bg-primary/20 text-text-muted hover:text-primary font-bold ring-1 ring-border-base hover:ring-primary/50 transition-all"
+            title={`Toggle to ${track.channels === 'stereo' ? 'mono' : 'stereo'}`}
+          >
+            {track.channels === 'stereo' ? 'ST' : 'M'}
+          </button>
         </div>
 
         {/* Playlist Selector */}
@@ -259,76 +283,6 @@ export const Track: React.FC<TrackProps> = ({ track, isSelected, onSelectTrack }
               </div>
             </div>
           )}
-
-          {/* Volume indicator */}
-          <div className="ml-auto flex items-center gap-1.5 px-2 py-1 rounded-lg bg-bg-base backdrop-blur-sm">
-            {track.isMuted ? (
-              <VolumeX className="w-3 h-3 text-yellow-400/70" />
-            ) : (
-              <Volume2 className="w-3 h-3 text-blue-400/70" />
-            )}
-            <span className="text-xs text-text-muted font-medium">
-              {Math.round(track.volume * 100)}%
-            </span>
-          </div>
-        </div>
-
-        {/* Volume slider with glassmorphic track */}
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-500/20 via-yellow-500/20 to-red-500/20 backdrop-blur-sm" />
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={track.volume * 100}
-            onChange={(e) => updateTrack(track.id, { volume: parseInt(e.target.value) / 100 })}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full h-2 bg-transparent rounded-full appearance-none cursor-pointer
-              [&::-webkit-slider-thumb]:appearance-none
-              [&::-webkit-slider-thumb]:w-3.5
-              [&::-webkit-slider-thumb]:h-3.5
-              [&::-webkit-slider-thumb]:rounded-full
-              [&::-webkit-slider-thumb]:bg-gradient-to-br
-              [&::-webkit-slider-thumb]:from-blue-400
-              [&::-webkit-slider-thumb]:to-blue-600
-              [&::-webkit-slider-thumb]:shadow-lg
-              [&::-webkit-slider-thumb]:shadow-blue-500/50
-              [&::-webkit-slider-thumb]:ring-2
-              [&::-webkit-slider-thumb]:ring-white/30
-              [&::-webkit-slider-thumb]:transition-all
-              [&::-webkit-slider-thumb]:hover:scale-110"
-          />
-        </div>
-
-        {/* Pan slider */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-text-dim font-medium">L</span>
-          <div className="flex-1 relative">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 via-white/10 to-purple-500/20 backdrop-blur-sm" />
-            <input
-              type="range"
-              min="-100"
-              max="100"
-              value={track.pan * 100}
-              onChange={(e) => updateTrack(track.id, { pan: parseInt(e.target.value) / 100 })}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full h-2 bg-transparent rounded-full appearance-none cursor-pointer
-                [&::-webkit-slider-thumb]:appearance-none
-                [&::-webkit-slider-thumb]:w-3.5
-                [&::-webkit-slider-thumb]:h-3.5
-                [&::-webkit-slider-thumb]:rounded-full
-                [&::-webkit-slider-thumb]:bg-gradient-to-br
-                [&::-webkit-slider-thumb]:from-purple-400
-                [&::-webkit-slider-thumb]:to-purple-600
-                [&::-webkit-slider-thumb]:shadow-lg
-                [&::-webkit-slider-thumb]:shadow-purple-500/50
-                [&::-webkit-slider-thumb]:ring-2
-                [&::-webkit-slider-thumb]:ring-white/30
-                [&::-webkit-slider-thumb]:transition-all
-                [&::-webkit-slider-thumb]:hover:scale-110"
-            />
-          </div>
-          <span className="text-[10px] text-text-dim font-medium">R</span>
         </div>
       </div>
 
@@ -353,6 +307,117 @@ export const Track: React.FC<TrackProps> = ({ track, isSelected, onSelectTrack }
             onClick={(e) => handleClipClick(clip.id, e)}
           />
         ))}
+
+        {/* Live Recording Waveform (Pro Tools style) */}
+        {track.isRecording && track.liveWaveformData && track.liveRecordingStartTime !== undefined && (
+          <LiveRecordingWaveform
+            waveformData={track.liveWaveformData}
+            startTime={track.liveRecordingStartTime}
+            duration={track.liveRecordingDuration || 0}
+            zoom={zoom}
+            trackHeight={track.height}
+            color={track.color}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Live Recording Waveform Component (Pro Tools style growing waveform)
+interface LiveRecordingWaveformProps {
+  waveformData: Float32Array;
+  startTime: number;
+  duration: number;
+  zoom: number;
+  trackHeight: number;
+  color: string;
+}
+
+const LiveRecordingWaveform: React.FC<LiveRecordingWaveformProps> = ({
+  waveformData,
+  startTime,
+  duration,
+  zoom,
+  trackHeight,
+  color,
+}) => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  const width = duration * zoom;
+  const height = trackHeight - 16;
+
+  // Draw live waveform
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !waveformData) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas resolution
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw waveform
+    const barWidth = width / waveformData.length;
+    const centerY = height / 2;
+    const maxAmplitude = height / 2 - 4;
+
+    // Recording red color with pulse effect
+    ctx.fillStyle = color + 'CC';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+
+    waveformData.forEach((amplitude, i) => {
+      const x = i * barWidth;
+      const barHeight = amplitude * maxAmplitude;
+
+      // Draw symmetrical waveform (top and bottom)
+      ctx.fillRect(x, centerY - barHeight, Math.max(1, barWidth - 0.5), barHeight * 2);
+    });
+
+    // Reset shadow
+    ctx.shadowBlur = 0;
+  }, [waveformData, width, height, color]);
+
+  return (
+    <div
+      className="absolute top-2 rounded-xl overflow-hidden animate-pulse"
+      style={{
+        left: `${startTime * zoom}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        backgroundColor: color + '20',
+        border: `2px solid ${color}`,
+        boxShadow: `0 0 20px ${color}60`,
+      }}
+    >
+      {/* Waveform canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0"
+        style={{ width: '100%', height: '100%' }}
+      />
+
+      {/* Recording indicator */}
+      <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-red-500/90 backdrop-blur-sm flex items-center gap-1.5">
+        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+        <span className="text-xs font-bold text-white">REC</span>
+      </div>
+
+      {/* Duration indicator */}
+      <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-sm">
+        <span className="text-xs font-mono text-white font-semibold">
+          {Math.floor(duration)}s
+        </span>
       </div>
     </div>
   );

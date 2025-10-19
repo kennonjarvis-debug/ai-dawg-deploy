@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Sliders, Settings, ChevronDown, Activity } from 'lucide-react';
+import { Volume2, VolumeX, Settings, ChevronDown, Activity } from 'lucide-react';
 import * as Slider from '@radix-ui/react-slider';
 import { Track, useTimelineStore, useTransportStore } from '@/stores';
 import { ChannelStripPanel } from './ChannelStripPanel';
@@ -164,11 +164,35 @@ const MasterChannel: React.FC = () => {
   const [volume, setVolume] = useState(masterVolume);
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(masterVolume);
+  const [showChannelStrip, setShowChannelStrip] = useState(false);
 
   // Sync with store
   useEffect(() => {
     setVolume(masterVolume);
   }, [masterVolume]);
+
+  // Create a virtual master track for the channel strip
+  const masterTrack: Track = {
+    id: 'master',
+    name: 'Master',
+    color: '#FF1493',
+    height: 120,
+    volume: masterVolume,
+    pan: 0,
+    isMuted: false,
+    isSolo: false,
+    isArmed: false,
+    isRecording: false,
+    inputMonitoring: 'off',
+    clips: [],
+    playlists: [{ id: 'master-playlist', name: 'Main', clips: [] }],
+    activePlaylistId: 'master-playlist',
+    trackType: 'aux' as const,
+    channels: 'stereo' as const,
+    sends: [],
+    outputDestination: 'master',
+    inputLevel: 0,
+  };
 
   // Convert linear volume (0-1) to dB (-Infinity to 0)
   const volumeToDb = (vol: number) => {
@@ -197,14 +221,23 @@ const MasterChannel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-2 p-3 bg-gradient-to-b from-pink-900/30 via-purple-900/20 to-black/90 backdrop-blur-sm rounded-lg border-2 border-pink-500/30 shadow-2xl shadow-pink-500/20 w-20 h-full">
-      {/* Master Header */}
-      <div className="w-full">
-        {/* Master Label */}
-        <div className="text-[10px] font-bold text-pink-400 truncate w-full text-center uppercase tracking-wider bg-black/60 px-1.5 py-1 rounded border border-pink-500/30">
-          Master
+    <>
+      <div className="flex flex-col items-center gap-2 p-3 bg-gradient-to-b from-pink-900/30 via-purple-900/20 to-black/90 backdrop-blur-sm rounded-lg border-2 border-pink-500/30 shadow-2xl shadow-pink-500/20 w-20 h-full">
+        {/* Master Header */}
+        <div className="w-full space-y-1">
+          {/* Master Label */}
+          <div className="text-[10px] font-bold text-pink-400 truncate w-full text-center uppercase tracking-wider bg-black/60 px-1.5 py-1 rounded border border-pink-500/30">
+            Master
+          </div>
+
+          {/* Settings Button */}
+          <button
+            onClick={() => setShowChannelStrip(!showChannelStrip)}
+            className="w-full flex items-center justify-center px-1 py-0.5 rounded bg-pink-500/10 hover:bg-pink-500/20 border border-white/5 hover:border-pink-500/30 transition-all"
+          >
+            <Settings className="w-2.5 h-2.5 text-pink-400" />
+          </button>
         </div>
-      </div>
 
       {/* Master VU Meter */}
       <div className="w-full h-2 bg-black/60 rounded overflow-hidden border border-white/10">
@@ -255,7 +288,13 @@ const MasterChannel: React.FC = () => {
       <div className="text-[9px] text-pink-400 font-bold bg-black/60 px-1.5 py-0.5 rounded border border-white/10">
         {Math.round(volume * 100)}%
       </div>
-    </div>
+      </div>
+
+      {/* Channel Strip Panel - Logic Pro X Style */}
+      {showChannelStrip && (
+        <ChannelStripPanel track={masterTrack} onClose={() => setShowChannelStrip(false)} />
+      )}
+    </>
   );
 };
 
@@ -263,15 +302,7 @@ export const MixerPanel: React.FC = () => {
   const { tracks } = useTimelineStore();
 
   return (
-    <div className="flex flex-col h-full bg-bg-surface border-l border-border-base">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border-base">
-        <Sliders className="w-5 h-5 text-text-muted" />
-        <h2 className="text-lg font-semibold text-text-base">
-          Mixer
-        </h2>
-      </div>
-
+    <div className="flex flex-col h-full bg-bg-surface">
       {/* Mixer Channels */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
         <div className="flex gap-3 h-full">

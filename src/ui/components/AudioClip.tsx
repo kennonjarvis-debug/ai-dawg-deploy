@@ -191,8 +191,8 @@ export const AudioClip: React.FC<AudioClipProps> = ({
         left: `${clip.startTime * zoom}px`,
         width: `${width}px`,
         height: `${height}px`,
-        backgroundColor: clip.color + '25', // Glass effect with transparency
-        border: `1px solid ${clip.color}40`,
+        backgroundColor: clip.color + 'CC', // Solid color with slight transparency for waveform visibility
+        border: `1px solid ${clip.color}`,
       }}
       onClick={onClick}
       onMouseDown={handleMouseDown}
@@ -213,8 +213,18 @@ export const AudioClip: React.FC<AudioClipProps> = ({
       />
 
       {/* Clip name with glass background */}
-      <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-black/30 backdrop-blur-sm">
-        <div className="text-xs font-semibold text-white/90 pointer-events-none">
+      <div
+        className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-black/30 backdrop-blur-sm cursor-text hover:bg-black/50 transition-colors"
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          const newName = prompt('Rename clip:', clip.name);
+          if (newName && newName.trim()) {
+            updateClip(clip.id, { name: newName.trim() });
+          }
+        }}
+        title="Double-click to rename"
+      >
+        <div className="text-xs font-semibold text-white/90">
           {clip.name}
         </div>
       </div>

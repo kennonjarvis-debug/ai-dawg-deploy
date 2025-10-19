@@ -15,6 +15,37 @@ export interface GeneratedAudioMetadata {
   format: string;
   sampleRate: number;
   channels: number;
+
+  // Enhanced fields for AI training
+  userPrompt?: string;              // Original user prompt
+  aiEnhancedPrompt?: string;        // AI-enhanced prompt used for generation
+  generationParams?: {              // Full generation parameters
+    model?: string;
+    temperature?: number;
+    topP?: number;
+    style?: string;
+    mood?: string;
+    instrumental?: boolean;
+    duration?: number;
+  };
+  userFeedback?: {                  // User feedback for training
+    liked?: boolean;
+    rating?: number;                // 1-5 star rating
+    feedback?: string;              // Text feedback
+    used?: boolean;                 // Whether user actually used the audio
+    timestamp?: string;
+  };
+  audioEmbedding?: number[];        // Audio feature embedding for similarity search
+  analysisMetadata?: {              // Metadata from MetadataAnalyzer
+    vocalCharacteristics?: any;
+    rhythmCharacteristics?: any;
+    styleMetadata?: any;
+    analyzedAt?: string;
+  };
+  provider?: string;                // Generation provider (suno, musicgen, expert_music_ai)
+  modelUsed?: string;               // Specific model version used
+  generationTimestamp?: string;     // When generation occurred
+  trainingDataId?: string;          // ID for linking to training dataset
 }
 
 export interface DAWTrackInfo {
@@ -52,9 +83,11 @@ export class DAWIntegrationService {
         trackId,
         clipId,
         startTime,
+        room: `user:${userId}`,
       });
 
       // Emit event to frontend to add audio to timeline
+      console.log(`[DAW Integration] Emitting daw:audio:loaded to user:${userId}`);
       emitToUser(userId, 'daw:audio:loaded', {
         generationId,
         trackId,

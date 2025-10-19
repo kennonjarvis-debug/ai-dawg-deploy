@@ -132,6 +132,57 @@ export interface ProjectListResponse {
   limit: number;
 }
 
+// Track Metadata Types
+export interface TimbreProfile {
+  brightness: number;      // 0-1
+  warmth: number;          // 0-1
+  roughness: number;       // 0-1
+  spectralCentroid: number; // Hz
+  spectralRolloff: number;  // Hz
+  harmonicRichness: number; // 0-1
+}
+
+export interface VocalCharacteristics {
+  timbre: TimbreProfile;
+  dynamicRange: number;           // dB
+  peakLevel: number;              // 0-1
+  spectralBalance: 'dark' | 'balanced' | 'bright';
+  hasClipping: boolean;
+  noiseFloor: number;             // dB
+  hasSibilance: boolean;
+  hasRoomTone: boolean;
+  breathNoise: 'low' | 'moderate' | 'high';
+}
+
+export interface RhythmCharacteristics {
+  bpm: number;
+  confidence: number;             // 0-1
+  timeSignature: {
+    numerator: number;
+    denominator: number;
+  };
+  key: string;                    // e.g., "C", "Am"
+  scale: string;                  // "major", "minor", etc.
+  tempoStability: number;         // 0-1
+  swingAmount?: number;           // 0-1
+}
+
+export interface StyleMetadata {
+  genre: 'country' | 'pop' | 'rock' | 'rnb' | 'hip-hop' | 'indie' | 'folk' | 'jazz' | 'other';
+  subgenre?: string;              // e.g., "morgan-wallen", "country-pop"
+  mood: string;                   // "happy", "sad", "energetic", etc.
+  energy: number;                 // 0-1
+  danceability?: number;          // 0-1
+  valence?: number;               // 0-1 (musical positivity)
+}
+
+export interface TrackMetadata {
+  vocalCharacteristics?: VocalCharacteristics;
+  rhythmCharacteristics?: RhythmCharacteristics;
+  style?: StyleMetadata;
+  analyzedAt?: string;            // ISO timestamp
+}
+
 // Track Types
 export interface Track {
   id: string;
@@ -145,6 +196,7 @@ export interface Track {
   isSolo: boolean;
   isArmed: boolean;
   order: number;
+  metadata?: TrackMetadata;       // AI-extracted metadata
   createdAt: string;
   updatedAt: string;
   clips?: Clip[];
@@ -325,4 +377,246 @@ export interface APIError {
   code?: string;
   status?: number;
   details?: any;
+}
+
+// ============================================
+// AI TRAINING METADATA
+// ============================================
+
+export interface GenerationMetadataForTraining {
+  id: string;
+  userId: string;
+  generationId: string;
+
+  // User input
+  userPrompt: string;
+  aiEnhancedPrompt?: string;
+
+  // Generation parameters
+  generationParams: {
+    genre?: string;
+    bpm?: number;
+    key?: string;
+    mood?: string;
+    style?: string;
+    duration?: number;
+    model?: string;
+    provider?: string;
+    instrumental?: boolean;
+    customLyrics?: string;
+  };
+
+  // Generated output
+  audioUrl: string;
+  duration: number;
+  format: string;
+
+  // Analysis results
+  analysisMetadata?: {
+    vocalCharacteristics?: VocalCharacteristics;
+    rhythmCharacteristics?: RhythmCharacteristics;
+    styleMetadata?: StyleMetadata;
+    analyzedAt?: string;
+  };
+
+  // Audio features
+  audioEmbedding?: number[];        // Feature vector for similarity search
+  spectralFeatures?: {
+    spectralCentroid: number;
+    spectralRolloff: number;
+    mfcc: number[];                 // Mel-frequency cepstral coefficients
+    chromagram?: number[];          // Pitch class distribution
+  };
+
+  // User feedback
+  userFeedback?: {
+    liked?: boolean;
+    rating?: number;                // 1-5 stars
+    feedback?: string;
+    used?: boolean;                 // Added to project timeline
+    feedbackTimestamp?: string;
+  };
+
+  // Training metadata
+  provider: string;                 // suno, musicgen, expert_music_ai
+  modelUsed?: string;               // Specific model version
+  generationCost?: number;          // API cost in USD
+  generationDuration?: number;      // Time to generate in seconds
+
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SaveMetadataRequest {
+  generationId: string;
+  metadata: Partial<GenerationMetadataForTraining>;
+}
+
+export interface UpdateFeedbackRequest {
+  generationId: string;
+  feedback: {
+    liked?: boolean;
+    rating?: number;
+    feedback?: string;
+    used?: boolean;
+  };
+}
+
+// ============================================
+// LYRICS ANALYSIS
+// ============================================
+
+export type SectionType =
+  | 'intro'
+  | 'verse'
+  | 'pre-chorus'
+  | 'chorus'
+  | 'bridge'
+  | 'outro'
+  | 'hook'
+  | 'unknown';
+
+export type LyricsGenre =
+  | 'pop'
+  | 'country'
+  | 'hip-hop'
+  | 'rock'
+  | 'rnb'
+  | 'indie'
+  | 'folk'
+  | 'other';
+
+export interface SectionLabel {
+  lineStart: number;
+  lineEnd: number;
+  sectionType: SectionType;
+  sectionNumber?: number;
+  confidence: number;
+  reasoning?: string;
+}
+
+export interface RepeatedSection {
+  sectionType: SectionType;
+  occurrences: number;
+  lineRanges: Array<{ start: number; end: number }>;
+}
+
+export interface LyricsStructure {
+  sections: SectionLabel[];
+  repeatedSections: RepeatedSection[];
+  estimatedLength: number;
+  structure: string;
+}
+
+export interface StructureRecommendation {
+  type: 'suggestion' | 'warning' | 'info';
+  message: string;
+  section?: SectionType;
+  reasoning: string;
+}
+
+export interface LyricsAnalysisResult {
+  structure: LyricsStructure;
+  recommendations: StructureRecommendation[];
+  genreAdvice?: {
+    genre: LyricsGenre;
+    suggestions: string[];
+  };
+  cost: {
+    totalCost: number;
+    inputTokens: number;
+    outputTokens: number;
+    breakdown: string;
+  };
+}
+
+export interface AnalyzeLyricsRequest {
+  lyrics: string;
+  genre?: LyricsGenre;
+  suggestedStructure?: string;
+  trackId?: string;
+  projectId?: string;
+}
+
+export interface LyricsValidation {
+  valid: boolean;
+  warnings: string[];
+  lyricsLength?: number;
+  lineCount?: number;
+}
+
+// ============================================
+// MULTI-CLIP ANALYSIS
+// ============================================
+
+export interface ClipMetadata {
+  clipId: string;
+  clipName: string;
+  bpm?: number;
+  key?: string;
+  scale?: string;
+  energy?: number;
+  isVocal: boolean;
+  duration: number;
+  vocalCharacteristics?: VocalCharacteristics;
+  rhythmCharacteristics?: RhythmCharacteristics;
+  style?: StyleMetadata;
+}
+
+export interface ClipRelationship {
+  clipId1: string;
+  clipId2: string;
+  relationshipType: 'complementary' | 'matching' | 'conflicting' | 'neutral';
+  score: number;
+  reasons: string[];
+}
+
+export interface ArrangementSection {
+  name: string;
+  clipIds: string[];
+  startTime?: number;
+  duration?: number;
+}
+
+export interface ArrangementSuggestion {
+  order: string[];
+  reasoning: string;
+  sections: ArrangementSection[];
+}
+
+export interface ClipConflict {
+  clipIds: string[];
+  conflictType: 'tempo-mismatch' | 'key-clash' | 'energy-mismatch' | 'style-clash';
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+  suggestion?: string;
+}
+
+export interface MultiClipAnalysisResult {
+  clips: ClipMetadata[];
+  relationships: ClipRelationship[];
+  arrangementSuggestions: ArrangementSuggestion[];
+  conflicts: ClipConflict[];
+  aiRecommendations: string[];
+  cost: {
+    totalCost: number;
+    inputTokens: number;
+    outputTokens: number;
+    breakdown: string;
+  };
+}
+
+export interface AnalyzeMultipleClipsRequest {
+  clipIds: string[];
+  suggestArrangement?: boolean;
+  detectConflicts?: boolean;
+  projectId?: string;
+}
+
+export interface CostEstimate {
+  estimatedCost: number;
+  inputTokens: number;
+  outputTokens: number;
+  breakdown: string;
 }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum, Upload } from 'lucide-react';
-import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub, Widget, AuxTrackDialog } from './components';
+import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum, Upload, Cpu } from 'lucide-react';
+import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub, Widget, AuxTrackDialog, MusicGenerationProgressBar, AdvancedFeaturesPanel } from './components';
+import type { MusicGenerationProgress } from './components';
 import { apiClient } from '../api/client';
 import { wsClient } from '../api/websocket';
 import { parseStepProgressFromStatus } from './utils/aiProgress';
@@ -12,6 +13,7 @@ import { useTimelineStore } from '../stores/timelineStore';
 import { useProjectRoom, useWebSocketEvent } from '../hooks/useWebSocket';
 import { useAudioEngine } from '../hooks/useAudioEngine';
 import { usePlaylistRecording } from '../hooks/usePlaylistRecording';
+import { useMultiTrackRecording } from '../hooks/useMultiTrackRecording';
 import { useAuth } from '../contexts/AuthContext';
 import type { Project, User } from '../api/types';
 import type { AIProcessingJob } from './components/AIProcessingModal';
@@ -45,10 +47,12 @@ export const DAWDashboard: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIHub, setShowAIHub] = useState(false);
   const [showAuxTrackDialog, setShowAuxTrackDialog] = useState(false);
+  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
   const [lyrics, setLyrics] = useState('');
   const [expandedWidget, setExpandedWidget] = useState<'ai' | 'lyrics' | 'balanced'>('balanced');
   const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number; step: string } | null>(null);
   const [flashFeature, setFlashFeature] = useState<'voice-memo' | 'music-gen' | null>(null);
+  const [musicGenProgress, setMusicGenProgress] = useState<MusicGenerationProgress | null>(null);
   const { isPlaying, currentTime, setCurrentTime, bpm: projectBPM, key: projectKey } = useTransportStore();
   const { addTrack, updateTrack, selectedClipIds, tracks, updateClip, addClip } = useTimelineStore();
   const selectedTrackIds = React.useMemo(() => getSelectedTrackIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
@@ -65,13 +69,16 @@ export const DAWDashboard: React.FC = () => {
   // Enable Pro Tools-style playlist recording
   const { currentLoopPass, isPlaylistRecordingActive } = usePlaylistRecording();
 
-  // Connect WebSocket when user is authenticated
+  // Enable multi-track recording with live waveform visualization
+  const { isRecordingActive, recordingTrackCount } = useMultiTrackRecording();
+
+  // Connect WebSocket when user is authenticated OR in demo mode
   useEffect(() => {
-    if (user) {
-      const token = apiClient.getToken();
-      if (token && !wsClient.isConnected()) {
-        wsClient.connect(token);
-      }
+    // Always connect WebSocket (even in demo mode)
+    const token = apiClient.getToken() || 'demo-token';
+    if (!wsClient.isConnected()) {
+      console.log('[DAWDashboard] Connecting WebSocket with token:', token ? '✓' : '✗');
+      wsClient.connect(token);
     }
 
     // Cleanup WebSocket on unmount
@@ -315,6 +322,12 @@ export const DAWDashboard: React.FC = () => {
     // SECURITY FIX: Check for valid project ID before saving
     if (!currentProject?.id || isSaving) return;
 
+    // Skip auto-save for demo projects
+    if (currentProject.id.startsWith('demo-')) {
+      console.log('[Demo Mode] Skipping auto-save for demo project');
+      return;
+    }
+
     try {
       setIsSaving(true);
       await apiClient.updateProject(currentProject.id, {
@@ -324,8 +337,11 @@ export const DAWDashboard: React.FC = () => {
         timeSignature: currentProject.timeSignature,
       });
       setLastSaved(new Date());
-    } catch (error) {
-      console.error('Auto-save failed:', error);
+    } catch (error: any) {
+      // Only log errors for non-demo projects
+      if (!error?.response?.status || error.response.status !== 404) {
+        console.error('Auto-save failed:', error);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -749,9 +765,22 @@ export const DAWDashboard: React.FC = () => {
       await apiClient.updateProject(currentProject.id, settings);
       setCurrentProject({ ...currentProject, ...settings });
       toast.success('Project settings updated!');
-    } catch (error) {
-      console.error('Failed to update project settings:', error);
-      toast.error('Failed to update settings');
+    } catch (error: any) {
+      // Silently update local state for demo projects (which don't exist in backend)
+      if (error?.response?.status === 404 || currentProject.id.startsWith('demo-')) {
+        console.log('[Demo Mode] Updating project settings locally:', settings);
+        setCurrentProject({ ...currentProject, ...settings });
+        // Update transport store directly for demo mode
+        if (settings.bpm) {
+          useTransportStore.setState({ bpm: settings.bpm });
+        }
+        if (settings.key) {
+          useTransportStore.setState({ key: settings.key });
+        }
+      } else {
+        console.error('Failed to update project settings:', error);
+        toast.error('Failed to update settings');
+      }
     }
   };
 
@@ -968,13 +997,95 @@ export const DAWDashboard: React.FC = () => {
   };
 
   const handleAutoMusic = async (prompt: string, genre?: string, tempo?: number, duration?: number) => {
+    console.log('🎵 handleAutoMusic called with:', { prompt, genre, tempo, duration });
+
+    // Supported genres from backend
+    const supportedGenres = ['trap', 'lo-fi', 'boom bap', 'house', 'drill', 'drum and bass', 'techno', 'hip hop', 'r&b', 'pop', 'edm', 'dubstep', 'jazz', 'rock'];
+
+    // Map unsupported genres to supported ones
+    const genreMap: Record<string, string> = {
+      'country': 'rock',
+      'folk': 'rock',
+      'blues': 'jazz',
+      'reggae': 'hip hop',
+      'metal': 'rock',
+      'punk': 'rock',
+      'indie': 'pop',
+      'alternative': 'rock',
+      'classical': 'jazz',
+      'soul': 'r&b',
+      'funk': 'r&b',
+      'disco': 'house',
+      'ambient': 'lo-fi',
+      'trance': 'edm',
+      'hardstyle': 'edm',
+    };
+
+    // Smart genre normalization with compound genre support
+    let normalizedGenre = genre?.toLowerCase() || 'pop';
+
+    // Check if it's already a supported genre
+    if (supportedGenres.includes(normalizedGenre)) {
+      console.log(`🎵 Genre "${genre}" is already supported`);
+    }
+    // Check if it's in our mapping
+    else if (genreMap[normalizedGenre]) {
+      console.log(`🎵 Mapping genre "${genre}" -> "${genreMap[normalizedGenre]}"`);
+      normalizedGenre = genreMap[normalizedGenre];
+    }
+    // Handle compound genres (e.g., "country-pop" -> "pop")
+    else if (normalizedGenre.includes('-') || normalizedGenre.includes(' ')) {
+      const parts = normalizedGenre.split(/[-\s]+/);
+      console.log(`🎵 Compound genre detected: "${genre}", parts:`, parts);
+
+      // Try to find a supported genre in the parts
+      const supportedPart = parts.find(part => supportedGenres.includes(part));
+      if (supportedPart) {
+        console.log(`🎵 Using supported part: "${supportedPart}"`);
+        normalizedGenre = supportedPart;
+      } else {
+        // Try to find a mapped genre in the parts
+        const mappedPart = parts.find(part => genreMap[part]);
+        if (mappedPart) {
+          console.log(`🎵 Mapping compound part "${mappedPart}" -> "${genreMap[mappedPart]}"`);
+          normalizedGenre = genreMap[mappedPart];
+        } else {
+          console.log(`🎵 No supported parts found in "${genre}", defaulting to "pop"`);
+          normalizedGenre = 'pop';
+        }
+      }
+    }
+    // Unknown genre, default to pop
+    else {
+      console.log(`🎵 Unknown genre "${genre}", defaulting to "pop"`);
+      normalizedGenre = 'pop';
+    }
+
     const jobId = addAiJob('music-generation', `Generating music: "${prompt}"...`);
 
+    // Initialize top progress bar
+    setMusicGenProgress({
+      isGenerating: true,
+      prompt: prompt,
+      progress: 0,
+      status: 'pending',
+      message: 'Starting music generation...',
+    });
+
     try {
+      // Update to processing state
+      setMusicGenProgress({
+        isGenerating: true,
+        prompt: prompt,
+        progress: 20,
+        status: 'processing',
+        message: 'Generating music with AI...',
+      });
       updateAiJob(jobId, { status: 'processing', progress: 20 });
 
-      // Call full music generation API
-      const response = await fetch('/api/v1/ai/dawg', {
+      console.log('🎵 Making API call to /api/generate/beat...');
+      // Call beat generation API
+      const response = await fetch('/api/generate/beat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -982,12 +1093,10 @@ export const DAWDashboard: React.FC = () => {
         credentials: 'include',
         body: JSON.stringify({
           prompt,
-          genre: genre || 'pop',
-          mood: 'energetic',
+          genre: normalizedGenre,
           tempo: tempo || 120,
           duration: duration || 30,
-          style: 'full-production',
-          project_id: currentProject?.id,
+          projectId: currentProject?.id,
         }),
       });
 
@@ -998,30 +1107,17 @@ export const DAWDashboard: React.FC = () => {
 
       const data = await response.json();
 
-      updateAiJob(jobId, { progress: 80, message: 'Creating track...' });
+      // Update progress - almost done
+      // Job queued successfully - track/clip will be added via WebSocket event
+      console.log('🎵 Beat generation job queued:', { jobId, generationId: data.generationId });
 
-      // If track was created with audio, add it to the timeline
-      if (data.audio_url) {
-        const trackName = `AI Music: ${prompt.substring(0, 30)}...`;
-        const newTrack = addTrack(trackName);
-
-        // Create clip with the generated audio
-        setTimeout(() => {
-          const allTracks = useTimelineStore.getState().tracks;
-          const latestTrack = allTracks[allTracks.length - 1];
-          if (latestTrack) {
-            addClip(latestTrack.id, {
-              name: trackName,
-              startTime: 0,
-              duration: duration || 30,
-              color: latestTrack.color,
-              audioUrl: data.audio_url,
-            });
-            console.log(`Created track with AI-generated music: ${trackName}`);
-          }
-        }, 100);
-      }
-
+      setMusicGenProgress({
+        isGenerating: true,
+        prompt: prompt,
+        progress: 80,
+        status: 'processing',
+        message: 'Generating beat... Track will be added automatically when complete.',
+      });
       updateAiJob(jobId, {
         status: 'completed',
         progress: 100,
@@ -1029,14 +1125,44 @@ export const DAWDashboard: React.FC = () => {
         result: data
       });
 
-      toast.success(`🎵 Generated: ${prompt}`);
+      // Dismiss any loading toasts from AIChatWidget
+      toast.dismiss('music-gen-progress');
+
+      // Show success notification
+      toast.success(`🎵 Beat Generated: ${prompt}`, {
+        duration: 5000,
+        description: 'Your AI-generated music has been added to the timeline!',
+      });
+
+      // Auto-dismiss progress bar after 5 seconds
+      setTimeout(() => {
+        setMusicGenProgress(null);
+      }, 5000);
+
     } catch (error: any) {
+      console.error('🎵 Music generation error:', error);
+      // Dismiss any loading toasts from AIChatWidget
+      toast.dismiss('music-gen-progress');
+
+      // Mark as error
+      setMusicGenProgress({
+        isGenerating: true,
+        prompt: prompt,
+        progress: 0,
+        status: 'error',
+        error: error.message || 'Music generation failed',
+      });
       updateAiJob(jobId, {
         status: 'error',
         error: error.message || 'Music generation failed',
         message: 'Music generation failed'
       });
       toast.error('Music generation failed: ' + error.message);
+
+      // Auto-dismiss error after 8 seconds
+      setTimeout(() => {
+        setMusicGenProgress(null);
+      }, 8000);
     }
   };
 
@@ -1227,6 +1353,92 @@ export const DAWDashboard: React.FC = () => {
     const u3 = wsClient.on('ai:failed', onFailed);
     return () => { u1(); u2(); u3(); };
   }, []);
+
+  // Debug WebSocket connection status
+  useEffect(() => {
+    console.log('🔌 WebSocket connection status:', {
+      isConnected: wsClient.isConnected(),
+      reconnectAttempts: wsClient.getReconnectAttempts(),
+    });
+
+    // Log connection state changes
+    const onConnected = () => {
+      console.log('✅ WebSocket connected to backend');
+    };
+    const onDisconnected = (data: any) => {
+      console.warn('⚠️ WebSocket disconnected:', data);
+    };
+
+    const u1 = wsClient.on('connected', onConnected);
+    const u2 = wsClient.on('disconnected', onDisconnected);
+
+    return () => {
+      u1();
+      u2();
+    };
+  }, []);
+
+  // WebSocket listener for beat generation completion - adds track/clip to timeline
+  useEffect(() => {
+    console.log('🎵 Registering daw:audio:loaded event handler');
+
+    const onAudioLoaded = (data: {
+      generationId: string;
+      trackId: string;
+      trackName: string;
+      clipId: string;
+      clip: {
+        id: string;
+        name: string;
+        startTime: number;
+        duration: number;
+        trackId: string;
+        audioUrl: string;
+        audioFileId: string;
+        metadata?: any;
+      };
+      autoPlay: boolean;
+    }) => {
+      console.log('🎵 daw:audio:loaded event received:', data);
+
+      // Create track
+      const newTrack = addTrack(data.trackName);
+
+      // Add clip to the newly created track
+      setTimeout(() => {
+        const allTracks = useTimelineStore.getState().tracks;
+        const latestTrack = allTracks[allTracks.length - 1];
+
+        if (latestTrack) {
+          addClip(latestTrack.id, {
+            name: data.clip.name,
+            startTime: data.clip.startTime,
+            duration: data.clip.duration,
+            color: latestTrack.color,
+            audioUrl: data.clip.audioUrl,
+          });
+
+          console.log(`🎵 Track "${data.trackName}" added to timeline with clip`);
+          toast.success(`Beat added to timeline: ${data.trackName}`);
+
+          // Update progress to complete
+          setMusicGenProgress({
+            isGenerating: false,
+            prompt: '',
+            progress: 100,
+            status: 'completed',
+            message: 'Beat added to timeline!',
+          });
+        } else {
+          console.error('🎵 Failed to find newly created track');
+          toast.error('Failed to add beat to timeline');
+        }
+      }, 100);
+    };
+
+    const unsubscribe = wsClient.on('daw:audio:loaded', onAudioLoaded);
+    return () => { unsubscribe(); };
+  }, [addTrack, addClip]);
 
   // Auto-create demo project on first login
   useEffect(() => {
@@ -1485,6 +1697,12 @@ export const DAWDashboard: React.FC = () => {
   // Project Editor View
   return (
     <div className="h-screen bg-bg-base flex flex-col overflow-hidden">
+      {/* Music Generation Progress Bar - Top of Screen */}
+      <MusicGenerationProgressBar
+        progress={musicGenProgress}
+        onDismiss={() => setMusicGenProgress(null)}
+      />
+
       {/* Top Menu Bar */}
       <div className="flex-shrink-0 bg-bg-surface border-b border-border-base relative z-50">
         <div className="flex items-center h-10 px-4">
@@ -2109,6 +2327,32 @@ export const DAWDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Floating Action Button - Advanced Features */}
+      {!showAdvancedFeatures && (
+        <button
+          onClick={() => setShowAdvancedFeatures(true)}
+          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 z-40 group"
+          title="Advanced Features"
+        >
+          <Cpu className="w-7 h-7" />
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-gray-900 rounded-full animate-pulse" />
+          <div className="absolute right-full mr-4 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+            Advanced Features
+          </div>
+        </button>
+      )}
+
+      {/* Advanced Features Panel */}
+      <AdvancedFeaturesPanel
+        isOpen={showAdvancedFeatures}
+        onClose={() => setShowAdvancedFeatures(false)}
+        projectId={currentProject?.id || ''}
+        userId={currentUser?.id || ''}
+        currentProject={currentProject}
+        isRecording={isRecording}
+        websocketUrl={import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:3001'}
+      />
     </div>
   );
 };

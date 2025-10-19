@@ -10,6 +10,18 @@ export interface Playlist {
   clips: Clip[];
 }
 
+export type TrackType = 'audio' | 'midi' | 'aux';
+export type ChannelConfig = 'mono' | 'stereo';
+
+export interface Send {
+  id: string;
+  destination: string; // Track ID of the aux track
+  level: number; // 0-1
+  pan: number; // -1 to 1
+  preFader: boolean; // Pre-fader or post-fader send
+  enabled: boolean;
+}
+
 export interface Track {
   id: string;
   name: string;
@@ -26,6 +38,20 @@ export interface Track {
   clips: Clip[]; // Active playlist clips
   playlists: Playlist[]; // Pro Tools-style playlists
   activePlaylistId: string; // Currently active playlist
+
+  // Track type and channel configuration
+  trackType?: TrackType; // 'audio', 'midi', or 'aux'
+  channels?: ChannelConfig; // 'mono' or 'stereo'
+
+  // Routing
+  sends?: Send[]; // Send buses to aux tracks
+  outputDestination?: string; // Track ID or 'master' for output routing
+
+  // Live recording visualization (Pro Tools style)
+  isRecording?: boolean;
+  liveWaveformData?: Float32Array;
+  liveRecordingStartTime?: number;
+  liveRecordingDuration?: number;
 
   // Logic Pro X channel strip (optional for backward compatibility)
   channelStrip?: ChannelStrip;
@@ -45,6 +71,12 @@ export interface Clip {
   fadeIn?: number; // Fade in duration in seconds
   fadeOut?: number; // Fade out duration in seconds
   gain?: number; // Gain in dB
+  // AI-detected audio properties
+  detectedBPM?: number; // Original BPM detected by AI
+  detectedKey?: string; // Original musical key detected by AI
+  originalBuffer?: AudioBuffer; // Unprocessed original audio
+  isTimeStretched?: boolean; // Whether clip has been time-stretched
+  isPitchShifted?: boolean; // Whether clip has been pitch-shifted
 }
 
 export interface TimelineState {
@@ -79,7 +111,7 @@ export interface TimelineState {
   setEditMode: (mode: EditMode) => void;
 
   // Track management
-  addTrack: (name: string) => void;
+  addTrack: (name: string, config?: { trackType?: TrackType; channels?: ChannelConfig }) => Track;
   removeTrack: (trackId: string) => void;
   updateTrack: (trackId: string, updates: Partial<Track>) => void;
   setSelectedTracks: (trackIds: string[]) => void;
@@ -149,14 +181,26 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
   },
 
   // Track management
-  addTrack: (name: string) => {
+  addTrack: (name: string, config?: { trackType?: TrackType; channels?: ChannelConfig }) => {
     const defaultPlaylistId = `playlist-${Date.now()}`;
+    // Solid colors for clips - cycle through a predefined palette
+    const solidColors = [
+      '#3B82F6', // blue
+      '#8B5CF6', // purple
+      '#EC4899', // pink
+      '#EF4444', // red
+      '#F59E0B', // amber
+      '#10B981', // emerald
+      '#06B6D4', // cyan
+      '#6366F1', // indigo
+    ];
+    const colorIndex = Math.floor(Math.random() * solidColors.length);
     const newTrack: Track = {
       id: `track-${Date.now()}`,
       name,
-      color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+      color: solidColors[colorIndex],
       height: 120,
-      volume: 0.75,
+      volume: 1.0,
       pan: 0,
       isMuted: false,
       isSolo: false,
@@ -173,8 +217,13 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
         },
       ],
       activePlaylistId: defaultPlaylistId,
+      trackType: config?.trackType || 'audio',
+      channels: config?.channels || 'stereo',
+      sends: [],
+      outputDestination: 'master',
     };
     set((state) => ({ tracks: [...state.tracks, newTrack] }));
+    return newTrack;
   },
 
   removeTrack: (trackId: string) => {

@@ -78,7 +78,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             <UserPlus className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Create Account</h2>
-          <p className="text-gray-400">Join AI DAW and start creating music</p>
+          <p className="text-gray-400">Join DAWG AI and start creating music</p>
         </div>
 
         {/* Error Message */}

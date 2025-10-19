@@ -183,14 +183,6 @@ export const RealtimeVoiceWidget: React.FC<RealtimeVoiceWidgetProps> = ({
   const stopLiveVoice = () => {
     if (!isLive) return;
 
-    // CRITICAL: If recording is active, stop it to save the clip
-    const { isRecording } = require('../stores/transportStore').useTransportStore.getState();
-    if (isRecording) {
-      require('../stores/transportStore').useTransportStore.setState({ isRecording: false, isPlaying: false });
-      console.log('🔴 Auto-stopped recording on voice disconnect to save clip');
-      toast.info('Recording saved');
-    }
-
     // Stop audio processing
     if (processorRef.current) {
       processorRef.current.disconnect();
@@ -218,8 +210,12 @@ export const RealtimeVoiceWidget: React.FC<RealtimeVoiceWidgetProps> = ({
   // Play audio queue
   const playAudioQueue = async () => {
     if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
+
+    // AudioContext must be created by user gesture (in connect function)
+    // Don't create it here to avoid autoplay policy violations
     if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      console.warn('[RealtimeVoiceWidget] Cannot play audio: AudioContext not initialized. Connect to voice first.');
+      return;
     }
 
     isPlayingRef.current = true;

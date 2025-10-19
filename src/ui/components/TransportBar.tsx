@@ -21,17 +21,20 @@ export const TransportBar: React.FC = () => {
     isLooping,
     currentTime,
     bpm,
+    key,
     timeSignature,
     togglePlay,
     toggleRecord,
     toggleLoop,
     setBpm,
+    setKey,
     stop,
     skipBackward,
     skipForward,
   } = useTransportStore();
 
   const [bpmInput, setBpmInput] = useState(bpm.toString());
+  const [showKeySelector, setShowKeySelector] = useState(false);
 
   // Update BPM input when store changes
   useEffect(() => {
@@ -66,6 +69,13 @@ export const TransportBar: React.FC = () => {
     setBpm(bpm - 1);
   };
 
+  const musicKeys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+  const handleKeySelect = (selectedKey: string) => {
+    setKey(selectedKey);
+    setShowKeySelector(false);
+  };
+
 
   // Calculate bars, beats, ticks from current time
   const totalBeats = secondsToBeats(currentTime, bpm);
@@ -74,10 +84,10 @@ export const TransportBar: React.FC = () => {
   return (
     <div
       data-testid="transport-bar"
-      className="w-full bg-transparent px-6 py-3 flex items-center justify-between gap-8"
+      className="w-full bg-transparent px-6 py-3 flex items-center justify-center gap-8 relative"
     >
       {/* Left Section: BPM and Time Signature */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 absolute left-6">
         {/* BPM Control */}
         <div className="flex items-center gap-2">
           <div className="flex flex-col items-center">
@@ -109,6 +119,39 @@ export const TransportBar: React.FC = () => {
             />
             <span className="text-text-muted text-sm font-medium">BPM</span>
           </div>
+        </div>
+
+        {/* Key Control */}
+        <div className="flex items-center gap-2 relative">
+          <span className="text-text-muted text-sm font-medium">KEY:</span>
+          <button
+            onClick={() => setShowKeySelector(!showKeySelector)}
+            className="bg-bg-surface-2 text-text-base font-medium text-base px-3 py-1 rounded min-w-[50px] text-center outline-none hover:bg-bg-surface-hover transition-colors"
+            aria-label="Musical Key"
+          >
+            {key}
+          </button>
+
+          {showKeySelector && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowKeySelector(false)} />
+              <div className="absolute top-full left-0 mt-1 bg-bg-surface-2 border border-border-strong rounded-lg shadow-2xl z-20 grid grid-cols-3 gap-1 p-2">
+                {musicKeys.map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => handleKeySelect(k)}
+                    className={`px-3 py-2 text-sm rounded transition-colors ${
+                      k === key
+                        ? 'bg-primary text-text-base'
+                        : 'text-text-muted hover:bg-bg-surface-hover'
+                    }`}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Time Signature Display */}

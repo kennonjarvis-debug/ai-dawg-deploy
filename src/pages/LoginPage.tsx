@@ -45,7 +45,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       await login({ email: 'demo@aidaw.com', password: 'DemoPassword123!' });
-      toast.success('Welcome to AI DAW!');
+      toast.success('Welcome to DAWG AI!');
 
       // Auto-create demo project and redirect
       navigate('/app', { state: { createDemoProject: true } });
@@ -69,7 +69,7 @@ export const LoginPage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl mb-4 shadow-2xl shadow-blue-500/50">
             <Music2 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">AI DAW</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">DAWG AI</h1>
           <p className="text-gray-400">Sign in to your account</p>
         </div>
 
@@ -185,7 +185,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-8">
-          © 2025 AI DAW. All rights reserved.
+          © 2025 DAWG AI. All rights reserved.
         </p>
       </div>
     </div>

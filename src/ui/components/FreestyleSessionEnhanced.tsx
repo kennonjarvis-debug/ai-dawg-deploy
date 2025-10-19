@@ -128,8 +128,7 @@ export const FreestyleSessionEnhanced: React.FC<FreestyleSessionProps> = ({
   useEffect(() => {
     const initializeAudio = async () => {
       try {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-
+        // Load beat if URL provided (AudioContext will be created when recording starts)
         if (beatUrl) {
           beatAudioRef.current = new Audio(beatUrl);
           beatAudioRef.current.addEventListener('loadedmetadata', () => {
@@ -358,6 +357,16 @@ export const FreestyleSessionEnhanced: React.FC<FreestyleSessionProps> = ({
    */
   const startRecording = async (playBeatToo: boolean = false) => {
     try {
+      // Create AudioContext on user gesture (recording button click)
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+
+      // Resume AudioContext if suspended
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,

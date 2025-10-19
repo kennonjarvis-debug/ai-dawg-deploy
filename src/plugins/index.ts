@@ -9,3 +9,8 @@ export type {
   AudioPluginInterface,
   PluginParameter,
 } from './PluginSDK';
+
+/**
+ * DAWG AI EQ Plugins - AI-Powered EQ Suite
+ */
+export * from './ai-eq';

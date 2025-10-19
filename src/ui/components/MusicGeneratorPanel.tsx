@@ -6,8 +6,9 @@
  */
 
 import React, { useState } from 'react';
-import { Wand2, Music, Sparkles, Download, Play, Pause, AlertCircle, Info, Loader2 } from 'lucide-react';
+import { Wand2, Music, Sparkles, Download, Play, Pause, AlertCircle, Info, Loader2, Mic, MicOff, Guitar } from 'lucide-react';
 import { toast } from 'sonner';
+import { LyricsWidget } from '../recording/LyricsWidget';
 
 interface MusicGeneratorPanelProps {
   projectId: string;
@@ -25,6 +26,10 @@ export const MusicGeneratorPanel: React.FC<MusicGeneratorPanelProps> = ({
   const [tempo, setTempo] = useState(120);
   const [duration, setDuration] = useState(30); // seconds
   const [style, setStyle] = useState('full-production');
+  const [includeVocals, setIncludeVocals] = useState(false);
+  const [customLyrics, setCustomLyrics] = useState('');
+  const [useCustomLyrics, setUseCustomLyrics] = useState(false);
+  const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
 
   // State
   const [loading, setLoading] = useState(false);
@@ -63,6 +68,9 @@ export const MusicGeneratorPanel: React.FC<MusicGeneratorPanelProps> = ({
           duration,
           style,
           project_id: projectId,
+          include_vocals: includeVocals,
+          custom_lyrics: includeVocals && useCustomLyrics ? customLyrics : undefined,
+          instruments: selectedInstruments.length > 0 ? selectedInstruments : undefined,
         }),
       });
 
@@ -131,6 +139,17 @@ export const MusicGeneratorPanel: React.FC<MusicGeneratorPanelProps> = ({
     document.body.removeChild(a);
 
     toast.success('Download started');
+  };
+
+  /**
+   * Toggle instrument selection
+   */
+  const toggleInstrument = (instrument: string) => {
+    setSelectedInstruments(prev =>
+      prev.includes(instrument)
+        ? prev.filter(i => i !== instrument)
+        : [...prev, instrument]
+    );
   };
 
   return (
@@ -287,34 +306,161 @@ export const MusicGeneratorPanel: React.FC<MusicGeneratorPanelProps> = ({
             </div>
           </div>
 
-          {/* Style */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Style
-            </label>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Style & Vocals */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Style
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setStyle('full-production')}
+                  disabled={loading}
+                  className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                    style === 'full-production'
+                      ? 'bg-purple-500/30 border-2 border-purple-500 text-purple-300'
+                      : 'bg-black/40 border border-white/10 text-gray-400 hover:border-white/30'
+                  } disabled:opacity-50`}
+                >
+                  Full Production
+                </button>
+                <button
+                  onClick={() => setStyle('instrumental')}
+                  disabled={loading}
+                  className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                    style === 'instrumental'
+                      ? 'bg-purple-500/30 border-2 border-purple-500 text-purple-300'
+                      : 'bg-black/40 border border-white/10 text-gray-400 hover:border-white/30'
+                  } disabled:opacity-50`}
+                >
+                  Instrumental
+                </button>
+              </div>
+            </div>
+
+            {/* Vocals Toggle */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Vocals
+              </label>
               <button
-                onClick={() => setStyle('full-production')}
+                onClick={() => setIncludeVocals(!includeVocals)}
                 disabled={loading}
-                className={`px-4 py-3 rounded-lg font-medium transition-all ${
-                  style === 'full-production'
+                className={`w-full px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                  includeVocals
                     ? 'bg-purple-500/30 border-2 border-purple-500 text-purple-300'
                     : 'bg-black/40 border border-white/10 text-gray-400 hover:border-white/30'
                 } disabled:opacity-50`}
               >
-                Full Production
+                {includeVocals ? (
+                  <>
+                    <Mic className="w-4 h-4" />
+                    Vocals Enabled
+                  </>
+                ) : (
+                  <>
+                    <MicOff className="w-4 h-4" />
+                    Instrumental Only
+                  </>
+                )}
               </button>
-              <button
-                onClick={() => setStyle('instrumental')}
-                disabled={loading}
-                className={`px-4 py-3 rounded-lg font-medium transition-all ${
-                  style === 'instrumental'
-                    ? 'bg-purple-500/30 border-2 border-purple-500 text-purple-300'
-                    : 'bg-black/40 border border-white/10 text-gray-400 hover:border-white/30'
-                } disabled:opacity-50`}
-              >
-                Instrumental
-              </button>
+            </div>
+
+            {/* Custom Lyrics (shown when vocals enabled) */}
+            {includeVocals && (
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Lyrics
+                  </label>
+                  <button
+                    onClick={() => setUseCustomLyrics(!useCustomLyrics)}
+                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    {useCustomLyrics ? 'Auto-generate' : 'Add custom lyrics'}
+                  </button>
+                </div>
+
+                {useCustomLyrics && (
+                  <>
+                    <textarea
+                      value={customLyrics}
+                      onChange={(e) => setCustomLyrics(e.target.value)}
+                      placeholder="Enter your custom lyrics here... (optional)"
+                      disabled={loading}
+                      rows={6}
+                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 disabled:opacity-50 resize-none text-sm"
+                    />
+                    <p className="text-xs text-gray-500 flex items-start gap-1.5">
+                      <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      <span>Leave blank to let Suno AI auto-generate lyrics based on your prompt</span>
+                    </p>
+                  </>
+                )}
+
+                {!useCustomLyrics && (
+                  <p className="text-xs text-gray-500 flex items-start gap-1.5 px-4 py-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <Sparkles className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-blue-400" />
+                    <span className="text-blue-300">Suno AI will auto-generate lyrics based on your prompt and settings</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Specialized Instruments (Expert Music AI) */}
+            <div className="space-y-3 pt-2 border-t border-white/10">
+              <div className="flex items-center gap-2">
+                <Guitar className="w-4 h-4 text-orange-400" />
+                <label className="block text-sm font-medium text-gray-300">
+                  Specialized Instruments
+                </label>
+                <div className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded text-xs text-orange-300">
+                  Expert AI
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'telecaster', label: 'Telecaster Guitar', emoji: '🎸' },
+                  { id: 'metro_drums', label: 'Metro Drums', emoji: '🥁' },
+                  { id: 'martin_acoustic', label: 'Martin Acoustic', emoji: '🎻' },
+                  { id: 'piano', label: 'Grand Piano', emoji: '🎹' },
+                  { id: '808_bass', label: '808 Bass', emoji: '🔊' },
+                  { id: 'morgan_wallen', label: 'Morgan Wallen Style', emoji: '⭐' },
+                ].map((instrument) => (
+                  <button
+                    key={instrument.id}
+                    onClick={() => toggleInstrument(instrument.id)}
+                    disabled={loading}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                      selectedInstruments.includes(instrument.id)
+                        ? 'bg-orange-500/30 border-2 border-orange-500 text-orange-300'
+                        : 'bg-black/40 border border-white/10 text-gray-400 hover:border-white/30'
+                    } disabled:opacity-50`}
+                  >
+                    <span>{instrument.emoji}</span>
+                    <span className="truncate">{instrument.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {selectedInstruments.length > 0 && (
+                <div className="flex items-start gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                  <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-orange-400" />
+                  <div className="flex-1 text-xs text-orange-300">
+                    <p className="font-medium mb-1">Expert Music AI Enabled</p>
+                    <p className="text-orange-300/80">
+                      Using custom-trained models for {selectedInstruments.join(', ')}.
+                      Results will be ~80-90% of Suno quality with full instrument control.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 flex items-start gap-1.5">
+                <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <span>Select specialized instruments to use Expert Music AI models. Leave unselected to use standard Suno generation.</span>
+              </p>
             </div>
           </div>
         </div>

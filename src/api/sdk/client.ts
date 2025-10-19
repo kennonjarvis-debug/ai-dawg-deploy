@@ -1,7 +1,7 @@
 /**
- * AI DAW API Client SDK
+ * DAWG AI API Client SDK
  *
- * Client library for consuming the AI DAW API from other agents/services
+ * Client library for consuming the DAWG AI API from other agents/services
  * Usage:
  *
  * import { AIDAWClient } from './api/sdk/client';

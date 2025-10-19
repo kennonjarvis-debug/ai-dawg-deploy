@@ -35,16 +35,30 @@ export class PlaybackEngine {
   }
 
   /**
-   * Initialize playback engine with audio context
+   * Initialize playback engine with audio context (optional, can defer)
    */
-  initialize(audioContext: AudioContext): void {
-    this.audioContext = audioContext;
+  initialize(audioContext?: AudioContext): void {
+    if (audioContext) {
+      this.audioContext = audioContext;
+    }
+    // Note: If audioContext is null, it will be created lazily on first use
+    console.log('[PlaybackEngine] Initialized (AudioContext will be created on first playback)');
+  }
 
-    // Create master gain node
-    this.masterGain = audioContext.createGain();
-    this.masterGain.connect(audioContext.destination);
+  /**
+   * Ensure audio nodes are created (lazy initialization)
+   * @private
+   */
+  private ensureAudioNodes(): void {
+    if (!this.audioContext) {
+      throw new Error('AudioContext not available. Playback requires AudioContext.');
+    }
 
-    console.log('[PlaybackEngine] Initialized');
+    if (!this.masterGain) {
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.connect(this.audioContext.destination);
+      console.log('[PlaybackEngine] Audio nodes created');
+    }
   }
 
   /**
@@ -88,6 +102,9 @@ export class PlaybackEngine {
    * Start playback from specified time
    */
   start(tracks: Track[], startTime: number = 0, masterVolume: number = 1.0): void {
+    // Ensure audio nodes are created
+    this.ensureAudioNodes();
+
     if (!this.audioContext || !this.masterGain) {
       throw new Error('Playback engine not initialized');
     }

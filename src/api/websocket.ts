@@ -58,6 +58,12 @@ export class WebSocketClient {
       return;
     }
 
+    // Skip WebSocket connection in demo mode
+    if (import.meta.env.VITE_DEMO_MODE === 'true') {
+      console.log('[WebSocket] Demo mode enabled - skipping real-time connection');
+      return;
+    }
+
     try {
       this.token = token;
       this.socket = io(this.url, {

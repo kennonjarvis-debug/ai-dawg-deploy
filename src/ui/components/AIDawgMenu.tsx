@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Music2, TrendingUp, Sliders, Wand2, ChevronDown, Scissors, AlignCenter, Music, Volume2, Zap, Mic, Drum } from 'lucide-react';
+import { Sparkles, Music2, TrendingUp, Sliders, Wand2, ChevronDown, Scissors, AlignCenter, Music, Volume2, Zap, Mic, Drum, Guitar, Piano, Radio } from 'lucide-react';
 
 export interface AIDawgMenuItem {
   id: string;
@@ -7,42 +7,49 @@ export interface AIDawgMenuItem {
   icon: React.ReactNode;
   action: () => void;
   requiresSelection?: boolean;
-  category: 'vocal' | 'production' | 'auto';
+  category: 'vocal' | 'production' | 'ai';
 }
 
 interface AIDawgMenuProps {
   selectedClipCount: number;
-  onAutoComp: () => void;
-  onAutoTimeAlign: () => void;
-  onAutoPitch: () => void;
-  onAutoMix: () => void;
-  onAutoMaster: () => void;
-  onAutoMusic: () => void;
+  onAIComp: () => void;
+  onAITimeAlign: () => void;
+  onAIPitch: () => void;
+  onAIMix: () => void;
+  onAIMaster: () => void;
+  onAIMusic: () => void;
   onAIDawg: () => void;
   onAnalyzeVocals: () => void;
   onGenerateHarmony: () => void;
   onApplyGenrePreset: (genre: string) => void;
-  onGenerateBeat: () => void;
+  onGenerateBeat: (style?: string) => void;
+  onGenerateInstrument: (type?: string) => void;
+  onComposeFullSong: (style?: string) => void;
   onVoiceMemo: () => void;
 }
 
 export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
   selectedClipCount,
-  onAutoComp,
-  onAutoTimeAlign,
-  onAutoPitch,
-  onAutoMix,
-  onAutoMaster,
-  onAutoMusic,
+  onAIComp,
+  onAITimeAlign,
+  onAIPitch,
+  onAIMix,
+  onAIMaster,
+  onAIMusic,
   onAIDawg,
   onAnalyzeVocals,
   onGenerateHarmony,
   onApplyGenrePreset,
   onGenerateBeat,
+  onGenerateInstrument,
+  onComposeFullSong,
   onVoiceMemo,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showGenreSubmenu, setShowGenreSubmenu] = useState(false);
+  const [showBeatStyleSubmenu, setShowBeatStyleSubmenu] = useState(false);
+  const [showInstrumentSubmenu, setShowInstrumentSubmenu] = useState(false);
+  const [showCompositionSubmenu, setShowCompositionSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const genres = [
@@ -53,69 +60,87 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
     { id: 'electronic', label: 'Electronic', emoji: '🎹' },
   ];
 
+  const beatStyles = [
+    { id: 'metro-boomin', label: 'Metro Boomin', emoji: '🔥' },
+    { id: 'drake', label: '808 Mafia', emoji: '💎' },
+    { id: 'timbaland', label: 'Timbaland', emoji: '⚡' },
+    { id: 'pharrell', label: 'Pharrell', emoji: '✨' },
+    { id: 'southside', label: 'Southside', emoji: '🎯' },
+    { id: 'pierre-bourne', label: 'Pierre Bourne', emoji: '🌟' },
+  ];
+
+  const instrumentTypes = [
+    { id: 'bass', label: 'Bass Line', emoji: '🎸' },
+    { id: 'melody', label: 'Melody', emoji: '🎹' },
+    { id: 'chords', label: 'Chord Progression', emoji: '🎼' },
+    { id: 'synth', label: 'Synth Lead', emoji: '🎛️' },
+    { id: 'guitar', label: 'Guitar Riff', emoji: '🎸' },
+  ];
+
+  const compositionStyles = [
+    { id: 'full-beat', label: 'Full Beat (Trap/Hip-Hop)', emoji: '🔥' },
+    { id: 'lo-fi', label: 'Lo-Fi Instrumental', emoji: '🌙' },
+    { id: 'pop-track', label: 'Pop Production', emoji: '✨' },
+    { id: 'edm-drop', label: 'EDM Drop', emoji: '⚡' },
+    { id: 'rock-track', label: 'Rock Song', emoji: '🤘' },
+  ];
+
   const menuItems: AIDawgMenuItem[] = [
-    // DAWG AI AUTO FEATURES
+    // DAWG AI FEATURES
     {
       id: 'ai-dawg-full',
-      label: '🎸 Dawg AI (Full Auto)',
+      label: '⚡ DAWG AI (Full)',
       icon: <Zap className="w-5 h-5" />,
       action: onAIDawg,
       requiresSelection: true,
-      category: 'auto',
+      category: 'ai',
     },
     {
       id: 'ai-voice-memo',
       label: 'AI Voice Memo',
       icon: <Mic className="w-5 h-5" />,
       action: onVoiceMemo,
-      category: 'auto',
+      category: 'ai',
     },
     {
       id: 'ai-comp',
       label: 'AI Comp',
       icon: <Scissors className="w-5 h-5" />,
-      action: onAutoComp,
+      action: onAIComp,
       requiresSelection: true,
-      category: 'auto',
+      category: 'ai',
     },
     {
-      id: 'ai-tune',
-      label: 'AI Tune',
+      id: 'ai-time-align',
+      label: 'AI Time Align',
       icon: <AlignCenter className="w-5 h-5" />,
-      action: onAutoTimeAlign,
+      action: onAITimeAlign,
       requiresSelection: true,
-      category: 'auto',
+      category: 'ai',
     },
     {
-      id: 'ai-pitch',
-      label: 'AI Pitch',
+      id: 'ai-pitch-correct',
+      label: 'AI Pitch Correct',
       icon: <Music className="w-5 h-5" />,
-      action: onAutoPitch,
+      action: onAIPitch,
       requiresSelection: true,
-      category: 'auto',
+      category: 'ai',
     },
     {
       id: 'ai-mix',
       label: 'AI Mix',
       icon: <Sliders className="w-5 h-5" />,
-      action: onAutoMix,
+      action: onAIMix,
       requiresSelection: true,
-      category: 'auto',
+      category: 'ai',
     },
     {
       id: 'ai-master',
       label: 'AI Master',
       icon: <Volume2 className="w-5 h-5" />,
-      action: onAutoMaster,
+      action: onAIMaster,
       requiresSelection: true,
-      category: 'auto',
-    },
-    {
-      id: 'ai-music-gen',
-      label: 'AI Music Gen',
-      icon: <Sparkles className="w-5 h-5" />,
-      action: onAutoMusic,
-      category: 'auto',
+      category: 'ai',
     },
     // VOCAL TOOLS
     {
@@ -144,10 +169,24 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
     },
     // PRODUCTION
     {
-      id: 'generate-beat',
-      label: '🥁 Generate Beat',
-      icon: <Drum className="w-5 h-5 text-red-400" />,
-      action: onGenerateBeat,
+      id: 'ai-beat-generation',
+      label: 'AI Beat Generation',
+      icon: <Drum className="w-5 h-5" />,
+      action: () => setShowBeatStyleSubmenu(!showBeatStyleSubmenu),
+      category: 'production',
+    },
+    {
+      id: 'ai-instrument-gen',
+      label: 'AI Instrument Gen',
+      icon: <Guitar className="w-5 h-5" />,
+      action: () => setShowInstrumentSubmenu(!showInstrumentSubmenu),
+      category: 'production',
+    },
+    {
+      id: 'ai-full-composition',
+      label: 'AI Full Composition',
+      icon: <Radio className="w-5 h-5" />,
+      action: () => setShowCompositionSubmenu(!showCompositionSubmenu),
       category: 'production',
     },
   ];
@@ -158,6 +197,9 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setShowGenreSubmenu(false);
+        setShowBeatStyleSubmenu(false);
+        setShowInstrumentSubmenu(false);
+        setShowCompositionSubmenu(false);
       }
     };
 
@@ -176,10 +218,17 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
       return;
     }
 
-    if (item.id !== 'apply-genre-preset') {
+    // Don't close menu for submenu items
+    const submenuItems = ['apply-genre-preset', 'ai-beat-generation', 'ai-instrument-gen', 'ai-full-composition'];
+    if (!submenuItems.includes(item.id)) {
       item.action();
       setIsOpen(false);
       setShowGenreSubmenu(false);
+      setShowBeatStyleSubmenu(false);
+      setShowInstrumentSubmenu(false);
+      setShowCompositionSubmenu(false);
+    } else {
+      item.action();
     }
   };
 
@@ -189,14 +238,32 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
     setShowGenreSubmenu(false);
   };
 
+  const handleBeatStyleSelect = (styleId: string) => {
+    onGenerateBeat(styleId);
+    setIsOpen(false);
+    setShowBeatStyleSubmenu(false);
+  };
+
+  const handleInstrumentSelect = (instrumentId: string) => {
+    onGenerateInstrument(instrumentId);
+    setIsOpen(false);
+    setShowInstrumentSubmenu(false);
+  };
+
+  const handleCompositionSelect = (styleId: string) => {
+    onComposeFullSong(styleId);
+    setIsOpen(false);
+    setShowCompositionSubmenu(false);
+  };
+
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'auto':
-        return '⚡ DAWG AI AUTO FEATURES';
+      case 'ai':
+        return '⚡ DAWG AI FEATURES';
       case 'vocal':
         return 'VOCAL TOOLS';
       case 'production':
-        return 'PRODUCTION';
+        return 'AI MUSIC GENERATION';
       default:
         return category;
     }
@@ -271,6 +338,15 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
                         {item.id === 'apply-genre-preset' && (
                           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showGenreSubmenu ? '-rotate-90' : 'rotate-0'}`} />
                         )}
+                        {item.id === 'ai-beat-generation' && (
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showBeatStyleSubmenu ? '-rotate-90' : 'rotate-0'}`} />
+                        )}
+                        {item.id === 'ai-instrument-gen' && (
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showInstrumentSubmenu ? '-rotate-90' : 'rotate-0'}`} />
+                        )}
+                        {item.id === 'ai-full-composition' && (
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCompositionSubmenu ? '-rotate-90' : 'rotate-0'}`} />
+                        )}
                       </button>
 
                       {/* Genre Submenu */}
@@ -284,6 +360,54 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
                             >
                               <span className="text-lg">{genre.emoji}</span>
                               <span className="text-sm text-gray-300">{genre.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Beat Style Submenu */}
+                      {item.id === 'ai-beat-generation' && showBeatStyleSubmenu && (
+                        <div className="bg-black/60 border-t border-white/10 py-2">
+                          {beatStyles.map((style) => (
+                            <button
+                              key={style.id}
+                              onClick={() => handleBeatStyleSelect(style.id)}
+                              className="w-full flex items-center gap-3 px-8 py-2 hover:bg-purple-500/20 transition-all"
+                            >
+                              <span className="text-lg">{style.emoji}</span>
+                              <span className="text-sm text-gray-300">{style.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Instrument Submenu */}
+                      {item.id === 'ai-instrument-gen' && showInstrumentSubmenu && (
+                        <div className="bg-black/60 border-t border-white/10 py-2">
+                          {instrumentTypes.map((instrument) => (
+                            <button
+                              key={instrument.id}
+                              onClick={() => handleInstrumentSelect(instrument.id)}
+                              className="w-full flex items-center gap-3 px-8 py-2 hover:bg-purple-500/20 transition-all"
+                            >
+                              <span className="text-lg">{instrument.emoji}</span>
+                              <span className="text-sm text-gray-300">{instrument.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Composition Submenu */}
+                      {item.id === 'ai-full-composition' && showCompositionSubmenu && (
+                        <div className="bg-black/60 border-t border-white/10 py-2">
+                          {compositionStyles.map((style) => (
+                            <button
+                              key={style.id}
+                              onClick={() => handleCompositionSelect(style.id)}
+                              className="w-full flex items-center gap-3 px-8 py-2 hover:bg-purple-500/20 transition-all"
+                            >
+                              <span className="text-lg">{style.emoji}</span>
+                              <span className="text-sm text-gray-300">{style.label}</span>
                             </button>
                           ))}
                         </div>

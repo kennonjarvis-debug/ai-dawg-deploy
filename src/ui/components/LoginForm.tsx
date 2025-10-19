@@ -39,7 +39,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
             <LogIn className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-gray-400">Log in to your AI DAW account</p>
+          <p className="text-gray-400">Log in to your DAWG AI account</p>
         </div>
 
         {/* Error Message */}

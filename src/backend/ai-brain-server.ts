@@ -14,6 +14,8 @@ import { createServer } from 'http';
 import { audioConverter } from './services/audio-converter';
 import { generateMusic, generateBeat } from './services/udio-service';
 import { generateExpertMusic, isExpertMusicAvailable } from './services/expert-music-service';
+import { getCachedDAWFunctions, initializeFunctionCache } from './services/function-cache-service';
+import functionCacheRoutes from './routes/function-cache-routes';
 
 const app = express();
 const PORT = parseInt(process.env.AI_BRAIN_PORT || '8002', 10);
@@ -33,6 +35,14 @@ if (!process.env.OPENAI_API_KEY) {
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Function cache routes
+app.use('/api/functions', functionCacheRoutes);
+
+// Initialize function cache
+initializeFunctionCache()
+  .then(() => console.log('✅ DAW Function cache initialized'))
+  .catch((err) => console.error('❌ Function cache initialization failed:', err));
 
 // System prompt for DAWG AI
 const SYSTEM_PROMPT = `You are DAWG AI, an expert AI music production assistant with FULL CONTROL over a professional Digital Audio Workstation (DAW) modeled after Logic Pro X.
@@ -691,14 +701,15 @@ app.post('/api/chat', async (req, res) => {
 
     console.log(`📚 Conversation history length: ${httpChatHistory.length} messages`);
 
-    // Call OpenAI with conversation history
+    // Call OpenAI with conversation history (using cached function definitions)
+    const dawFunctions = getCachedDAWFunctions();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         ...httpChatHistory, // Include conversation history
       ],
-      functions: DAW_FUNCTIONS,
+      functions: dawFunctions,
       function_call: 'auto',
       temperature: 0.7,
       max_tokens: 500,
@@ -782,9 +793,10 @@ app.post('/api/voice-chat', async (req, res) => {
       if (project_context.lyrics) contextMessage += `Lyrics:\n${project_context.lyrics}\n`;
     }
 
-    // Step 3: Process with GPT-4o
+    // Step 3: Process with GPT-4o (using cached function definitions)
     console.log('🤖 Processing with GPT-4o...');
     apiCallCount.gpt++;
+    const dawFunctions = getCachedDAWFunctions();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -792,7 +804,7 @@ app.post('/api/voice-chat', async (req, res) => {
         { role: 'user', content: contextMessage },
         { role: 'user', content: transcript },
       ],
-      functions: DAW_FUNCTIONS,
+      functions: dawFunctions,
       function_call: 'auto',
       temperature: 0.7,
       max_tokens: 500,
@@ -949,16 +961,17 @@ io.on('connection', (socket) => {
         conversationHistory.splice(0, conversationHistory.length - 10);
       }
 
-      // Get AI response with conversation history
+      // Get AI response with conversation history (using cached function definitions)
       console.log('🤖 GPT-4o response with memory...');
       apiCallCount.gpt++;
+      const dawFunctions = getCachedDAWFunctions();
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...conversationHistory,
         ],
-        functions: DAW_FUNCTIONS,
+        functions: dawFunctions,
         function_call: 'auto',
         temperature: 0.7,
         max_tokens: 300, // Reduced for faster responses

@@ -8,6 +8,8 @@ import { Redis } from 'ioredis';
 import { logger } from '../utils/logger';
 import { emitToUser } from '../../api/websocket/server';
 import { dawIntegrationService } from '../services/daw-integration-service';
+import { generateBeat as generateBeatUdio } from '../services/udio-service';
+import { generateBeat as generateBeatMusicGen } from '../services/musicgen-service';
 
 // Redis connection
 const redisConnection = new Redis({
@@ -215,40 +217,74 @@ async function processBeatGeneration(job: Job<BeatGenerationData>): Promise<any>
     throw new Error('Duration must be between 15 and 300 seconds');
   }
 
-  // Stage 1: Generate drum pattern (25%)
-  updateProgress(job, 25, 'Generating drum pattern...');
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing
+  // Stage 1: Preparing music generation request
+  updateProgress(job, 10, 'Preparing AI music generation...');
 
-  // Stage 2: Create bassline (50%)
-  updateProgress(job, 50, 'Creating bassline...');
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Select provider (Udio for professional quality, MusicGen as fallback)
+  const provider = process.env.MUSIC_GENERATION_PROVIDER || 'udio';
 
-  // Stage 3: Add melody (75%)
-  updateProgress(job, 75, 'Adding melody and harmonies...');
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  logger.info(`Generating beat with ${provider.toUpperCase()}`, {
+    genre,
+    bpm,
+    key,
+    mood,
+    duration,
+    generationId: job.data.generationId,
+    provider,
+  });
 
-  // Stage 4: Mix and finalize (100%)
-  updateProgress(job, 95, 'Mixing and finalizing...');
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Stage 2: Calling music generation API (this takes 30-90 seconds)
+  updateProgress(job, 20, `Calling ${provider.toUpperCase()} API...`);
 
-  // TODO: Integrate with actual music generation API
-  // For now, return a mock result
+  let musicResult;
+
+  if (provider === 'udio') {
+    musicResult = await generateBeatUdio({
+      genre,
+      tempo: bpm,
+      duration,
+    });
+  } else {
+    // Fallback to MusicGen
+    musicResult = await generateBeatMusicGen({
+      genre,
+      tempo: bpm,
+      duration,
+    });
+  }
+
+  if (!musicResult.success || !musicResult.audio_url) {
+    throw new Error(musicResult.error || 'Failed to generate beat');
+  }
+
+  updateProgress(job, 90, 'Beat generated successfully!');
+
+  // Stage 3: Finalizing
+  updateProgress(job, 95, 'Finalizing...');
+
   const result = {
-    audioUrl: `https://storage.example.com/beats/${job.data.generationId}.mp3`,
+    audioUrl: musicResult.audio_url,
     duration,
     genre,
     bpm,
     key,
     mood,
+    stems: musicResult.stems || {}, // Udio provides stems for drums, bass, vocals, melody
     metadata: {
       format: 'mp3',
       bitrate: 320,
       sampleRate: 44100,
       channels: 2,
+      provider: provider,
     },
   };
 
   updateProgress(job, 100, 'Complete!');
+
+  logger.info('Beat generation complete', {
+    generationId: job.data.generationId,
+    audioUrl: result.audioUrl,
+  });
 
   return result;
 }

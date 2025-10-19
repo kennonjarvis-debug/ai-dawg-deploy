@@ -1,4 +1,4 @@
-# AI DAW Plugin System
+# DAWG AI Plugin System
 
 Professional VST3/AU plugin hosting with AI-powered mixing and mastering.
 

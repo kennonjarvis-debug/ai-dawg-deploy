@@ -1,9 +1,9 @@
 /**
- * AI DAW - Audio Engine
+ * DAWG AI - Audio Engine
  * Main entry point and public API
  *
  * @module AudioEngine
- * @author AI DAW Team - Agent 1 (Core Audio Engine Architect)
+ * @author DAWG AI Team - Agent 1 (Core Audio Engine Architect)
  */
 
 // Core Engine

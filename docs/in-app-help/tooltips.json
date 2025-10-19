@@ -1,0 +1,223 @@
+{
+  "melody_to_vocals": {
+    "feature_title": "Melody-to-Vocals",
+    "feature_description": "Transform your hummed melodies into professional vocals with AI-generated lyrics",
+
+    "audio_upload": {
+      "title": "Upload Melody",
+      "tooltip": "Upload a recording of you humming or singing a melody. Works best with 5-15 seconds of clear audio.",
+      "help_text": "Tip: Record in a quiet space for best results"
+    },
+
+    "prompt": {
+      "title": "Song Prompt",
+      "tooltip": "Describe what you want the song to be about. Example: 'A love song about summer nights'",
+      "placeholder": "A love song about...",
+      "help_text": "Be specific but concise (1-2 sentences works best)"
+    },
+
+    "genre": {
+      "title": "Genre",
+      "tooltip": "Select the musical genre for your lyrics. This influences word choice, themes, and style.",
+      "options": [
+        {"value": "pop", "label": "Pop", "description": "Mainstream, catchy, relatable"},
+        {"value": "rock", "label": "Rock", "description": "Edgy, powerful, energetic"},
+        {"value": "hip-hop", "label": "Hip-Hop", "description": "Rhythmic, modern, urban"},
+        {"value": "r&b", "label": "R&B", "description": "Smooth, soulful, romantic"},
+        {"value": "country", "label": "Country", "description": "Storytelling, traditional"},
+        {"value": "folk", "label": "Folk", "description": "Acoustic, personal, narrative"},
+        {"value": "indie", "label": "Indie", "description": "Alternative, artistic"},
+        {"value": "electronic", "label": "Electronic", "description": "Futuristic, dance-oriented"},
+        {"value": "jazz", "label": "Jazz", "description": "Sophisticated, complex"},
+        {"value": "blues", "label": "Blues", "description": "Emotional, raw"}
+      ]
+    },
+
+    "mood": {
+      "title": "Mood",
+      "tooltip": "Set the emotional atmosphere of your song. This guides the AI's creative direction.",
+      "placeholder": "happy, nostalgic, energetic...",
+      "suggestions": [
+        "happy",
+        "sad",
+        "nostalgic",
+        "energetic",
+        "romantic",
+        "peaceful",
+        "angry",
+        "hopeful",
+        "playful",
+        "melancholic"
+      ],
+      "help_text": "Optional but recommended for better results"
+    },
+
+    "theme": {
+      "title": "Theme",
+      "tooltip": "The main subject or topic of the song. Examples: love, freedom, personal growth",
+      "placeholder": "love, freedom, celebration...",
+      "suggestions": [
+        "love",
+        "heartbreak",
+        "freedom",
+        "personal growth",
+        "celebration",
+        "struggle",
+        "nature",
+        "memory",
+        "adventure",
+        "dreams"
+      ],
+      "help_text": "Optional - helps focus the lyrical content"
+    },
+
+    "ai_provider": {
+      "title": "AI Provider",
+      "tooltip": "Choose which AI generates the lyrics. Claude is more creative, GPT-4 is more structured.",
+      "options": [
+        {
+          "value": "anthropic",
+          "label": "Claude AI",
+          "description": "Creative, nuanced storytelling",
+          "recommended_for": "Complex themes, narrative songs"
+        },
+        {
+          "value": "openai",
+          "label": "GPT-4",
+          "description": "Versatile, well-structured",
+          "recommended_for": "Genre-specific, mainstream styles"
+        }
+      ],
+      "help_text": "Both produce excellent results - try each to find your preference"
+    },
+
+    "vocal_model": {
+      "title": "Vocal Model",
+      "tooltip": "Choose the AI model for vocal synthesis. Bark is faster with clearer lyrics, MusicGen sounds more musical.",
+      "options": [
+        {
+          "value": "bark",
+          "label": "Bark (Recommended)",
+          "description": "Clear pronunciation, natural speech",
+          "processing_time": "~25 seconds",
+          "best_for": "Pop, R&B, ballads",
+          "pros": ["Clearer lyrics", "Faster processing", "Natural speech"],
+          "cons": ["Less 'singing' quality"]
+        },
+        {
+          "value": "musicgen",
+          "label": "MusicGen",
+          "description": "More musical, follows melody closely",
+          "processing_time": "~50 seconds",
+          "best_for": "Rock, country, upbeat songs",
+          "pros": ["Better melody following", "More singing quality"],
+          "cons": ["Less clear lyrics", "Slower"]
+        }
+      ],
+      "help_text": "Try Bark first for clarity, MusicGen for more musical results"
+    },
+
+    "processing_status": {
+      "extracting": {
+        "title": "Extracting Melody",
+        "message": "Analyzing your audio to identify the melody...",
+        "estimated_time": "1-2 seconds"
+      },
+      "generating_lyrics": {
+        "title": "Generating Lyrics",
+        "message": "AI is writing lyrics that match your melody...",
+        "estimated_time": "3-5 seconds"
+      },
+      "synthesizing": {
+        "title": "Synthesizing Vocals",
+        "message": "Creating professional vocals with the generated lyrics...",
+        "estimated_time": "20-50 seconds"
+      }
+    },
+
+    "results": {
+      "audio_player": {
+        "tooltip": "Listen to your AI-generated vocals. Click to play/pause."
+      },
+      "lyrics_display": {
+        "title": "Generated Lyrics",
+        "tooltip": "These lyrics were created to match your melody's rhythm and structure"
+      },
+      "melody_info": {
+        "title": "Melody Analysis",
+        "tooltip": "Details about your melody extracted by AI",
+        "fields": {
+          "notes": "Number of distinct notes in your melody",
+          "duration": "Length of the melody in seconds",
+          "key": "Detected musical key",
+          "range": "Pitch range from lowest to highest note"
+        }
+      },
+      "download": {
+        "tooltip": "Download the generated vocal track (MP3 format)"
+      },
+      "copy_lyrics": {
+        "tooltip": "Copy lyrics to clipboard"
+      },
+      "regenerate": {
+        "tooltip": "Generate a new version with different lyrics",
+        "help_text": "Uses the same melody but creates new lyrics"
+      }
+    },
+
+    "errors": {
+      "no_melody": {
+        "title": "Could Not Extract Melody",
+        "message": "We couldn't detect a clear melody in your audio.",
+        "suggestions": [
+          "Record in a quieter environment",
+          "Hum or sing louder and more clearly",
+          "Ensure your melody is audible throughout",
+          "Try a different audio format (WAV recommended)"
+        ]
+      },
+      "api_error": {
+        "title": "Processing Error",
+        "message": "Something went wrong while generating your vocals.",
+        "suggestions": [
+          "Check your internet connection",
+          "Verify API keys are configured",
+          "Try again in a moment",
+          "Contact support if issue persists"
+        ]
+      },
+      "file_too_large": {
+        "title": "File Too Large",
+        "message": "Your audio file is too large (max 10MB).",
+        "suggestions": [
+          "Trim your recording to 5-15 seconds",
+          "Compress the audio file",
+          "Use a lower bitrate or sample rate"
+        ]
+      }
+    },
+
+    "tips": {
+      "recording": [
+        "Record in a quiet room for best results",
+        "Hum or sing clearly and confidently",
+        "5-15 seconds is the sweet spot",
+        "Don't worry about perfect pitch",
+        "Maintain consistent volume throughout"
+      ],
+      "prompts": [
+        "Be specific but concise",
+        "Focus on emotion and theme",
+        "Examples: 'A love song about summer nights'",
+        "Avoid technical music terminology",
+        "Think about what you'd tell a songwriter"
+      ],
+      "parameters": [
+        "Genre affects lyrical style and vocabulary",
+        "Mood guides the emotional direction",
+        "Theme focuses the lyrical content",
+        "Try different combinations to explore options"
+      ]
+    }
+  }
+}

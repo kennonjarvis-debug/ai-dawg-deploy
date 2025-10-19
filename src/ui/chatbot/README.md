@@ -1,6 +1,6 @@
-# AI DAWG Chatbot Assistant
+# DAWG AIG Chatbot Assistant
 
-An intelligent onboarding assistant for AI DAWG that helps users discover features and generate music interactively.
+An intelligent onboarding assistant for DAWG AIG that helps users discover features and generate music interactively.
 
 ## Features
 
@@ -251,7 +251,7 @@ npm run test -- src/ui/chatbot
 
 ## License
 
-Part of AI DAWG project.
+Part of DAWG AIG project.
 
 ## Support
 

@@ -100,11 +100,6 @@ export const SectionMarkers: React.FC<SectionMarkersProps> = ({
 
   return (
     <div className="relative h-12 bg-gradient-to-b from-bg-surface to-bg-surface-2 border-b border-border-strong">
-      {/* Current time indicator */}
-      <div className="absolute top-2 right-2 z-30 px-3 py-1.5 bg-bg-surface-2 border border-border-base rounded-lg shadow-lg">
-        <span className="text-xs font-mono text-text-muted">{formatTime(currentTime)}</span>
-      </div>
-
       {/* Section markers */}
       <div className="absolute inset-0 overflow-hidden pt-8">
         {sortedMarkers.map((marker) => {

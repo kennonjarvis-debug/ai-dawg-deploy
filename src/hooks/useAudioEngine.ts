@@ -67,29 +67,68 @@ export const useAudioEngine = () => {
     });
   }, [tracks, isInitialized, updateTrack]);
 
+  // Helper to ensure AudioContext is created and engines are initialized
+  const ensureAudioContextInitialized = async () => {
+    if (!engineRef.current) return false;
+
+    // Ensure AudioContext is created (requires user gesture)
+    const audioContext = (engineRef.current as any).audioContext;
+
+    if (!audioContext) {
+      // Create AudioContext via ensureAudioContext (this requires a user gesture)
+      await (engineRef.current as any).ensureAudioContext();
+      const newAudioContext = (engineRef.current as any).audioContext;
+
+      if (!newAudioContext) {
+        console.error('[useAudioEngine] Failed to create AudioContext');
+        return false;
+      }
+
+      // Initialize engines with the new AudioContext
+      if (playbackRef.current) {
+        playbackRef.current.initialize(newAudioContext);
+      }
+      if (metronomeRef.current) {
+        metronomeRef.current.initialize(newAudioContext);
+      }
+      if (!routingRef.current) {
+        const routing = initializeRoutingEngine(newAudioContext);
+        routingRef.current = routing;
+
+        // Wire routing engine to AudioEngine for plugin processing
+        if (engineRef.current) {
+          engineRef.current.setRoutingEngine(routing);
+        }
+
+        console.log('[useAudioEngine] Routing engine initialized and wired to AudioEngine');
+      }
+    }
+
+    return true;
+  };
+
   // Initialize audio engine (WITHOUT microphone access)
   useEffect(() => {
     const init = async () => {
       try {
-        // Initialize audio context only (no mic request yet)
+        // Initialize audio engine (AudioContext creation is deferred until user gesture)
         const engine = getAudioEngine();
-        await engine.initialize(); // Only creates AudioContext
+        await engine.initialize();
         engineRef.current = engine;
 
-        // Initialize playback engine with same audio context
-        const audioContext = (engine as any).audioContext;
+        // Initialize playback engine without AudioContext (will be created lazily)
         const playback = getPlaybackEngine();
-        playback.initialize(audioContext);
+        playback.initialize(); // No audioContext passed - will be created on first use
         playbackRef.current = playback;
 
-        // Initialize metronome with same audio context
+        // Initialize metronome without AudioContext (will be created lazily)
         const metronome = getMetronomeEngine();
-        metronome.initialize(audioContext);
+        metronome.initialize(); // No audioContext passed - will be created on first use
         metronomeRef.current = metronome;
 
-        // Initialize Logic Pro routing engine
-        const routing = initializeRoutingEngine(audioContext);
-        routingRef.current = routing;
+        // Note: Routing engine initialization is deferred until AudioContext is created
+        // It will be initialized when microphone access is requested
+        routingRef.current = null;
 
         setIsInitialized(true);
 
@@ -114,12 +153,22 @@ export const useAudioEngine = () => {
           });
         });
 
+        // Set up live waveform callback for Pro Tools-style recording visualization
+        engine.onLiveWaveform((trackId, waveformData, duration) => {
+          updateTrack(trackId, {
+            isRecording: true,
+            liveWaveformData: waveformData,
+            liveRecordingDuration: duration,
+            liveRecordingStartTime: currentTime - duration,
+          });
+        });
+
         // Set up playback time update callback
         playback.setTimeUpdateCallback((time) => {
           setCurrentTime(time);
         });
 
-        console.log('[useAudioEngine] All engines initialized (audio, playback, metronome, routing) - mic not requested yet');
+        console.log('[useAudioEngine] Basic engines initialized (AudioContext deferred until user gesture)');
       } catch (error) {
         console.error('[useAudioEngine] Initialization failed:', error);
         toast.error('Failed to initialize audio engine');
@@ -169,7 +218,12 @@ export const useAudioEngine = () => {
       if (shouldHaveMic && !microphoneActive) {
         // Request microphone access when tracks are armed
         try {
+          // This will create AudioContext and request microphone
           await engineRef.current!.requestMicrophoneAccess();
+
+          // Ensure all engines are initialized with the AudioContext
+          await ensureAudioContextInitialized();
+
           setMicrophoneActive(true);
           setHasPermission(true);
           console.log('🎙️ [useAudioEngine] Microphone activated (track armed)');
@@ -240,7 +294,7 @@ export const useAudioEngine = () => {
     // Find armed tracks and set their monitoring
     tracks.forEach(track => {
       if (track.isArmed) {
-        engineRef.current!.setInputMonitoring(track.inputMonitoring, isPlaying);
+        engineRef.current!.setInputMonitoring(track.inputMonitoring, isPlaying, track.id);
       }
     });
   }, [tracks, isPlaying]);
@@ -275,6 +329,9 @@ export const useAudioEngine = () => {
     if (!playbackRef.current) return;
 
     try {
+      // Ensure AudioContext is created (requires user gesture)
+      await ensureAudioContextInitialized();
+
       // Play count-in if enabled
       if (countIn > 0 && metronomeRef.current) {
         toast.info(`Count-in: ${countIn} bars...`);
@@ -353,6 +410,17 @@ export const useAudioEngine = () => {
         if (buffer) {
           console.log('[useAudioEngine] Recording stopped');
         }
+
+        // Clear live waveform visualization
+        if (recordingTrackRef.current) {
+          updateTrack(recordingTrackRef.current, {
+            isRecording: false,
+            liveWaveformData: undefined,
+            liveRecordingDuration: undefined,
+            liveRecordingStartTime: undefined,
+          });
+        }
+
         recordingTrackRef.current = null;
       }
     } catch (error) {

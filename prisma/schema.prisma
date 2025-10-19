@@ -167,6 +167,148 @@ model Project {
 }
 
 // ============================================
+// COST MONITORING SYSTEM
+// ============================================
+
+model ApiUsageLog {
+  id          String   @id @default(uuid())
+  userId      String
+
+  // API details
+  service     String   // whisper | gpt-4o | tts-1-hd | realtime-api
+  operation   String   // transcription | chat | synthesis | realtime-chat | realtime-audio-input | realtime-audio-output
+
+  // Usage metrics
+  inputTokens  Int?     // For GPT-4o and Realtime API
+  outputTokens Int?     // For GPT-4o and Realtime API
+  audioMinutes Float?   // For Whisper and Realtime audio
+  characters   Int?     // For TTS
+
+  // Cost calculation
+  unitCost     Float    // Cost per unit (per token, minute, character)
+  totalCost    Float    // Total cost for this usage
+
+  // Metadata
+  requestId    String?  // Unique request identifier
+  metadata     String?  // JSON: Additional context
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([service])
+  @@index([createdAt])
+}
+
+model BudgetLimit {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+
+  // Budget settings
+  dailyLimit   Float?   // Daily budget limit in USD
+  monthlyLimit Float?   // Monthly budget limit in USD
+
+  // Current usage (reset periodically)
+  dailySpent   Float    @default(0)
+  monthlySpent Float    @default(0)
+
+  // Alert settings
+  alertThreshold Float  @default(0.8) // Alert at 80% of budget
+  alertsEnabled  Boolean @default(true)
+  pauseOnExceed  Boolean @default(false) // Pause services when budget exceeded
+
+  // Last reset timestamps
+  lastDailyReset   DateTime @default(now())
+  lastMonthlyReset DateTime @default(now())
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CostAlert {
+  id          String   @id @default(uuid())
+  userId      String
+
+  // Alert details
+  type        String   // threshold_reached | budget_exceeded | daily_summary
+  message     String
+  severity    String   // info | warning | critical
+
+  // Alert data
+  currentSpent Float
+  budgetLimit  Float?
+  percentage   Float?   // Percentage of budget used
+
+  // Status
+  isRead      Boolean  @default(false)
+  isResolved  Boolean  @default(false)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============================================
+// AI TRAINING DATA COLLECTION
+// ============================================
+
+model TrainingMetadata {
+  id                String    @id @default(uuid())
+  userId            String
+  generationId      String    @unique
+
+  // User input
+  userPrompt        String
+  aiEnhancedPrompt  String?
+
+  // Generation parameters (JSON)
+  generationParams  String    // { genre, bpm, key, mood, style, duration, model, provider }
+
+  // Generated output
+  audioUrl          String
+  audioStorageKey   String?   // S3/storage key if we store it
+  duration          Float
+  format            String
+
+  // Analysis results (JSON)
+  analysisMetadata  String?   // VocalCharacteristics, RhythmCharacteristics, StyleMetadata
+
+  // Audio features (JSON)
+  audioEmbedding    String?   // Feature vector for similarity search
+  spectralFeatures  String?   // spectralCentroid, spectralRolloff, mfcc, chromagram
+
+  // User feedback (JSON)
+  userFeedback      String?   // { liked, rating, feedback, used, feedbackTimestamp }
+
+  // Training metadata
+  provider          String    // suno, musicgen, expert_music_ai
+  modelUsed         String?
+  generationCost    Float?
+  generationDuration Float?   // Time to generate in seconds
+
+  // Training flags
+  usedForTraining   Boolean   @default(false)
+  trainingEpoch     Int?      // Which training epoch used this data
+  qualityScore      Float?    // Auto-computed quality score (0-1)
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([provider])
+  @@index([usedForTraining])
+  @@index([createdAt])
+}
+
+// ============================================
 // EXISTING MODELS (if any)
 // Add your existing models below
 // ============================================

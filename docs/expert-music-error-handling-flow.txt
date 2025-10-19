@@ -1,0 +1,277 @@
+Expert Music AI Error Handling Flow Diagram
+===========================================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                      CLIENT REQUEST                                  │
+│              POST /api/melody-to-vocals                              │
+└────────────────────────┬────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                   AI BRAIN SERVER (Port 8002)                        │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────┐        │
+│  │  1. Check Health Check Service                         │        │
+│  │     - Get current status                               │        │
+│  │     - Check circuit breaker state                      │        │
+│  └────────────────────────────────────────────────────────┘        │
+└─────────────────────────┬───────────────────────────────────────────┘
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+              ▼                       ▼
+    ┌─────────────────┐    ┌─────────────────┐
+    │ Circuit OPEN?   │    │ Service DOWN?   │
+    └────────┬────────┘    └────────┬────────┘
+             │                      │
+         YES │                  YES │
+             ▼                      ▼
+    ┌─────────────────────────────────────────┐
+    │     GRACEFUL DEGRADATION                │
+    │                                          │
+    │  Return 503 with:                       │
+    │  ✓ Clear error message                  │
+    │  ✓ Alternatives (Udio/Suno)            │
+    │  ✓ Queue option                         │
+    │  ✓ Retry-after header                   │
+    │  ✓ Estimated recovery time              │
+    └─────────────────────────────────────────┘
+             │
+             ▼
+    ┌─────────────────────────────────────────┐
+    │     FRONTEND HANDLES ERROR              │
+    │                                          │
+    │  ✓ Show status indicator (red/orange)   │
+    │  ✓ Display alternatives                 │
+    │  ✓ Offer to queue request               │
+    │  ✓ Suggest Udio/Suno instead            │
+    └─────────────────────────────────────────┘
+
+
+         NO  │
+             ▼
+    ┌─────────────────────────────────────────┐
+    │     SERVICE AVAILABLE                   │
+    │     Forward request to Expert Music AI  │
+    └────────────────────┬────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│               EXPERT MUSIC AI (Port 8003)                            │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────┐        │
+│  │  Process Request                                       │        │
+│  │  - Generate vocals from melody                         │        │
+│  │  - Return audio URL + metadata                         │        │
+│  └────────────────────────────────────────────────────────┘        │
+└─────────────────────────┬───────────────────────────────────────────┘
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+          SUCCESS                  FAILURE
+              │                       │
+              ▼                       ▼
+    ┌─────────────────┐    ┌─────────────────┐
+    │ Return 200      │    │ Health Check    │
+    │ Audio + Lyrics  │    │ Detects Failure │
+    └─────────────────┘    └────────┬────────┘
+                                    │
+                                    ▼
+                          ┌─────────────────┐
+                          │ Increment       │
+                          │ Failure Counter │
+                          └────────┬────────┘
+                                   │
+                    ┌──────────────┴──────────────┐
+                    │                             │
+            Failures < 3                  Failures >= 3
+                    │                             │
+                    ▼                             ▼
+          ┌─────────────────┐         ┌─────────────────┐
+          │ Status: DOWN    │         │ TRIP CIRCUIT    │
+          │ Circuit: CLOSED │         │ Status: CIRCUIT │
+          └─────────────────┘         │        OPEN     │
+                                      └────────┬────────┘
+                                               │
+                                               ▼
+                                      ┌─────────────────┐
+                                      │ Block requests  │
+                                      │ for 5 minutes   │
+                                      └────────┬────────┘
+                                               │
+                                      Wait 5 minutes
+                                               │
+                                               ▼
+                                      ┌─────────────────┐
+                                      │ HALF-OPEN       │
+                                      │ Test recovery   │
+                                      └────────┬────────┘
+                                               │
+                                   ┌───────────┴───────────┐
+                                   │                       │
+                               SUCCESS                 FAILURE
+                                   │                       │
+                                   ▼                       ▼
+                          ┌─────────────────┐   ┌─────────────────┐
+                          │ CLOSE CIRCUIT   │   │ REOPEN CIRCUIT  │
+                          │ Resume normal   │   │ Wait 5 more min │
+                          └─────────────────┘   └─────────────────┘
+
+
+BACKGROUND PROCESSES
+====================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                 HEALTH CHECK SERVICE                                 │
+│                 (Every 30 seconds)                                   │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────┐        │
+│  │  1. Ping Expert Music AI                               │        │
+│  │     GET http://localhost:8003/                         │        │
+│  └────────────────────────────────────────────────────────┘        │
+│                           │                                          │
+│               ┌───────────┴───────────┐                             │
+│               │                       │                              │
+│           SUCCESS                 FAILURE                            │
+│               │                       │                              │
+│               ▼                       ▼                              │
+│  ┌──────────────────────┐  ┌──────────────────────┐               │
+│  │ • Status = UP        │  │ • Status = DOWN      │               │
+│  │ • Reset failures = 0 │  │ • failures++         │               │
+│  │ • Track uptime       │  │ • Track downtime     │               │
+│  │ • Record resp time   │  │ • Check for trip     │               │
+│  │ • Emit 'service-up'  │  │ • Emit 'service-down'│               │
+│  └──────────────────────┘  └──────────┬───────────┘               │
+│                                        │                             │
+│                            If down > 5 minutes                       │
+│                                        │                             │
+│                                        ▼                             │
+│                           ┌──────────────────────┐                  │
+│                           │ SEND ALERT           │                  │
+│                           │ • Email (TODO)       │                  │
+│                           │ • Slack (TODO)       │                  │
+│                           │ • PagerDuty (TODO)   │                  │
+│                           │ • Emit 'downtime-    │                  │
+│                           │   alert'             │                  │
+│                           └──────────────────────┘                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+REQUEST QUEUE PROCESS
+=====================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                      REQUEST QUEUE                                   │
+│                                                                      │
+│  When service is DOWN or circuit is OPEN:                          │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────┐        │
+│  │  Request arrives → Add to queue                        │        │
+│  │                                                         │        │
+│  │  Queue entry:                                          │        │
+│  │  {                                                     │        │
+│  │    id: 'req_12345',                                   │        │
+│  │    timestamp: 1234567890,                              │        │
+│  │    endpoint: '/melody-to-vocals',                      │        │
+│  │    params: { prompt, genre, ... },                     │        │
+│  │    resolve: fn,                                        │        │
+│  │    reject: fn                                          │        │
+│  │  }                                                     │        │
+│  └────────────────────────────────────────────────────────┘        │
+│                           │                                          │
+│                           │                                          │
+│                  Wait for recovery                                  │
+│                           │                                          │
+│                           ▼                                          │
+│  ┌────────────────────────────────────────────────────────┐        │
+│  │  Service recovers → Process queue                      │        │
+│  │                                                         │        │
+│  │  For each queued request:                              │        │
+│  │  1. Emit 'process-queued-request' event               │        │
+│  │  2. Handler makes actual request                       │        │
+│  │  3. Resolve/reject promise                             │        │
+│  └────────────────────────────────────────────────────────┘        │
+│                                                                      │
+│  Timeout: 10 minutes                                                │
+│  If not processed → reject with timeout error                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+ADMIN OPERATIONS
+================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                      ADMIN ENDPOINTS                                 │
+│                                                                      │
+│  GET /api/expert-music/health                                       │
+│  → Returns full metrics + queue status                              │
+│                                                                      │
+│  POST /api/expert-music/health/check                                │
+│  → Trigger immediate health check                                   │
+│                                                                      │
+│  POST /api/expert-music/circuit-breaker/reset                       │
+│  → Manually close circuit                                           │
+│  → Use when you know service is fixed                               │
+│                                                                      │
+│  POST /api/expert-music/queue/clear                                 │
+│  → Clear all queued requests                                        │
+│  → Returns count of cleared requests                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+METRICS TRACKED
+===============
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  Service Metrics                                                     │
+│  ================                                                    │
+│  • status: 'up' | 'down' | 'degraded' | 'circuit_open'             │
+│  • circuitState: 'closed' | 'open' | 'half_open'                   │
+│  • consecutiveFailures: number                                      │
+│  • totalFailures: number                                            │
+│  • totalSuccesses: number                                           │
+│  • uptime: milliseconds                                             │
+│  • downtime: milliseconds                                           │
+│  • uptimePercentage: 0-100                                          │
+│  • averageResponseTime: milliseconds                                │
+│  • lastCheckTime: timestamp                                         │
+│  • lastSuccessTime: timestamp | null                                │
+│  • lastFailureTime: timestamp | null                                │
+│  • queuedRequests: number                                           │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+EVENT FLOW
+==========
+
+Health Check Events:
+  service-up        → Service came online
+  service-down      → Service went offline
+  circuit-opened    → Circuit breaker tripped
+  circuit-closed    → Circuit breaker reset
+  circuit-reopened  → Circuit reopened in half-open state
+  downtime-alert    → Service down > 5 minutes
+  request-queued    → Request added to queue
+  circuit-reset     → Admin manually reset circuit
+
+Event handlers can:
+  - Send notifications (email, Slack, PagerDuty)
+  - Log to monitoring systems
+  - Trigger auto-scaling
+  - Update dashboards
+  - Alert on-call engineers
+
+
+CONFIGURATION
+=============
+
+Environment Variables:
+  EXPERT_MUSIC_AI_URL=http://localhost:8003
+  EXPERT_MUSIC_AI_ENABLED=true
+
+Tuning Parameters:
+  HEALTH_CHECK_INTERVAL = 30000ms (30s)
+  CIRCUIT_BREAKER_THRESHOLD = 3 failures
+  CIRCUIT_BREAKER_TIMEOUT = 300000ms (5min)
+  ALERT_THRESHOLD = 300000ms (5min)
+  QUEUE_TIMEOUT = 600000ms (10min)

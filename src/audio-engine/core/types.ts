@@ -1,5 +1,5 @@
 /**
- * Core type definitions for the AI DAW Audio Engine
+ * Core type definitions for the DAWG AI Audio Engine
  */
 
 export interface AudioEngineConfig {

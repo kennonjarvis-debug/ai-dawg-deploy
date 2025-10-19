@@ -11,6 +11,7 @@ export interface TransportState {
   // Time and tempo
   currentTime: number; // in seconds
   bpm: number;
+  key: string; // Musical key (e.g. "C", "C#", "D", etc.)
   timeSignature: { numerator: number; denominator: number };
 
   // Volume
@@ -49,6 +50,7 @@ export interface TransportState {
   reset: () => void;
 
   setBpm: (bpm: number) => void;
+  setKey: (key: string) => void;
   setCurrentTime: (time: number) => void;
   setMasterVolume: (volume: number) => void;
   setTimeSignature: (numerator: number, denominator: number) => void;
@@ -108,8 +110,9 @@ export const useTransportStore = create<TransportState>((set, get) => ({
   loopEnd: 8,
   currentTime: 0,
   bpm: 120,
+  key: 'C',
   timeSignature: { numerator: 4, denominator: 4 },
-  masterVolume: 0.75,
+  masterVolume: 1.0,
 
   // Punch recording
   punchMode: 'off',
@@ -194,8 +197,9 @@ export const useTransportStore = create<TransportState>((set, get) => ({
       loopEnd: 8,
       currentTime: 0,
       bpm: 120,
+      key: 'C',
       timeSignature: { numerator: 4, denominator: 4 },
-      masterVolume: 0.75,
+      masterVolume: 1.0,
       punchMode: 'off',
       punchInTime: null,
       punchOutTime: null,
@@ -217,6 +221,11 @@ export const useTransportStore = create<TransportState>((set, get) => ({
     }
     set({ bpm });
     console.log('[Transport] BPM set to:', bpm);
+  },
+
+  setKey: (key: string) => {
+    set({ key });
+    console.log('[Transport] Key set to:', key);
   },
 
   setCurrentTime: (time: number) => {

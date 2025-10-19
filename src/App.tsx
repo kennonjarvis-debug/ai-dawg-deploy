@@ -36,7 +36,16 @@ function App() {
         <AuthProvider>
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
+            {/* In dev (localhost), redirect root to app. In production, show landing page */}
+            <Route
+              path="/"
+              element={
+                window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                  ? <Navigate to="/app" replace />
+                  : <LandingPage />
+              }
+            />
+            <Route path="/home" element={<LandingPage />} />
             <Route path="/demo" element={<LiveDemoPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/pricing" element={<PricingPage />} />

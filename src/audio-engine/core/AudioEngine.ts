@@ -1,5 +1,5 @@
 /**
- * Core Audio Engine - Main class for AI DAW
+ * Core Audio Engine - Main class for DAWG AI
  * Handles real-time audio processing, routing, and playback
  */
 

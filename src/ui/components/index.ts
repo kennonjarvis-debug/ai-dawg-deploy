@@ -12,12 +12,15 @@ export { CollaboratorList } from './CollaboratorList';
 export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 export { LoadingSpinner, SkeletonLoader, SkeletonCard } from './LoadingSpinner';
 export { AudioUploader } from './AudioUploader';
+export { AudioUploaderClientSide } from './AudioUploaderClientSide';
 export { AudioFileList } from './AudioFileList';
 export { MixerPanel } from './MixerPanel';
 export { ExportModal } from './ExportModal';
 export { AIDawgMenu } from './AIDawgMenu';
 export { AIProcessingModal } from './AIProcessingModal';
 export type { AIProcessingJob } from './AIProcessingModal';
+export { MusicGenerationProgressBar } from './MusicGenerationProgressBar';
+export type { MusicGenerationProgress } from './MusicGenerationProgressBar';
 export { AIChatWidget } from './AIChatWidget';
 export { RealtimeVoiceWidget } from './RealtimeVoiceWidget';
 export { UpsellModal } from './UpsellModal';
@@ -33,6 +36,12 @@ export type { FreestyleSessionProps } from './FreestyleSession';
 export { FreestyleSessionEnhanced } from './FreestyleSessionEnhanced';
 export { default as PunchMarkers } from './PunchMarkers';
 export type { PunchMarker } from './PunchMarkers';
+export { AIInsightsPanel } from './AIInsightsPanel';
+export { Widget } from './Widget';
+export type { WidgetProps } from './Widget';
+export { AuxTrackDialog } from './AuxTrackDialog';
+export { AdvancedFeaturesPanel } from './AdvancedFeaturesPanel';
+export { LivePitchDisplay } from './LivePitchDisplay';
 
 // Base UI Components
 export { Modal, Button, ButtonGroup, Input, Select, Textarea, Checkbox, FormField } from './base';

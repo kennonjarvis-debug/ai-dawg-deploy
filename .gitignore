@@ -75,3 +75,4 @@ credentials.json
 
 # Local Netlify folder
 .netlify
+venv-expert-music/

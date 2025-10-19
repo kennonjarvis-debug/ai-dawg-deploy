@@ -21,8 +21,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install OpenSSL 1.1 compatibility for Prisma and tsx for running TypeScript
-RUN apk add --no-cache openssl1.1-compat && npm install -g tsx
+# Install OpenSSL for Prisma and tsx for running TypeScript
+RUN apk add --no-cache openssl && npm install -g tsx
 
 # Copy package files
 COPY package*.json ./

@@ -148,15 +148,16 @@ export async function initializeWebSocket(io: SocketIOServer) {
   // Connection handler
   io.on('connection', (socket: AuthenticatedSocket) => {
     const username = socket.username || 'anonymous';
-    const userId = socket.userId || socket.id; // Use socket.id as fallback if auth is disabled
+    // When auth is disabled, try to get userId from auth.userId, otherwise fall back to socket.id
+    const userId = socket.userId || (socket.handshake.auth?.userId as string) || socket.id;
 
-    logger.info(`WebSocket client connected: ${socket.id} (user: ${username})`);
+    logger.info(`WebSocket client connected: ${socket.id} (user: ${username}, userId: ${userId})`);
 
     // Metrics: track connection
     wsConnectionsGauge.labels('websocket').inc();
     wsConnectionsTotal.labels('websocket', 'connect').inc();
 
-    // Join user's personal room (use userId or socket.id as fallback)
+    // Join user's personal room
     socket.join(`user:${userId}`);
 
     // Project collaboration handlers
@@ -385,6 +386,76 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
+    // Lyrics analysis events
+    socket.on('lyrics:update', (data: any) => {
+      const { projectId, trackId, lyrics } = data;
+      socket.to(`project:${projectId}`).emit('lyrics:updated', {
+        userId,
+        username,
+        trackId,
+        lyrics,
+        timestamp: new Date(),
+      });
+    });
+
+    socket.on('lyrics:analyze-request', (data: any) => {
+      const { projectId, trackId, lyrics, genre } = data;
+      socket.to(`project:${projectId}`).emit('lyrics:analyzing', {
+        userId,
+        trackId,
+        timestamp: new Date(),
+      });
+    });
+
+    socket.on('lyrics:analysis-complete', (data: any) => {
+      const { projectId, trackId, analysis } = data;
+      socket.to(`project:${projectId}`).emit('lyrics:analyzed', {
+        userId,
+        trackId,
+        analysis,
+        timestamp: new Date(),
+      });
+    });
+
+    socket.on('lyrics:section-labels-update', (data: any) => {
+      const { projectId, trackId, sectionLabels } = data;
+      socket.to(`project:${projectId}`).emit('lyrics:section-labels-updated', {
+        userId,
+        trackId,
+        sectionLabels,
+        timestamp: new Date(),
+      });
+    });
+
+    socket.on('lyrics:recommendations-ready', (data: any) => {
+      const { projectId, trackId, recommendations } = data;
+      socket.to(`project:${projectId}`).emit('lyrics:recommendations', {
+        userId,
+        trackId,
+        recommendations,
+        timestamp: new Date(),
+      });
+    });
+
+    // Multi-clip analysis events
+    socket.on('clips:analyze-request', (data: any) => {
+      const { projectId, clipIds } = data;
+      socket.to(`project:${projectId}`).emit('clips:analyzing', {
+        userId,
+        clipIds,
+        timestamp: new Date(),
+      });
+    });
+
+    socket.on('clips:analysis-complete', (data: any) => {
+      const { projectId, analysis } = data;
+      socket.to(`project:${projectId}`).emit('clips:analyzed', {
+        userId,
+        analysis,
+        timestamp: new Date(),
+      });
+    });
+
     // Disconnect handler
     socket.on('disconnect', () => {
       logger.info(`WebSocket client disconnected: ${socket.id} (user: ${username})`);
@@ -552,6 +623,39 @@ export function emitGenerationFailed(userId: string, jobId: string, error: strin
   emitToUser(userId, 'generation:failed', {
     jobId,
     error,
+    timestamp: new Date(),
+  });
+}
+
+// Lyrics analysis event emitters
+export function emitLyricsAnalyzed(userId: string, trackId: string, analysis: any) {
+  emitToUser(userId, 'lyrics:analyzed', {
+    trackId,
+    analysis,
+    timestamp: new Date(),
+  });
+}
+
+export function emitLyricsSectionLabels(userId: string, trackId: string, sectionLabels: any) {
+  emitToUser(userId, 'lyrics:section-labels-updated', {
+    trackId,
+    sectionLabels,
+    timestamp: new Date(),
+  });
+}
+
+export function emitLyricsRecommendations(userId: string, trackId: string, recommendations: any) {
+  emitToUser(userId, 'lyrics:recommendations', {
+    trackId,
+    recommendations,
+    timestamp: new Date(),
+  });
+}
+
+// Multi-clip analysis event emitters
+export function emitClipsAnalyzed(userId: string, analysis: any) {
+  emitToUser(userId, 'clips:analyzed', {
+    analysis,
     timestamp: new Date(),
   });
 }

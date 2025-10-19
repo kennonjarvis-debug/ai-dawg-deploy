@@ -22,17 +22,17 @@ import type {
 export class RoutingEngine implements IRoutingEngine {
   private mixerState: MixerState;
   private pluginHost: PluginHost;
-  private audioContext: AudioContext;
+  private audioContext: AudioContext | null;
 
-  // Audio nodes for routing
+  // Audio nodes for routing (lazily initialized)
   private trackGainNodes: Map<string, GainNode> = new Map();
   private trackPanNodes: Map<string, StereoPannerNode> = new Map();
   private sendGainNodes: Map<string, Map<string, GainNode>> = new Map(); // trackId -> sendId -> GainNode
   private busGainNodes: Map<string, GainNode> = new Map();
   private insertNodes: Map<string, Map<string, AudioNode>> = new Map(); // trackId -> insertId -> AudioNode
 
-  constructor(audioContext: AudioContext, pluginHost: PluginHost) {
-    this.audioContext = audioContext;
+  constructor(pluginHost: PluginHost, audioContext?: AudioContext) {
+    this.audioContext = audioContext ?? null;
     this.pluginHost = pluginHost;
 
     // Initialize mixer state
@@ -43,7 +43,37 @@ export class RoutingEngine implements IRoutingEngine {
       soloMode: 'off',
     };
 
-    console.log('[RoutingEngine] Initialized');
+    // Create default buses (Logic Pro style: Reverb, Delay, etc.)
+    this.createDefaultBuses();
+
+    console.log('[RoutingEngine] Initialized with Logic Pro X-style routing');
+  }
+
+  /**
+   * Create default aux buses (Logic Pro style)
+   */
+  private createDefaultBuses(): void {
+    // Create common effect buses
+    const defaultBuses = [
+      { name: 'Reverb', type: 'aux' as const },
+      { name: 'Delay', type: 'aux' as const },
+      { name: 'Chorus', type: 'aux' as const },
+      { name: 'Mix Bus', type: 'submix' as const },
+    ];
+
+    defaultBuses.forEach(({ name, type }) => {
+      this.createBus(name, type === 'aux');
+    });
+
+    console.log('[RoutingEngine] Created default buses:', defaultBuses.map(b => b.name).join(', '));
+  }
+
+  /**
+   * Set or update the AudioContext (allows deferred initialization)
+   */
+  setAudioContext(audioContext: AudioContext): void {
+    this.audioContext = audioContext;
+    console.log('[RoutingEngine] AudioContext set');
   }
 
   /**
@@ -140,16 +170,40 @@ export class RoutingEngine implements IRoutingEngine {
   }
 
   /**
-   * Create audio nodes for a track's signal chain
+   * Create audio nodes for a track's signal chain (deferred until AudioContext is available)
    */
   private createTrackAudioNodes(trackId: string): void {
-    const gainNode = this.audioContext.createGain();
-    const panNode = this.audioContext.createStereoPanner();
+    // Initialize empty maps for nodes - actual nodes created lazily when needed
+    if (!this.sendGainNodes.has(trackId)) {
+      this.sendGainNodes.set(trackId, new Map());
+    }
+    if (!this.insertNodes.has(trackId)) {
+      this.insertNodes.set(trackId, new Map());
+    }
 
-    this.trackGainNodes.set(trackId, gainNode);
-    this.trackPanNodes.set(trackId, panNode);
-    this.sendGainNodes.set(trackId, new Map());
-    this.insertNodes.set(trackId, new Map());
+    // Only create audio nodes if AudioContext is available
+    if (this.audioContext) {
+      this.ensureTrackAudioNodes(trackId);
+    }
+  }
+
+  /**
+   * Ensure audio nodes exist for a track (lazy initialization)
+   */
+  private ensureTrackAudioNodes(trackId: string): void {
+    if (!this.audioContext) {
+      return;
+    }
+
+    if (!this.trackGainNodes.has(trackId)) {
+      const gainNode = this.audioContext.createGain();
+      this.trackGainNodes.set(trackId, gainNode);
+    }
+
+    if (!this.trackPanNodes.has(trackId)) {
+      const panNode = this.audioContext.createStereoPanner();
+      this.trackPanNodes.set(trackId, panNode);
+    }
   }
 
   /**
@@ -177,10 +231,12 @@ export class RoutingEngine implements IRoutingEngine {
 
     track.channelStrip.sends.push(send);
 
-    // Create audio node for send
-    const sendGain = this.audioContext.createGain();
-    sendGain.gain.value = send.level;
-    this.sendGainNodes.get(trackId)!.set(send.id, sendGain);
+    // Create audio node for send only if AudioContext is available
+    if (this.audioContext) {
+      const sendGain = this.audioContext.createGain();
+      sendGain.gain.value = send.level;
+      this.sendGainNodes.get(trackId)!.set(send.id, sendGain);
+    }
 
     console.log(`[RoutingEngine] Created ${position} send on track ${trackId} to ${destination}`);
     return send;
@@ -251,10 +307,12 @@ export class RoutingEngine implements IRoutingEngine {
 
     this.mixerState.buses.set(busId, bus);
 
-    // Create audio node for bus
-    const busGain = this.audioContext.createGain();
-    busGain.gain.value = bus.volume;
-    this.busGainNodes.set(busId, busGain);
+    // Create audio node for bus only if AudioContext is available
+    if (this.audioContext) {
+      const busGain = this.audioContext.createGain();
+      busGain.gain.value = bus.volume;
+      this.busGainNodes.set(busId, busGain);
+    }
 
     console.log(`[RoutingEngine] Created bus: ${name} (${isAuxTrack ? 'aux track' : 'submix'})`);
     return bus;
@@ -456,10 +514,22 @@ export class RoutingEngine implements IRoutingEngine {
 
     send.level = Math.max(0, Math.min(1, level));
 
-    // Update audio node
-    const sendGain = this.sendGainNodes.get(trackId)?.get(sendId);
-    if (sendGain) {
-      sendGain.gain.value = send.level;
+    // Update audio node if it exists
+    if (this.audioContext) {
+      let sendGain = this.sendGainNodes.get(trackId)?.get(sendId);
+
+      // Lazy create send gain node if it doesn't exist
+      if (!sendGain) {
+        sendGain = this.audioContext.createGain();
+        const trackSends = this.sendGainNodes.get(trackId);
+        if (trackSends) {
+          trackSends.set(sendId, sendGain);
+        }
+      }
+
+      if (sendGain) {
+        sendGain.gain.value = send.level;
+      }
     }
   }
 
@@ -483,14 +553,171 @@ export class RoutingEngine implements IRoutingEngine {
   }
 
   /**
+   * Route track to bus (Logic Pro style)
+   */
+  routeTrackToBus(trackId: string, busId: string): void {
+    const track = this.mixerState.tracks.get(trackId);
+    const bus = this.mixerState.buses.get(busId);
+
+    if (!track) {
+      throw new Error(`Track not found: ${trackId}`);
+    }
+
+    if (!bus) {
+      throw new Error(`Bus not found: ${busId}`);
+    }
+
+    // Update track output routing
+    track.channelStrip.output = {
+      type: 'bus',
+      destination: busId,
+      gain: 0,
+    };
+
+    console.log(`[RoutingEngine] Routed track ${trackId} to bus ${busId}`);
+  }
+
+  /**
+   * Route track to master (default routing)
+   */
+  routeTrackToMaster(trackId: string): void {
+    const track = this.mixerState.tracks.get(trackId);
+
+    if (!track) {
+      throw new Error(`Track not found: ${trackId}`);
+    }
+
+    track.channelStrip.output = {
+      type: 'master',
+      destination: 'master',
+      gain: 0,
+    };
+
+    console.log(`[RoutingEngine] Routed track ${trackId} to master`);
+  }
+
+  /**
+   * Get available buses for routing
+   */
+  getAvailableBuses(): { id: string; name: string; type: string }[] {
+    const buses = Array.from(this.mixerState.buses.values()).map(bus => ({
+      id: bus.id,
+      name: bus.name,
+      type: bus.type,
+    }));
+
+    return [
+      { id: 'master', name: 'Stereo Out', type: 'master' },
+      ...buses,
+    ];
+  }
+
+  /**
+   * Create a send to a specific bus (quick send creation)
+   */
+  createSendToBus(
+    trackId: string,
+    busId: string,
+    position: SendPosition = 'post-fader',
+    level: number = 0
+  ): Send {
+    const send = this.createSend(trackId, busId, position);
+    this.setSendLevel(trackId, send.id, level);
+    return send;
+  }
+
+  /**
+   * Get track's current routing destination
+   */
+  getTrackRoutingDestination(trackId: string): { type: string; destination: string } | null {
+    const track = this.mixerState.tracks.get(trackId);
+    if (!track) return null;
+
+    return {
+      type: track.channelStrip.output.type,
+      destination: track.channelStrip.output.destination,
+    };
+  }
+
+  /**
+   * Connect input monitoring through track's channel strip
+   * Routes audio through plugins and sends to destination
+   */
+  connectInputMonitoring(
+    sourceNode: GainNode,
+    trackId: string,
+    destination: AudioNode
+  ): void {
+    if (!this.audioContext) {
+      console.warn('[RoutingEngine] Cannot connect input monitoring - AudioContext not set');
+      return;
+    }
+
+    const track = this.mixerState.tracks.get(trackId);
+    if (!track) {
+      console.warn(`[RoutingEngine] Cannot connect input monitoring - track not found: ${trackId}`);
+      return;
+    }
+
+    // Ensure track audio nodes exist
+    this.ensureTrackAudioNodes(trackId);
+
+    // Disconnect any existing connections from source
+    try {
+      sourceNode.disconnect();
+    } catch (e) {
+      // Ignore if already disconnected
+    }
+
+    // Build signal chain through inserts
+    let currentNode: AudioNode = sourceNode;
+
+    // Process inserts in order: pre-eq -> eq -> post-eq
+    const orderedInserts = [...track.channelStrip.inserts]
+      .filter(i => i.pluginInstanceId && i.enabled)
+      .sort((a, b) => a.slot - b.slot);
+
+    for (const insert of orderedInserts) {
+      const insertNode = this.insertNodes.get(trackId)?.get(insert.id);
+      if (insertNode) {
+        currentNode.connect(insertNode);
+        currentNode = insertNode;
+      }
+    }
+
+    // Connect through pan node
+    const panNode = this.trackPanNodes.get(trackId);
+    if (panNode) {
+      panNode.pan.value = track.channelStrip.pan;
+      currentNode.connect(panNode);
+      currentNode = panNode;
+    }
+
+    // Connect through volume/gain node
+    const gainNode = this.trackGainNodes.get(trackId);
+    if (gainNode) {
+      gainNode.gain.value = track.channelStrip.volume;
+      currentNode.connect(gainNode);
+      currentNode = gainNode;
+    }
+
+    // Finally connect to destination
+    currentNode.connect(destination);
+
+    console.log(`[RoutingEngine] Input monitoring connected for track ${trackId} through ${orderedInserts.length} plugins`);
+  }
+
+  /**
    * Cleanup
    */
   dispose(): void {
-    // Disconnect all nodes
-    this.trackGainNodes.forEach(node => node.disconnect());
-    this.trackPanNodes.forEach(node => node.disconnect());
-    this.busGainNodes.forEach(node => node.disconnect());
-    this.sendGainNodes.forEach(sends => sends.forEach(node => node.disconnect()));
+    // Disconnect all nodes only if they exist
+    if (this.audioContext) {
+      this.trackGainNodes.forEach(node => node.disconnect());
+      this.trackPanNodes.forEach(node => node.disconnect());
+      this.busGainNodes.forEach(node => node.disconnect());
+      this.sendGainNodes.forEach(sends => sends.forEach(node => node.disconnect()));
+    }
 
     this.trackGainNodes.clear();
     this.trackPanNodes.clear();

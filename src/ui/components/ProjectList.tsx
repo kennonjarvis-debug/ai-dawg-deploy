@@ -28,16 +28,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject, current
 
   const loadEntitlements = async () => {
     try {
-      // Demo mode: Use mock entitlements
-      const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
-      if (isDemoMode) {
-        setPlanLimits({
-          plan: 'PRO',
-          maxProjects: 100,
-        });
-        return;
-      }
-
       const entitlements = await apiClient.getEntitlements();
       // Map plan to project limits
       const limits = {
@@ -72,7 +62,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({ onOpenProject, current
           {
             id: 'demo-project-1',
             name: 'Demo Song - Electronic Dance',
-            description: 'A demo project showcasing the AI DAW features',
+            description: 'A demo project showcasing the DAWG AI features',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             userId: 'demo-user',

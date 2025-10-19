@@ -158,7 +158,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Subheadline */}
             <p className="text-xl sm:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-              AI DAW brings studio-quality production to everyone. Comp, pitch correct, mix, and master your tracks with AI in seconds.
+              DAWG AI brings studio-quality production to everyone. Comp, pitch correct, mix, and master your tracks with AI in seconds.
             </p>
 
             {/* CTA Buttons */}
