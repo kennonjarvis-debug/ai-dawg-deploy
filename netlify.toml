@@ -12,8 +12,8 @@
 
 [context.production.environment]
   VITE_DEMO_MODE = "true"
-  # Unified Backend (all services consolidated into one Railway service)
-  VITE_API_URL = "https://dawg-ai-backend-production.up.railway.app/api"
-  VITE_WEBSOCKET_URL = "https://dawg-ai-backend-production.up.railway.app"
-  VITE_AI_BRAIN_URL = "https://dawg-ai-backend-production.up.railway.app"
-  VITE_REALTIME_VOICE_URL = "https://dawg-ai-backend-production.up.railway.app"
+  # Backend on Vercel Serverless (Railway no longer used - migrated Oct 2025)
+  VITE_API_URL = "https://ai-dawg-deploy-g1ort01sz-bens-projects-4e60e0da.vercel.app/api"
+  VITE_WEBSOCKET_URL = "https://ai-dawg-deploy-g1ort01sz-bens-projects-4e60e0da.vercel.app"
+  VITE_AI_BRAIN_URL = "https://ai-dawg-deploy-g1ort01sz-bens-projects-4e60e0da.vercel.app"
+  VITE_REALTIME_VOICE_URL = "https://ai-dawg-deploy-g1ort01sz-bens-projects-4e60e0da.vercel.app"
