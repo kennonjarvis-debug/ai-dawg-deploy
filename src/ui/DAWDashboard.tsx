@@ -2350,7 +2350,7 @@ export const DAWDashboard: React.FC = () => {
         projectId={currentProject?.id || ''}
         userId={currentUser?.id || ''}
         currentProject={currentProject}
-        isRecording={isRecording}
+        isRecording={isRecordingActive}
         websocketUrl={import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:3001'}
       />
     </div>
