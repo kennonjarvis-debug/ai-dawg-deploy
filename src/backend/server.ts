@@ -16,6 +16,7 @@ import costMonitoringRoutes from './routes/cost-monitoring-routes';
 import lyricsRoutes from './routes/lyrics-routes';
 import clipsRoutes from './routes/clips-routes';
 import advancedFeaturesRoutes from './routes/advanced-features-routes';
+import { authRouter } from './routes/deprecated/auth-routes';
 import { initializeWebSocket } from '../api/websocket/server';
 import { logger } from './utils/logger';
 import { shutdownGenerationQueue } from './queues/generation-queue';
@@ -67,12 +68,18 @@ app.use((req, _res, next) => {
 });
 
 // Mount routes
+app.use('/api/v1/auth', authRouter); // Auth routes
 app.use('/api/generate', generationRoutes);
 app.use('/api/tracks', trackRoutes);
 app.use('/api/cost-monitoring', costMonitoringRoutes);
 app.use('/api/lyrics', lyricsRoutes);
 app.use('/api/clips', clipsRoutes);
 app.use('/api/v1', advancedFeaturesRoutes); // Advanced features routes
+
+// CSRF token endpoint
+app.get('/api/v1/csrf-token', (_req, res) => {
+  res.json({ csrfToken: 'demo-csrf-token' });
+});
 
 // Health check
 app.get('/health', (_req, res) => {

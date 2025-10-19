@@ -39,7 +39,7 @@ export class AIVintageCompressor {
   private analysis: CompressorAnalysis;
 
   // DSP state
-  private envelopeFollower: number = 0;
+  private envelopeFollower: number = -96; // Initialize to silence level in dB
   private gainReduction: number = 0;
   private sampleRate: number = 48000;
 
@@ -394,19 +394,36 @@ export class AIVintageCompressor {
 
   /**
    * AI-powered tube saturation with harmonic enhancement
+   * UPGRADE: Replaced incorrect additive synthesis with proper nonlinear waveshaping
+   * that generates natural harmonics through asymmetric distortion
    */
   private applyTubeSaturation(sample: number, amount: number): number {
     if (amount === 0) return sample;
 
-    // Soft tube-style saturation (hyperbolic tangent)
-    const drive = 1 + amount * 4; // 1x to 5x drive
-    const saturated = Math.tanh(sample * drive) / Math.tanh(drive);
+    // Asymmetric tube-style waveshaping (generates even harmonics naturally)
+    const drive = 1 + amount * 3; // 1x to 4x drive
 
-    // Add even harmonics (tube characteristic)
-    const harmonic2 = 0.05 * amount * Math.sin(2 * Math.PI * saturated);
-    const harmonic3 = 0.02 * amount * Math.sin(3 * Math.PI * saturated);
+    // Pre-emphasis for natural tube response
+    const emphasized = sample * drive;
 
-    return saturated + harmonic2 + harmonic3;
+    // Asymmetric clipping (tube characteristic - different curves for +/-)
+    let saturated: number;
+    if (emphasized > 0) {
+      // Positive half: softer clipping (more headroom)
+      saturated = emphasized / (1 + emphasized * emphasized * 0.3);
+    } else {
+      // Negative half: harder clipping (generates even harmonics)
+      saturated = emphasized / (1 + Math.abs(emphasized) * 1.5);
+    }
+
+    // Add subtle grid bias (tube DC offset characteristic)
+    const bias = amount * 0.05;
+    saturated = saturated + bias * (1 - saturated * saturated);
+
+    // Normalize and apply makeup gain
+    const normalized = saturated / (drive * 0.5 + 0.5);
+
+    return normalized;
   }
 
   /**
@@ -535,9 +552,7 @@ export class AIVintageCompressor {
    * Format parameter value for display
    */
   private formatParameterValue(id: string, value: number): string {
-    const param = this.parameters.get(id);
-    if (!param) return value.toFixed(2);
-
+    // Don't try to access this.parameters during initialization
     switch (id) {
       case 'ratio':
         return `${value.toFixed(1)}:1`;

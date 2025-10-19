@@ -4,8 +4,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authService } from '../services/auth-service';
-import { aiMemoryService } from '../services/ai-memory-service';
+import { authService } from '../../services/auth-service';
+import { aiMemoryService } from '../../services/ai-memory-service';
 
 export const authRouter = Router();
 

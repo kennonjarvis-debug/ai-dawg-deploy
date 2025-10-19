@@ -37,7 +37,7 @@ export class WebSocketClient {
 
       // For local development
       if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        return 'http://localhost:3001';
+        return 'http://localhost:3100';
       }
 
       // For production, use same host with appropriate protocol
@@ -46,7 +46,7 @@ export class WebSocketClient {
         return `${protocol}//${window.location.hostname}`;
       }
 
-      return 'http://localhost:3001';
+      return 'http://localhost:3100';
     })();
 
     console.log('[WebSocket] Connecting to:', baseUrl);

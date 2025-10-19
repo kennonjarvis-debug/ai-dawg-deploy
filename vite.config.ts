@@ -23,7 +23,7 @@ export default defineConfig({
     proxy: {
       // Proxy API requests to backend server
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3100',
         changeOrigin: true,
         secure: false,
       },
