@@ -11,10 +11,30 @@ import {
   wsMessagesTotal,
   wsLatencyHistogram,
 } from '../../backend/metrics';
+import type {
+  WebSocketEventData,
+  ProjectUpdateData,
+  TrackEventData,
+  ClipEventData,
+  PlaybackSyncData,
+  CursorMoveData,
+  AIEventData,
+  RecordingEventData,
+  SelectionEventData,
+  LyricsEventData,
+  ClipsAnalysisData,
+} from '../../types/api';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
   username?: string;
+}
+
+interface JWTPayload {
+  userId: string;
+  username: string;
+  iat?: number;
+  exp?: number;
 }
 
 // Export io instance for use in other services
@@ -121,7 +141,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       }
 
       // Verify token
-      const decoded = jwt.verify(token, jwtSecret) as any;
+      const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
 
       // Get user session
       const session = await prisma.session.findUnique({
@@ -208,7 +228,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Real-time project updates
-    socket.on('project:update', async (data: any) => {
+    socket.on('project:update', async (data: ProjectUpdateData) => {
       const { projectId, update } = data;
 
       // Broadcast to all users in the project except sender
@@ -223,7 +243,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Track events
-    socket.on('track:create', (data: any) => {
+    socket.on('track:create', (data: TrackEventData) => {
       const { projectId, track } = data;
       socket.to(`project:${projectId}`).emit('track:created', {
         userId,
@@ -232,7 +252,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('track:update', (data: any) => {
+    socket.on('track:update', (data: TrackEventData) => {
       const { projectId, trackId, changes } = data;
       socket.to(`project:${projectId}`).emit('track:updated', {
         userId,
@@ -242,7 +262,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('track:delete', (data: any) => {
+    socket.on('track:delete', (data: TrackEventData) => {
       const { projectId, trackId } = data;
       socket.to(`project:${projectId}`).emit('track:deleted', {
         userId,
@@ -251,7 +271,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('track:reorder', (data: any) => {
+    socket.on('track:reorder', (data: TrackEventData) => {
       const { projectId, trackOrders } = data;
       socket.to(`project:${projectId}`).emit('track:reordered', {
         userId,
@@ -261,7 +281,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Clip events
-    socket.on('clip:create', (data: any) => {
+    socket.on('clip:create', (data: ClipEventData) => {
       const { projectId, clip } = data;
       socket.to(`project:${projectId}`).emit('clip:created', {
         userId,
@@ -270,7 +290,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('clip:update', (data: any) => {
+    socket.on('clip:update', (data: ClipEventData) => {
       const { projectId, clipId, changes } = data;
       socket.to(`project:${projectId}`).emit('clip:updated', {
         userId,
@@ -280,7 +300,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('clip:delete', (data: any) => {
+    socket.on('clip:delete', (data: ClipEventData) => {
       const { projectId, clipId } = data;
       socket.to(`project:${projectId}`).emit('clip:deleted', {
         userId,
@@ -290,7 +310,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Playback synchronization
-    socket.on('playback:sync', (data: any) => {
+    socket.on('playback:sync', (data: PlaybackSyncData) => {
       const { projectId, state } = data;
       socket.to(`project:${projectId}`).emit('playback:synced', {
         userId,
@@ -300,7 +320,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Cursor position for collaboration awareness
-    socket.on('cursor:move', (data: any) => {
+    socket.on('cursor:move', (data: CursorMoveData) => {
       const { projectId, position } = data;
       socket.to(`project:${projectId}`).emit('cursor:moved', {
         userId,
@@ -310,7 +330,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // AI processing events
-    socket.on('ai:start', (data: any) => {
+    socket.on('ai:start', (data: AIEventData) => {
       const { projectId, taskId, taskType } = data;
       socket.to(`project:${projectId}`).emit('ai:started', {
         userId,
@@ -321,7 +341,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('ai:progress', (data: any) => {
+    socket.on('ai:progress', (data: AIEventData) => {
       const { projectId, taskId, progress, message } = data;
       socket.to(`project:${projectId}`).emit('ai:progress-update', {
         userId,
@@ -332,7 +352,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('ai:complete', (data: any) => {
+    socket.on('ai:complete', (data: AIEventData) => {
       const { projectId, taskId, result } = data;
       socket.to(`project:${projectId}`).emit('ai:completed', {
         userId,
@@ -343,7 +363,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('ai:error', (data: any) => {
+    socket.on('ai:error', (data: AIEventData) => {
       const { projectId, taskId, error } = data;
       socket.to(`project:${projectId}`).emit('ai:failed', {
         userId,
@@ -354,7 +374,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Recording events
-    socket.on('recording:start', (data: any) => {
+    socket.on('recording:start', (data: RecordingEventData) => {
       const { projectId, trackId } = data;
       socket.to(`project:${projectId}`).emit('recording:started', {
         userId,
@@ -364,7 +384,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('recording:stop', (data: any) => {
+    socket.on('recording:stop', (data: RecordingEventData) => {
       const { projectId, trackId, clipId } = data;
       socket.to(`project:${projectId}`).emit('recording:stopped', {
         userId,
@@ -375,7 +395,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Selection events
-    socket.on('selection:change', (data: any) => {
+    socket.on('selection:change', (data: SelectionEventData) => {
       const { projectId, selectedClips, selectedTracks } = data;
       socket.to(`project:${projectId}`).emit('selection:changed', {
         userId,
@@ -387,7 +407,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Lyrics analysis events
-    socket.on('lyrics:update', (data: any) => {
+    socket.on('lyrics:update', (data: LyricsEventData) => {
       const { projectId, trackId, lyrics } = data;
       socket.to(`project:${projectId}`).emit('lyrics:updated', {
         userId,
@@ -398,7 +418,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('lyrics:analyze-request', (data: any) => {
+    socket.on('lyrics:analyze-request', (data: LyricsEventData) => {
       const { projectId, trackId, lyrics, genre } = data;
       socket.to(`project:${projectId}`).emit('lyrics:analyzing', {
         userId,
@@ -407,7 +427,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('lyrics:analysis-complete', (data: any) => {
+    socket.on('lyrics:analysis-complete', (data: LyricsEventData) => {
       const { projectId, trackId, analysis } = data;
       socket.to(`project:${projectId}`).emit('lyrics:analyzed', {
         userId,
@@ -417,7 +437,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('lyrics:section-labels-update', (data: any) => {
+    socket.on('lyrics:section-labels-update', (data: LyricsEventData) => {
       const { projectId, trackId, sectionLabels } = data;
       socket.to(`project:${projectId}`).emit('lyrics:section-labels-updated', {
         userId,
@@ -427,7 +447,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('lyrics:recommendations-ready', (data: any) => {
+    socket.on('lyrics:recommendations-ready', (data: LyricsEventData) => {
       const { projectId, trackId, recommendations } = data;
       socket.to(`project:${projectId}`).emit('lyrics:recommendations', {
         userId,
@@ -438,7 +458,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
     });
 
     // Multi-clip analysis events
-    socket.on('clips:analyze-request', (data: any) => {
+    socket.on('clips:analyze-request', (data: ClipsAnalysisData) => {
       const { projectId, clipIds } = data;
       socket.to(`project:${projectId}`).emit('clips:analyzing', {
         userId,
@@ -447,7 +467,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
       });
     });
 
-    socket.on('clips:analysis-complete', (data: any) => {
+    socket.on('clips:analysis-complete', (data: ClipsAnalysisData) => {
       const { projectId, analysis } = data;
       socket.to(`project:${projectId}`).emit('clips:analyzed', {
         userId,
@@ -490,8 +510,8 @@ export async function initializeWebSocket(io: SocketIOServer) {
 
     // Track all events
     const originalOn = socket.on.bind(socket);
-    socket.on = ((event: string, handler: any) => {
-      return originalOn(event, (...args: any[]) => {
+    socket.on = ((event: string, handler: (...args: unknown[]) => void) => {
+      return originalOn(event, (...args: unknown[]) => {
         const start = Date.now();
         trackMessage(event, 'inbound');
 
@@ -505,7 +525,7 @@ export async function initializeWebSocket(io: SocketIOServer) {
           throw error;
         }
       });
-    }) as any;
+    }) as typeof socket.on;
   });
 
   logger.info('WebSocket server initialized');
@@ -513,11 +533,11 @@ export async function initializeWebSocket(io: SocketIOServer) {
 
 // Helper functions for emitting events from other services
 
-export function emitToUser(userId: string, event: string, data: any) {
+export function emitToUser(userId: string, event: string, data: WebSocketEventData) {
   ioInstance?.to(`user:${userId}`).emit(event, data);
 }
 
-export function emitToProject(projectId: string, event: string, data: any) {
+export function emitToProject(projectId: string, event: string, data: WebSocketEventData) {
   ioInstance?.to(`project:${projectId}`).emit(event, data);
 }
 
@@ -529,7 +549,7 @@ export function emitRenderProgress(userId: string, jobId: string, progress: numb
   });
 }
 
-export function emitRenderCompleted(userId: string, jobId: string, result: any) {
+export function emitRenderCompleted(userId: string, jobId: string, result: unknown) {
   emitToUser(userId, 'render:completed', {
     jobId,
     result,
@@ -553,7 +573,7 @@ export function emitAIProcessing(userId: string, taskId: string, status: string)
   });
 }
 
-export function emitAICompleted(userId: string, taskId: string, result: any) {
+export function emitAICompleted(userId: string, taskId: string, result: unknown) {
   emitToUser(userId, 'ai:completed', {
     taskId,
     result,
@@ -610,7 +630,7 @@ export function emitGenerationProgress(userId: string, jobId: string, percent: n
   });
 }
 
-export function emitGenerationCompleted(userId: string, jobId: string, audioUrl: string, metadata: any) {
+export function emitGenerationCompleted(userId: string, jobId: string, audioUrl: string, metadata: Record<string, unknown>) {
   emitToUser(userId, 'generation:completed', {
     jobId,
     audioUrl,
@@ -628,7 +648,7 @@ export function emitGenerationFailed(userId: string, jobId: string, error: strin
 }
 
 // Lyrics analysis event emitters
-export function emitLyricsAnalyzed(userId: string, trackId: string, analysis: any) {
+export function emitLyricsAnalyzed(userId: string, trackId: string, analysis: Record<string, unknown>) {
   emitToUser(userId, 'lyrics:analyzed', {
     trackId,
     analysis,
@@ -636,7 +656,7 @@ export function emitLyricsAnalyzed(userId: string, trackId: string, analysis: an
   });
 }
 
-export function emitLyricsSectionLabels(userId: string, trackId: string, sectionLabels: any) {
+export function emitLyricsSectionLabels(userId: string, trackId: string, sectionLabels: Array<{ time: number; label: string }>) {
   emitToUser(userId, 'lyrics:section-labels-updated', {
     trackId,
     sectionLabels,
@@ -644,7 +664,7 @@ export function emitLyricsSectionLabels(userId: string, trackId: string, section
   });
 }
 
-export function emitLyricsRecommendations(userId: string, trackId: string, recommendations: any) {
+export function emitLyricsRecommendations(userId: string, trackId: string, recommendations: string[]) {
   emitToUser(userId, 'lyrics:recommendations', {
     trackId,
     recommendations,
@@ -653,7 +673,7 @@ export function emitLyricsRecommendations(userId: string, trackId: string, recom
 }
 
 // Multi-clip analysis event emitters
-export function emitClipsAnalyzed(userId: string, analysis: any) {
+export function emitClipsAnalyzed(userId: string, analysis: Record<string, unknown>) {
   emitToUser(userId, 'clips:analyzed', {
     analysis,
     timestamp: new Date(),

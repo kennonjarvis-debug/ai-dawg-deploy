@@ -8,7 +8,17 @@
  * - Time: Reverb, Delay, Chorus
  * - Utility: Gain, Pan, Phase
  */
-// @ts-nocheck
+
+import type {
+  ToneNode,
+  ToneGain,
+  ToneFilter,
+  ToneCompressor,
+  ToneGate,
+  ToneReverb,
+  ToneDelay,
+  ToneMultibandCompressor,
+} from '../../types/audio';
 
 // Lazy-load Tone.js to avoid AudioContext autoplay policy violations
 let Tone: typeof import('tone') | null = null;
@@ -87,32 +97,32 @@ export interface EffectChainConfig {
 
 export class AudioEffectsChain {
   // Signal chain nodes
-  private input: any; // Tone.Gain - will be initialized lazily
-  private output: any; // Tone.Gain - will be initialized lazily
+  private input: ToneGain | null = null;
+  private output: ToneGain | null = null;
 
   // Pre-processing
-  private gate: any = null;
-  private highPassFilter: any = null;
-  private lowPassFilter: any = null;
+  private gate: ToneGate | null = null;
+  private highPassFilter: ToneFilter | null = null;
+  private lowPassFilter: ToneFilter | null = null;
 
   // Dynamics
-  private compressor: any = null;
-  private deEsser: any = null;
+  private compressor: ToneCompressor | null = null;
+  private deEsser: ToneMultibandCompressor | null = null;
 
   // EQ
-  private eqBands: any = null;
-  private parametricEQ: any[] = [];
+  private eqBands: ToneFilter | null = null;
+  private parametricEQ: ToneFilter[] = [];
 
   // Time-based
-  private reverb: any = null;
-  private delay: any = null;
+  private reverb: ToneReverb | null = null;
+  private delay: ToneDelay | null = null;
 
   // Utility
-  private outputGain: any;
+  private outputGain: ToneGain | null = null;
 
   // Bypass state
   private bypassed = false;
-  private bypassGain: any;
+  private bypassGain: ToneGain | null = null;
 
   // Initialization flag
   private initialized = false;
@@ -129,10 +139,10 @@ export class AudioEffectsChain {
 
     const T = await loadTone();
 
-    this.input = new T.Gain(1);
-    this.output = new T.Gain(1);
-    this.outputGain = new T.Gain(1);
-    this.bypassGain = new T.Gain(1);
+    this.input = new T.Gain(1) as unknown as ToneGain;
+    this.output = new T.Gain(1) as unknown as ToneGain;
+    this.outputGain = new T.Gain(1) as unknown as ToneGain;
+    this.bypassGain = new T.Gain(1) as unknown as ToneGain;
 
     // Initialize with input -> output (bypass)
     this.input.connect(this.bypassGain);
@@ -154,7 +164,7 @@ export class AudioEffectsChain {
     // Disconnect and dispose old chain
     this.disposeChain();
 
-    let currentNode: any = this.input;
+    let currentNode: ToneNode | null = this.input;
 
     // === PRE-PROCESSING ===
 
@@ -286,33 +296,38 @@ export class AudioEffectsChain {
   /**
    * Update single effect parameter
    */
-  async updateParameter(effect: string, param: string, value: any): Promise<void> {
+  async updateParameter(effect: string, param: string, value: number): Promise<void> {
     await this.ensureInitialized();
     const T = await loadTone();
 
     switch (effect) {
       case 'compressor':
-        if (this.compressor) {
-          (this.compressor as any)[param].value = value;
+        if (this.compressor && param in this.compressor) {
+          const compParam = this.compressor[param as keyof ToneCompressor];
+          if (compParam && typeof compParam === 'object' && 'value' in compParam) {
+            (compParam as { value: number }).value = value;
+          }
         }
         break;
       case 'reverb':
-        if (this.reverb) {
-          (this.reverb as any)[param] = value;
+        if (this.reverb && param in this.reverb) {
+          (this.reverb as Record<string, unknown>)[param] = value;
         }
         break;
       case 'delay':
-        if (this.delay) {
-          (this.delay as any)[param] = value;
+        if (this.delay && param in this.delay) {
+          (this.delay as Record<string, unknown>)[param] = value;
         }
         break;
       case 'gate':
-        if (this.gate) {
-          (this.gate as any)[param] = value;
+        if (this.gate && param in this.gate) {
+          (this.gate as Record<string, unknown>)[param] = value;
         }
         break;
       case 'outputGain':
-        this.outputGain.gain.value = T.gainToDb(value);
+        if (this.outputGain) {
+          this.outputGain.gain.value = T.gainToDb(value);
+        }
         break;
     }
   }
@@ -341,12 +356,12 @@ export class AudioEffectsChain {
   /**
    * Get input/output nodes for connection
    */
-  async getInput(): Promise<any> {
+  async getInput(): Promise<ToneGain | null> {
     await this.ensureInitialized();
     return this.input;
   }
 
-  async getOutput(): Promise<any> {
+  async getOutput(): Promise<ToneGain | null> {
     await this.ensureInitialized();
     return this.output;
   }

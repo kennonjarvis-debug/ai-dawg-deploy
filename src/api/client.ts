@@ -31,7 +31,11 @@ import type {
   MasterTrackRequest,
   GenerateContentRequest,
   PaginationParams,
+  PaginationMeta,
   APIError,
+  Entitlements,
+  Conversation,
+  GenerationResult,
 } from './types';
 
 export class APIClient {
@@ -119,7 +123,7 @@ export class APIClient {
   private async request<T>(
     method: string,
     path: string,
-    data?: any,
+    data?: unknown,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${path}`;
@@ -208,13 +212,13 @@ export class APIClient {
     return response.json();
   }
 
-  private handleError(error: any): APIError {
-    if (error.message && error.status) {
+  private handleError(error: unknown): APIError {
+    if (error && typeof error === 'object' && 'message' in error && 'status' in error) {
       return error as APIError;
     }
 
     return {
-      message: error.message || 'Network error occurred',
+      message: error instanceof Error ? error.message : 'Network error occurred',
       code: 'NETWORK_ERROR',
     };
   }
@@ -339,11 +343,11 @@ export class APIClient {
     return this.handleResponse<Project>(response);
   }
 
-  async listProjectVersions(id: string): Promise<any[]> {
+  async listProjectVersions(id: string): Promise<Array<Record<string, unknown>>> {
     return this.request('GET', `/projects/${id}/versions`);
   }
 
-  async createProjectVersion(id: string, name?: string, description?: string): Promise<any> {
+  async createProjectVersion(id: string, name?: string, description?: string): Promise<Record<string, unknown>> {
     return this.request('POST', `/projects/${id}/versions`, { name, description });
   }
 
@@ -365,8 +369,8 @@ export class APIClient {
   }
 
   // Track API
-  async listTracks(projectId: string, params?: PaginationParams): Promise<{ tracks: Track[]; pagination?: any }> {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+  async listTracks(projectId: string, params?: PaginationParams): Promise<{ tracks: Track[]; pagination?: PaginationMeta }> {
+    const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
     return this.request('GET', `/tracks/project/${projectId}${queryString}`);
   }
 
@@ -499,20 +503,20 @@ export class APIClient {
   }
 
   // AI Service API
-  async analyzeVocals(data: AnalyzeVocalsRequest): Promise<any> {
+  async analyzeVocals(data: AnalyzeVocalsRequest): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/vocal-coach/analyze', data);
   }
 
-  async masterTrack(data: MasterTrackRequest): Promise<any> {
+  async masterTrack(data: MasterTrackRequest): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/mastering/process', data);
   }
 
-  async generateContent(data: GenerateContentRequest): Promise<any> {
+  async generateContent(data: GenerateContentRequest): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/producer/generate', data);
   }
 
   // DAWG AI Auto Features
-  async autoComp(audioFileIds: string[], options?: { segmentDuration?: number; crossfadeDuration?: number }): Promise<any> {
+  async autoComp(audioFileIds: string[], options?: { segmentDuration?: number; crossfadeDuration?: number }): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/autocomp', {
       audioFileIds,
       segmentDuration: options?.segmentDuration || 5.0,
@@ -520,7 +524,7 @@ export class APIClient {
     });
   }
 
-  async timeAlign(audioFileId: string, options?: { gridDivision?: string; strength?: number; preserveFeel?: boolean; tempo?: number }): Promise<any> {
+  async timeAlign(audioFileId: string, options?: { gridDivision?: string; strength?: number; preserveFeel?: boolean; tempo?: number }): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/timealign', {
       audioFileId,
       gridDivision: options?.gridDivision || '1/16',
@@ -530,7 +534,7 @@ export class APIClient {
     });
   }
 
-  async pitchCorrect(audioFileId: string, options?: { targetKey?: string; targetScale?: string; strength?: number }): Promise<any> {
+  async pitchCorrect(audioFileId: string, options?: { targetKey?: string; targetScale?: string; strength?: number }): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/pitchcorrect', {
       audioFileId,
       targetKey: options?.targetKey || 'C',
@@ -539,7 +543,7 @@ export class APIClient {
     });
   }
 
-  async autoMix(trackIds: string[], options?: { genre?: string; targetLoudness?: number }): Promise<any> {
+  async autoMix(trackIds: string[], options?: { genre?: string; targetLoudness?: number }): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/mix', {
       trackIds,
       genre: options?.genre || 'pop',
@@ -547,7 +551,7 @@ export class APIClient {
     });
   }
 
-  async aiDawg(audioFileIds: string[], options?: { genre?: string; tempo?: number; key?: string }): Promise<any> {
+  async aiDawg(audioFileIds: string[], options?: { genre?: string; tempo?: number; key?: string }): Promise<Record<string, unknown>> {
     return this.request('POST', '/ai/dawg', {
       audioFileIds,
       genre: options?.genre,
@@ -557,22 +561,23 @@ export class APIClient {
   }
 
   // Billing API
-  private entitlementsCache: { data: { plan: string; features: Record<string, boolean>; limits: any }; ts: number } | null = null;
-  async getEntitlements(): Promise<{ plan: string; features: Record<string, boolean>; limits: any }> {
+  private entitlementsCache: { data: Entitlements; ts: number } | null = null;
+  async getEntitlements(): Promise<Entitlements> {
     const now = Date.now();
     if (this.entitlementsCache && now - this.entitlementsCache.ts < 60000) {
       return this.entitlementsCache.data;
     }
 
     try {
-      const res = await this.request('GET', '/billing/entitlements') as { plan: string; features: Record<string, boolean>; limits: any };
+      const res = await this.request<Entitlements>('GET', '/billing/entitlements');
       this.entitlementsCache = { data: res, ts: now };
       return res;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If billing endpoint doesn't exist (404), return demo entitlements
-      if (error.status === 404 || import.meta.env.VITE_DEMO_MODE === 'true') {
+      const isApiError = error && typeof error === 'object' && 'status' in error;
+      if ((isApiError && (error as APIError).status === 404) || import.meta.env.VITE_DEMO_MODE === 'true') {
         console.log('Billing service not available, using demo entitlements');
-        const demoEntitlements = {
+        const demoEntitlements: Entitlements = {
           plan: 'FREE',
           features: {
             basic_recording: true,
@@ -649,20 +654,7 @@ export class APIClient {
   /**
    * Get a specific conversation with its messages
    */
-  async getConversation(conversationId: string): Promise<{
-    id: string;
-    title?: string;
-    createdAt: string;
-    updatedAt: string;
-    messages: Array<{
-      id: string;
-      role: 'user' | 'assistant';
-      content: string;
-      createdAt: string;
-      intent?: string;
-      entities?: Record<string, any>;
-    }>;
-  }> {
+  async getConversation(conversationId: string): Promise<Conversation> {
     return this.request('GET', `/chat/conversations/${conversationId}`);
   }
 
@@ -808,12 +800,7 @@ export class APIClient {
   async getGenerationResult(jobId: string): Promise<{
     jobId: string;
     type: string;
-    result: {
-      audioUrl?: string;
-      lyrics?: string;
-      notes?: any[];
-      metadata?: any;
-    };
+    result: GenerationResult;
   }> {
     return this.request('GET', `/generate/result/${jobId}`);
   }
@@ -826,27 +813,27 @@ export class APIClient {
   }
 
   // Public HTTP Methods
-  async get<T = any>(path: string, options?: RequestInit): Promise<{ data: T }> {
+  async get<T = unknown>(path: string, options?: RequestInit): Promise<{ data: T }> {
     const result = await this.request<T>('GET', path, undefined, options);
     return { data: result };
   }
 
-  async post<T = any>(path: string, data?: any, options?: RequestInit): Promise<{ data: T }> {
+  async post<T = unknown>(path: string, data?: unknown, options?: RequestInit): Promise<{ data: T }> {
     const result = await this.request<T>('POST', path, data, options);
     return { data: result };
   }
 
-  async put<T = any>(path: string, data?: any, options?: RequestInit): Promise<{ data: T }> {
+  async put<T = unknown>(path: string, data?: unknown, options?: RequestInit): Promise<{ data: T }> {
     const result = await this.request<T>('PUT', path, data, options);
     return { data: result };
   }
 
-  async patch<T = any>(path: string, data?: any, options?: RequestInit): Promise<{ data: T }> {
+  async patch<T = unknown>(path: string, data?: unknown, options?: RequestInit): Promise<{ data: T }> {
     const result = await this.request<T>('PATCH', path, data, options);
     return { data: result };
   }
 
-  async delete<T = any>(path: string, options?: RequestInit): Promise<{ data: T }> {
+  async delete<T = unknown>(path: string, options?: RequestInit): Promise<{ data: T }> {
     const result = await this.request<T>('DELETE', path, undefined, options);
     return { data: result };
   }

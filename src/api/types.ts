@@ -371,12 +371,58 @@ export interface PaginationParams {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // API Error
 export interface APIError {
   message: string;
   code?: string;
   status?: number;
-  details?: any;
+  details?: unknown;
+}
+
+// Billing / Entitlements
+export interface Entitlements {
+  plan: 'FREE' | 'PRO' | 'STUDIO';
+  features: Record<string, boolean>;
+  limits: {
+    max_projects: number;
+    max_tracks_per_project: number;
+    max_storage_gb: number;
+    [key: string]: number;
+  };
+}
+
+// Chat / Conversations
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: string;
+  intent?: string;
+  entities?: Record<string, unknown>;
+}
+
+export interface Conversation {
+  id: string;
+  title?: string;
+  createdAt: string;
+  updatedAt: string;
+  messages?: Message[];
+  messageCount?: number;
+}
+
+// Generation
+export interface GenerationResult {
+  audioUrl?: string;
+  lyrics?: string;
+  notes?: unknown[];
+  metadata?: Record<string, unknown>;
 }
 
 // ============================================
