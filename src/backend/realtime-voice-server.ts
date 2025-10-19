@@ -14,20 +14,33 @@ const app = express();
 const server = createServer(app);
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://dawg-ai.com'
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 // Function cache routes
 app.use('/api/functions', functionCacheRoutes);
 
 const io = new SocketIOServer(server, {
-  cors: { origin: '*' }
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  }
 });
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const PORT = process.env.PORT || 3100;
+const PORT = parseInt(process.env.REALTIME_VOICE_PORT || process.env.PORT || '3100', 10);
 
 console.log('🚀 OpenAI Realtime Voice Server Starting...');
+console.log(`📡 Port: ${PORT}`);
 console.log(`✅ OpenAI API Key: ${OPENAI_API_KEY ? 'Configured' : 'MISSING'}`);
 
 // Initialize function cache

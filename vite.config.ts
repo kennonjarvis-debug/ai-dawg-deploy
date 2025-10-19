@@ -34,11 +34,58 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // Let Rollup automatically split chunks
+        // Intelligent code splitting for optimal bundle sizes
         manualChunks(id) {
-          // Only split node_modules into vendor chunk
           if (id.includes('node_modules')) {
+            // Split React and related libraries (largest dependency)
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'react-vendor';
+            }
+
+            // Split UI libraries (lucide-react, radix-ui, etc.)
+            if (id.includes('lucide-react') || id.includes('@radix-ui') || id.includes('sonner')) {
+              return 'ui-vendor';
+            }
+
+            // Split audio/music libraries (Tone.js, etc.)
+            if (id.includes('tone') || id.includes('audiobuffer') || id.includes('pizzicato')) {
+              return 'audio-vendor';
+            }
+
+            // Split WebSocket/Socket.io
+            if (id.includes('socket.io-client') || id.includes('engine.io-client')) {
+              return 'socket-vendor';
+            }
+
+            // Split state management (zustand)
+            if (id.includes('zustand')) {
+              return 'state-vendor';
+            }
+
+            // Split framer-motion animation library
+            if (id.includes('framer-motion')) {
+              return 'animation-vendor';
+            }
+
+            // Everything else goes into general vendor
             return 'vendor';
+          }
+
+          // Split large components for lazy loading
+          if (id.includes('/components/AIChatWidget')) {
+            return 'ai-chat-chunk';
+          }
+
+          if (id.includes('/components/ChannelStripPanel')) {
+            return 'channel-strip-chunk';
+          }
+
+          if (id.includes('/components/FreestyleSession')) {
+            return 'freestyle-chunk';
+          }
+
+          if (id.includes('/components/VocalRecorder')) {
+            return 'vocal-recorder-chunk';
           }
         },
         assetFileNames: (assetInfo) => {

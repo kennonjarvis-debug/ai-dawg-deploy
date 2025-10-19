@@ -10,6 +10,7 @@ import { getSelectedAudioFileIds, getSelectedTrackIds } from './utils/selection'
 import { VocalCoachPanel, ProducerPanel } from './panels';
 import { useTransportStore } from '../stores/transportStore';
 import { useTimelineStore } from '../stores/timelineStore';
+import { useDawUiStore } from '../stores/dawUiStore';
 import { useProjectRoom, useWebSocketEvent } from '../hooks/useWebSocket';
 import { useAudioEngine } from '../hooks/useAudioEngine';
 import { usePlaylistRecording } from '../hooks/usePlaylistRecording';
@@ -30,28 +31,53 @@ export const DAWDashboard: React.FC = () => {
   const params = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { user, logout: authLogout } = useAuth();
+  // Local state (project loading - transient)
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
+
   // Use user directly from AuthContext instead of redundant local state
   const currentUser = user;
-  const [activePanel, setActivePanel] = useState<'vocal-coach' | 'producer' | null>(null);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [aiJobs, setAiJobs] = useState<AIProcessingJob[]>([]);
-  const [showAiModal, setShowAiModal] = useState(false);
-  const [upsell, setUpsell] = useState<{ open: boolean; feature?: string; plan?: string; upgrade_url?: string | null }>({ open: false });
-  const [planBadge, setPlanBadge] = useState<string>('');
-  const [genre, setGenre] = useState<string>('pop');
-  // showAIChat removed - chat is now embedded in DAWG AI panel
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAIHub, setShowAIHub] = useState(false);
-  const [showAuxTrackDialog, setShowAuxTrackDialog] = useState(false);
-  const [lyrics, setLyrics] = useState('');
-  const [expandedWidget, setExpandedWidget] = useState<'ai' | 'lyrics' | 'balanced'>('balanced');
-  const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number; step: string } | null>(null);
-  const [flashFeature, setFlashFeature] = useState<'voice-memo' | 'music-gen' | null>(null);
-  const [musicGenProgress, setMusicGenProgress] = useState<MusicGenerationProgress | null>(null);
+
+  // Zustand store for DAW UI state (replaces 17 useState calls)
+  const {
+    activePanel,
+    setActivePanel,
+    lastSaved,
+    setLastSaved,
+    isSaving,
+    setIsSaving,
+    openMenu,
+    setOpenMenu,
+    aiJobs,
+    setAiJobs,
+    addAiJob,
+    removeAiJob,
+    updateAiJob,
+    showAiModal,
+    setShowAiModal,
+    upsell,
+    setUpsell,
+    planBadge,
+    setPlanBadge,
+    genre,
+    setGenre,
+    showSettings,
+    setShowSettings,
+    showAIHub,
+    setShowAIHub,
+    showAuxTrackDialog,
+    setShowAuxTrackDialog,
+    lyrics,
+    setLyrics,
+    expandedWidget,
+    setExpandedWidget,
+    uploadProgress,
+    setUploadProgress,
+    flashFeature,
+    setFlashFeature,
+    musicGenProgress,
+    setMusicGenProgress,
+  } = useDawUiStore();
   const { isPlaying, currentTime, setCurrentTime, bpm: projectBPM, key: projectKey } = useTransportStore();
   const { addTrack, updateTrack, selectedClipIds, tracks, updateClip, addClip } = useTimelineStore();
   const selectedTrackIds = React.useMemo(() => getSelectedTrackIds(tracks, selectedClipIds), [tracks, selectedClipIds]);
@@ -801,7 +827,7 @@ export const DAWDashboard: React.FC = () => {
   };
 
   // AI Processing Helpers
-  const addAiJob = (type: AIProcessingJob['type'], message: string): string => {
+  const createAiJob = (type: AIProcessingJob['type'], message: string): string => {
     const id = `${type}-${Date.now()}`;
     const newJob: AIProcessingJob = {
       id,
@@ -810,14 +836,12 @@ export const DAWDashboard: React.FC = () => {
       progress: 0,
       message,
     };
-    setAiJobs(prev => [...prev, newJob]);
+    addAiJob(newJob); // Use store method
     setShowAiModal(true);
     return id;
   };
 
-  const updateAiJob = (id: string, updates: Partial<AIProcessingJob>) => {
-    setAiJobs(prev => prev.map(job => job.id === id ? { ...job, ...updates } : job));
-  };
+  // Note: updateAiJob is now from the Zustand store (line 55)
 
   // DAWG AI Handlers
   const handleAutoComp = async () => {
@@ -826,7 +850,7 @@ export const DAWDashboard: React.FC = () => {
       return;
     }
 
-    const jobId = addAiJob('vocal-analysis', 'Analyzing vocal takes for best segments...');
+    const jobId = createAiJob('vocal-analysis', 'Analyzing vocal takes for best segments...');
 
     try {
       updateAiJob(jobId, { status: 'processing', progress: 30 });
@@ -858,7 +882,7 @@ export const DAWDashboard: React.FC = () => {
       return;
     }
 
-    const jobId = addAiJob('vocal-analysis', 'Aligning audio to grid...');
+    const jobId = createAiJob('vocal-analysis', 'Aligning audio to grid...');
 
     try {
       updateAiJob(jobId, { status: 'processing', progress: 50 });
@@ -894,7 +918,7 @@ export const DAWDashboard: React.FC = () => {
       return;
     }
 
-    const jobId = addAiJob('vocal-analysis', 'Analyzing and correcting pitch...');
+    const jobId = createAiJob('vocal-analysis', 'Analyzing and correcting pitch...');
 
     try {
       updateAiJob(jobId, { status: 'processing', progress: 60 });
@@ -930,7 +954,7 @@ export const DAWDashboard: React.FC = () => {
       return;
     }
 
-    const jobId = addAiJob('vocal-analysis', 'AI mixing tracks...');
+    const jobId = createAiJob('vocal-analysis', 'AI mixing tracks...');
 
     try {
       updateAiJob(jobId, { status: 'processing', progress: 50 });
@@ -964,7 +988,7 @@ export const DAWDashboard: React.FC = () => {
       return;
     }
 
-    const jobId = addAiJob('mastering', 'AI mastering track...');
+    const jobId = createAiJob('mastering', 'AI mastering track...');
 
     try {
       updateAiJob(jobId, { status: 'processing', progress: 70 });
@@ -1060,7 +1084,7 @@ export const DAWDashboard: React.FC = () => {
       normalizedGenre = 'pop';
     }
 
-    const jobId = addAiJob('music-generation', `Generating music: "${prompt}"...`);
+    const jobId = createAiJob('music-generation', `Generating music: "${prompt}"...`);
 
     // Initialize top progress bar
     setMusicGenProgress({
@@ -1171,7 +1195,7 @@ export const DAWDashboard: React.FC = () => {
       return;
     }
 
-    const jobId = addAiJob('vocal-analysis', 'Starting DAWG AI full production pipeline...');
+    const jobId = createAiJob('vocal-analysis', 'Starting DAWG AI full production pipeline...');
 
     try {
       updateAiJob(jobId, { status: 'processing', progress: 20 });

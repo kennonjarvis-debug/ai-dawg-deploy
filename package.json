@@ -15,6 +15,7 @@
     "build:ui": "vite build",
     "preview:ui": "vite preview",
     "dev:server": "tsx src/backend/server.ts",
+    "dev:unified": "tsx src/backend/unified-server.ts",
     "start": "sh start.sh",
     "start:monitor": "node monitor-server.js",
     "dev:monitor": "nodemon --watch monitor-server.js monitor-server.js",

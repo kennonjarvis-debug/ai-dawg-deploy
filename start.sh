@@ -1,25 +1,12 @@
 #!/bin/sh
 
-# Startup script for Railway services
-# Determines which server to run based on SERVICE_TYPE environment variable
+# Startup script for Railway deployment
+# Unified backend server (all services in one!)
 
-echo "🚀 Starting DAWG AI service..."
-echo "📋 SERVICE_TYPE: ${SERVICE_TYPE:-not set}"
+echo "🚀 Starting DAWG AI Unified Backend..."
+echo "📦 Services: Main Backend + AI Brain + Realtime Voice"
+echo "💰 Cost Savings: $15/month (consolidated from 3 services to 1)"
 
-if [ "$SERVICE_TYPE" = "ai-brain" ]; then
-  echo "🧠 Starting AI Brain Server (Text Chat - Port 8002)..."
-  exec tsx src/backend/ai-brain-server.ts
-elif [ "$SERVICE_TYPE" = "realtime-voice" ]; then
-  echo "🎤 Starting Realtime Voice Server (Voice Chat - Port 3100)..."
-  exec tsx src/backend/realtime-voice-server.ts
-elif [ "$SERVICE_TYPE" = "backend" ]; then
-  echo "🎛️  Starting DAW Backend Server (Main API - Port 3001)..."
-  exec tsx src/backend/server.ts
-elif [ "$SERVICE_TYPE" = "gateway" ]; then
-  echo "🚪 Starting Gateway Server..."
-  exec tsx src/gateway/server.ts
-else
-  # Default to backend server if not specified
-  echo "⚠️  SERVICE_TYPE not set, defaulting to DAW Backend Server..."
-  exec tsx src/backend/server.ts
-fi
+# Start the unified backend server (combines all 3 backend services)
+echo "🎛️  Starting Unified Backend Server..."
+exec tsx src/backend/unified-server.ts

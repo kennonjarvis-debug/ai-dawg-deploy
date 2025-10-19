@@ -8,6 +8,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { Readable } from 'stream';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
@@ -26,14 +27,33 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Check if OpenAI API key is configured
+// Initialize Anthropic
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// Check if API keys are configured
 if (!process.env.OPENAI_API_KEY) {
   console.warn('⚠️  WARNING: OPENAI_API_KEY not set! Voice features will not work.');
   console.warn('   Please add your OpenAI API key to .env file');
 }
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn('⚠️  WARNING: ANTHROPIC_API_KEY not set! Lyrics organization will not work.');
+  console.warn('   Please add your Anthropic API key to .env file');
+}
+
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://dawg-ai.com'
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 
 // Function cache routes
