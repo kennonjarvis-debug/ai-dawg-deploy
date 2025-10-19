@@ -11,5 +11,8 @@
   NODE_VERSION = "18"
 
 [context.production.environment]
-  VITE_DEMO_MODE = "true"
+  VITE_DEMO_MODE = "false"
   VITE_API_URL = "/api/v1"
+  VITE_WEBSOCKET_URL = "https://dawg-ai-backend-production.up.railway.app"
+  VITE_AI_BRAIN_URL = "https://dawg-ai-backend-production.up.railway.app"
+  VITE_REALTIME_VOICE_URL = "https://dawg-ai-backend-production.up.railway.app"
