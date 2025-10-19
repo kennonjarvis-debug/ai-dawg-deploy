@@ -6,12 +6,14 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { aiCache } from '../../services/ai-cache-service';
 
 export interface GenerateOptions {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+  skipCache?: boolean; // Force fresh API call, bypassing cache
 }
 
 export interface GenerateResponse {
@@ -62,14 +64,32 @@ class OpenAIProvider implements AIProvider {
       throw new Error('OpenAI client not initialized - API key missing');
     }
 
+    // Build cache key from messages
     const messages: any[] = [];
-
     if (options.systemPrompt) {
       messages.push({ role: 'system', content: options.systemPrompt });
     }
-
     messages.push({ role: 'user', content: prompt });
 
+    // Check cache first (for non-streaming requests)
+    if (!options.stream) {
+      const cached = await aiCache.get<GenerateResponse>(
+        { messages, temperature: options.temperature, maxTokens: options.maxTokens },
+        {
+          provider: 'openai',
+          model: 'gpt-4o-mini',
+          ttl: 3600, // 1 hour
+          skipCache: options.skipCache,
+        }
+      );
+
+      if (cached) {
+        console.log('✅ Using cached OpenAI response');
+        return cached;
+      }
+    }
+
+    // Make API call
     const response = await this.client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
@@ -80,12 +100,28 @@ class OpenAIProvider implements AIProvider {
     const content = response.choices[0]?.message?.content || '';
     const tokensUsed = response.usage?.total_tokens || 0;
 
-    return {
+    const result: GenerateResponse = {
       content,
       provider: this.name,
       tokensUsed,
       cost: this.estimateCost(tokensUsed),
     };
+
+    // Cache the result
+    if (!options.stream) {
+      await aiCache.set(
+        { messages, temperature: options.temperature, maxTokens: options.maxTokens },
+        result,
+        {
+          provider: 'openai',
+          model: 'gpt-4o-mini',
+          ttl: 3600,
+          skipCache: options.skipCache,
+        }
+      );
+    }
+
+    return result;
   }
 
   async *stream(prompt: string, options: GenerateOptions): AsyncIterable<StreamChunk> {
@@ -158,6 +194,30 @@ class AnthropicProvider implements AIProvider {
       throw new Error('Anthropic client not initialized - API key missing');
     }
 
+    // Build cache key
+    const cacheKey = {
+      prompt,
+      systemPrompt: options.systemPrompt,
+      temperature: options.temperature,
+      maxTokens: options.maxTokens,
+    };
+
+    // Check cache first (for non-streaming requests)
+    if (!options.stream) {
+      const cached = await aiCache.get<GenerateResponse>(cacheKey, {
+        provider: 'anthropic',
+        model: 'claude-3-5-haiku-20241022',
+        ttl: 3600, // 1 hour
+        skipCache: options.skipCache,
+      });
+
+      if (cached) {
+        console.log('✅ Using cached Anthropic response');
+        return cached;
+      }
+    }
+
+    // Make API call
     const response = await this.client.messages.create({
       model: 'claude-3-5-haiku-20241022',
       max_tokens: options.maxTokens ?? 2000,
@@ -169,12 +229,24 @@ class AnthropicProvider implements AIProvider {
     const content = response.content[0]?.type === 'text' ? response.content[0].text : '';
     const tokensUsed = response.usage.input_tokens + response.usage.output_tokens;
 
-    return {
+    const result: GenerateResponse = {
       content,
       provider: this.name,
       tokensUsed,
       cost: this.estimateCost(tokensUsed),
     };
+
+    // Cache the result
+    if (!options.stream) {
+      await aiCache.set(cacheKey, result, {
+        provider: 'anthropic',
+        model: 'claude-3-5-haiku-20241022',
+        ttl: 3600,
+        skipCache: options.skipCache,
+      });
+    }
+
+    return result;
   }
 
   async *stream(prompt: string, options: GenerateOptions): AsyncIterable<StreamChunk> {
@@ -237,6 +309,29 @@ class GoogleProvider implements AIProvider {
       throw new Error('Google AI client not initialized - API key missing');
     }
 
+    // Build cache key
+    const cacheKey = {
+      prompt,
+      systemPrompt: options.systemPrompt,
+      temperature: options.temperature,
+    };
+
+    // Check cache first (for non-streaming requests)
+    if (!options.stream) {
+      const cached = await aiCache.get<GenerateResponse>(cacheKey, {
+        provider: 'google',
+        model: 'gemini-1.5-flash',
+        ttl: 3600, // 1 hour
+        skipCache: options.skipCache,
+      });
+
+      if (cached) {
+        console.log('✅ Using cached Google AI response');
+        return cached;
+      }
+    }
+
+    // Make API call
     const model = this.client.getGenerativeModel({
       model: 'gemini-1.5-flash',
       systemInstruction: options.systemPrompt,
@@ -249,12 +344,24 @@ class GoogleProvider implements AIProvider {
     // Google doesn't provide token counts in free tier, estimate
     const tokensUsed = Math.ceil((prompt.length + content.length) / 4);
 
-    return {
+    const apiResult: GenerateResponse = {
       content,
       provider: this.name,
       tokensUsed,
       cost: this.estimateCost(tokensUsed),
     };
+
+    // Cache the result
+    if (!options.stream) {
+      await aiCache.set(cacheKey, apiResult, {
+        provider: 'google',
+        model: 'gemini-1.5-flash',
+        ttl: 3600,
+        skipCache: options.skipCache,
+      });
+    }
+
+    return apiResult;
   }
 
   async *stream(prompt: string, options: GenerateOptions): AsyncIterable<StreamChunk> {

@@ -8,6 +8,7 @@ import Replicate from 'replicate';
 import { metadataAnalyzer } from './MetadataAnalyzer';
 import { trainingMetadataService } from './training-metadata-service';
 import type { TrackMetadata } from '../../api/types';
+import { aiCache } from '../../services/ai-cache-service';
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN || '',
@@ -22,6 +23,7 @@ export interface MusicGenRequest {
   style?: string;
   userId?: string;   // For metadata tracking
   generationId?: string; // For metadata tracking
+  skipCache?: boolean; // Force fresh generation, bypassing cache
 }
 
 export interface MusicGenResponse {
@@ -153,6 +155,31 @@ export async function generateMusic(params: MusicGenRequest): Promise<MusicGenRe
       enhancedPrompt = `${descriptors.join(' ')} ${params.prompt}`;
     }
 
+    // Build cache key from generation parameters
+    const cacheKey = {
+      enhancedPrompt,
+      duration: params.duration || 30,
+      model: 'stereo-melody-large',
+    };
+
+    // Check cache for identical music generation requests (7 day TTL)
+    const cached = await aiCache.get<MusicGenResponse>(cacheKey, {
+      provider: 'replicate',
+      model: 'musicgen',
+      ttl: 604800, // 7 days - music generations are expensive and reusable
+      skipCache: params.skipCache,
+    });
+
+    if (cached) {
+      console.log('✅ Using cached music generation result');
+      // Return cached result with new generationId
+      return {
+        ...cached,
+        generationId,
+        job_id: generationId,
+      };
+    }
+
     // Run MusicGen on Replicate
     const output = await replicate.run(
       "meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
@@ -181,7 +208,7 @@ export async function generateMusic(params: MusicGenRequest): Promise<MusicGenRe
       startTime
     );
 
-    return {
+    const result: MusicGenResponse = {
       success: true,
       audio_url: audioUrl,
       message: 'Music generated successfully with MusicGen',
@@ -189,6 +216,16 @@ export async function generateMusic(params: MusicGenRequest): Promise<MusicGenRe
       generationId,
       metadata,
     };
+
+    // Cache the result for future identical requests (7 day TTL)
+    await aiCache.set(cacheKey, result, {
+      provider: 'replicate',
+      model: 'musicgen',
+      ttl: 604800, // 7 days
+      skipCache: params.skipCache,
+    });
+
+    return result;
   } catch (error: any) {
     console.error('❌ MusicGen generation error:', error);
 

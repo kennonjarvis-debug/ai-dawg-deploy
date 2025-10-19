@@ -5,6 +5,8 @@
 
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
+import { aiCache } from '../../services/ai-cache-service';
+import { cacheAnalytics } from '../../services/cache-analytics';
 
 const prisma = new PrismaClient();
 
@@ -437,7 +439,7 @@ export async function canMakeApiCall(userId: string): Promise<boolean> {
 }
 
 /**
- * Get cost summary for user
+ * Get cost summary for user (with cache savings)
  */
 export async function getCostSummary(
   userId: string,
@@ -448,6 +450,11 @@ export async function getCostSummary(
   byService: Record<string, number>;
   byOperation: Record<string, number>;
   count: number;
+  cacheSavings?: {
+    totalSaved: number;
+    hitRate: number;
+    projectedMonthlySavings: number;
+  };
 }> {
   try {
     const where: any = { userId };
@@ -471,6 +478,18 @@ export async function getCostSummary(
       summary.totalCost += log.totalCost;
       summary.byService[log.service] = (summary.byService[log.service] || 0) + log.totalCost;
       summary.byOperation[log.operation] = (summary.byOperation[log.operation] || 0) + log.totalCost;
+    }
+
+    // Add cache savings information
+    try {
+      const analytics = await cacheAnalytics.getAnalytics();
+      summary.cacheSavings = {
+        totalSaved: analytics.totalSavedCost,
+        hitRate: analytics.hitRate,
+        projectedMonthlySavings: analytics.projectedMonthlySavings,
+      };
+    } catch (error) {
+      logger.warn('Failed to get cache analytics for cost summary', { error });
     }
 
     return summary;
