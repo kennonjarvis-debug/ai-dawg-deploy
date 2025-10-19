@@ -99,7 +99,7 @@ export class AIDAWClient {
   private accessToken?: string;
   private refreshToken?: string;
 
-  constructor(baseURL: string = 'http://localhost:3001/api/v1') {
+  constructor(baseURL: string = process.env.VITE_API_URL || 'http://localhost:3001/api/v1') {
     this.client = axios.create({
       baseURL,
       timeout: 30000,
