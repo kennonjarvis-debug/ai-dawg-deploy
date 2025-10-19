@@ -79,7 +79,6 @@ class PitchExtractor:
             fmax,
             model=self.model,
             device=self.device,
-            return_confidence=True,
             batch_size=2048
         )
 

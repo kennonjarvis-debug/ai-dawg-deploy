@@ -77,6 +77,24 @@ const wsServer = new GatewayWebSocketServer(httpServer, sessionManager, firewall
 // Mount REST API
 app.use('/api', createRestAPI(sessionManager, aiService));
 
+// Proxy /api/v1 requests to the backend service (Railway internal network)
+app.use('/api/v1', (req, res) => {
+  const backendUrl = process.env.RAILWAY_PRIVATE_DOMAIN
+    ? `http://dawg-ai-backend.railway.internal:${process.env.PORT || 3001}`
+    : 'http://localhost:3001';
+
+  const targetUrl = `${backendUrl}${req.url}`;
+
+  fetch(targetUrl, {
+    method: req.method,
+    headers: req.headers as any,
+    body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+  })
+    .then(response => response.json())
+    .then(data => res.json(data))
+    .catch(err => res.status(500).json({ error: err.message }));
+});
+
 // Health check
 app.get('/health', (_req, res) => {
   res.json({

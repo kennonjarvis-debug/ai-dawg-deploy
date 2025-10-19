@@ -118,7 +118,8 @@ process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
 // Start server
-const PORT = parseInt(process.env.BACKEND_PORT || '3001');
+// Railway provides PORT, fallback to BACKEND_PORT for local dev
+const PORT = parseInt(process.env.PORT || process.env.BACKEND_PORT || '3001');
 httpServer.listen(PORT, () => {
   logger.info(`Backend server running on port ${PORT}`, {
     environment: process.env.NODE_ENV || 'development',
