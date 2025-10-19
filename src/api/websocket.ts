@@ -22,11 +22,35 @@ export class WebSocketClient {
   private reconnectTimer: NodeJS.Timeout | null = null;
 
   constructor(url?: string) {
-    // Use environment variable or default to port 3001
-    const baseUrl = typeof window !== 'undefined' && import.meta?.env?.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
-      : 'http://localhost:3001';
-    this.url = url || baseUrl;
+    // Auto-detect protocol and use environment variable for production
+    const baseUrl = (() => {
+      if (url) return url;
+
+      const envUrl = typeof window !== 'undefined' && import.meta?.env?.VITE_WEBSOCKET_URL
+        ? import.meta.env.VITE_WEBSOCKET_URL
+        : null;
+
+      if (envUrl) {
+        // Ensure https:// URLs work with Socket.IO
+        return envUrl;
+      }
+
+      // For local development
+      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        return 'http://localhost:3001';
+      }
+
+      // For production, use same host with appropriate protocol
+      if (typeof window !== 'undefined') {
+        const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+        return `${protocol}//${window.location.hostname}`;
+      }
+
+      return 'http://localhost:3001';
+    })();
+
+    console.log('[WebSocket] Connecting to:', baseUrl);
+    this.url = baseUrl;
   }
 
   connect(token: string) {
@@ -37,16 +61,18 @@ export class WebSocketClient {
     try {
       this.token = token;
       this.socket = io(this.url, {
-        auth: { token },
-        transports: ['polling'], // Force polling-only to avoid frame header issues
+        auth: {
+          token,
+          userId: 'user-123', // Match the hardcoded userId in API routes
+        },
+        transports: ['websocket', 'polling'], // Try WebSocket first, fallback to polling
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 30000, // Increased from 5000 to 30000
+        reconnectionDelayMax: 30000,
         reconnectionAttempts: this.maxReconnectAttempts,
-        timeout: 15000, // Increased connection timeout from 10s to 15s
-        upgrade: false, // Disable upgrade to WebSocket
-        rememberUpgrade: false,
-        perMessageDeflate: false, // Disable compression to avoid frame header issues
+        timeout: 15000,
+        upgrade: true, // Allow upgrade from polling to WebSocket
+        rememberUpgrade: true,
         forceNew: false,
         multiplex: true,
       });
@@ -148,6 +174,14 @@ export class WebSocketClient {
     this.socket.on('ai:processing', (data) => this.emit('ai:processing', data));
     this.socket.on('ai:completed', (data) => this.emit('ai:completed', data));
     this.socket.on('ai:failed', (data) => this.emit('ai:failed', data));
+
+    // DAW integration events (beat generation, etc.)
+    this.socket.on('daw:audio:loaded', (data) => this.emit('daw:audio:loaded', data));
+    this.socket.on('daw:transport:sync', (data) => this.emit('daw:transport:sync', data));
+    this.socket.on('generation:started', (data) => this.emit('generation:started', data));
+    this.socket.on('generation:progress', (data) => this.emit('generation:progress', data));
+    this.socket.on('generation:completed', (data) => this.emit('generation:completed', data));
+    this.socket.on('generation:failed', (data) => this.emit('generation:failed', data));
   }
 
   // Event Management
@@ -171,8 +205,16 @@ export class WebSocketClient {
   }
 
   private emit(event: string, payload: any) {
+    // Debug logging for DAW events
+    if (event.startsWith('daw:') || event.startsWith('generation:')) {
+      console.log(`[WebSocket] Emitting event: ${event}`, payload);
+    }
+
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
+      if (event.startsWith('daw:') || event.startsWith('generation:')) {
+        console.log(`[WebSocket] Found ${handlers.size} handler(s) for ${event}`);
+      }
       handlers.forEach((handler) => {
         try {
           handler(payload);
@@ -180,6 +222,10 @@ export class WebSocketClient {
           console.error('[WebSocket] Handler error:', error);
         }
       });
+    } else {
+      if (event.startsWith('daw:') || event.startsWith('generation:')) {
+        console.warn(`[WebSocket] No handlers registered for event: ${event}`);
+      }
     }
   }
 
