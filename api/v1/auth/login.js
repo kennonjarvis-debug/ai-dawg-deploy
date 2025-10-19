@@ -16,7 +16,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, password } = req.body;
+    // Parse body if it's a string (Vercel edge function compatibility)
+    let body = req.body;
+    if (typeof req.body === 'string') {
+      body = JSON.parse(req.body);
+    }
+
+    const { email, password } = body || {};
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
