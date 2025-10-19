@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum, Upload, Cpu } from 'lucide-react';
-import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub, Widget, AuxTrackDialog, MusicGenerationProgressBar, AdvancedFeaturesPanel } from './components';
+import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum, Upload } from 'lucide-react';
+import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub, Widget, AuxTrackDialog, MusicGenerationProgressBar } from './components';
 import type { MusicGenerationProgress } from './components';
 import { apiClient } from '../api/client';
 import { wsClient } from '../api/websocket';
@@ -47,7 +47,6 @@ export const DAWDashboard: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIHub, setShowAIHub] = useState(false);
   const [showAuxTrackDialog, setShowAuxTrackDialog] = useState(false);
-  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
   const [lyrics, setLyrics] = useState('');
   const [expandedWidget, setExpandedWidget] = useState<'ai' | 'lyrics' | 'balanced'>('balanced');
   const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number; step: string } | null>(null);
@@ -2236,6 +2235,8 @@ export const DAWDashboard: React.FC = () => {
         currentProject={currentProject}
         onClose={() => setShowSettings(false)}
         onSave={handleSaveSettings}
+        userId={currentUser?.id}
+        isRecording={isRecordingActive}
       />
 
       {/* Aux Track Dialog */}
@@ -2328,31 +2329,6 @@ export const DAWDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Floating Action Button - Advanced Features */}
-      {!showAdvancedFeatures && (
-        <button
-          onClick={() => setShowAdvancedFeatures(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 z-40 group"
-          title="Advanced Features"
-        >
-          <Cpu className="w-7 h-7" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-gray-900 rounded-full animate-pulse" />
-          <div className="absolute right-full mr-4 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
-            Advanced Features
-          </div>
-        </button>
-      )}
-
-      {/* Advanced Features Panel */}
-      <AdvancedFeaturesPanel
-        isOpen={showAdvancedFeatures}
-        onClose={() => setShowAdvancedFeatures(false)}
-        projectId={currentProject?.id || ''}
-        userId={currentUser?.id || ''}
-        currentProject={currentProject}
-        isRecording={isRecordingActive}
-        websocketUrl={import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:3001'}
-      />
     </div>
   );
 };
