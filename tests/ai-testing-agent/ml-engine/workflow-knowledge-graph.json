@@ -1,0 +1,197 @@
+{
+  "freestyle": {
+    "files": [
+      "src/ui/components/FreestyleSessionEnhanced.tsx",
+      "src/ui/components/LiveWaveformRecorder.tsx",
+      "src/ui/recording/LyricsWidget.tsx",
+      "src/services/voiceCommandService.ts"
+    ],
+    "features": [
+      "recording",
+      "transcription",
+      "voice-commands",
+      "beat-sync"
+    ],
+    "dependencies": [
+      "Web Audio API",
+      "Speech Recognition API",
+      "MediaRecorder"
+    ],
+    "tests": [
+      "freestyle-recording.test.ts",
+      "voice-commands.test.ts"
+    ],
+    "criticalPaths": [
+      "mic_permission",
+      "audio_context",
+      "transcription",
+      "beat_playback"
+    ]
+  },
+  "melody-to-vocals": {
+    "files": [
+      "src/backend/services/melody-vocals-service.ts"
+    ],
+    "features": [
+      "melody-analysis",
+      "lyrics-generation",
+      "vocal-synthesis"
+    ],
+    "dependencies": [
+      "Expert Music AI Service",
+      "Anthropic API",
+      "Bark/MusicGen"
+    ],
+    "tests": [
+      "melody-to-vocals.test.ts"
+    ],
+    "criticalPaths": [
+      "api_availability",
+      "melody_detection",
+      "lyrics_gen",
+      "vocal_synthesis"
+    ]
+  },
+  "stem-separation": {
+    "files": [
+      "src/audio/ai/StemSeparator.ts"
+    ],
+    "features": [
+      "hpss",
+      "spectral-masking",
+      "frequency-isolation"
+    ],
+    "dependencies": [
+      "Web Audio API",
+      "FFT"
+    ],
+    "tests": [
+      "stem-separation.test.ts"
+    ],
+    "criticalPaths": [
+      "memory_allocation",
+      "stft_computation",
+      "hpss",
+      "reconstruction"
+    ]
+  },
+  "ai-mastering": {
+    "files": [
+      "src/audio/ai/AIMasteringEngine.ts"
+    ],
+    "features": [
+      "lufs-targeting",
+      "limiting",
+      "eq",
+      "compression"
+    ],
+    "dependencies": [
+      "Web Audio API"
+    ],
+    "tests": [
+      "ai-mastering.test.ts"
+    ],
+    "criticalPaths": [
+      "level_analysis",
+      "processing",
+      "clipping_detection"
+    ]
+  },
+  "live-vocal-analysis": {
+    "files": [
+      "src/backend/services/live-vocal-analysis-service.ts",
+      "src/audio/VocalAnalyzer.ts",
+      "src/api/websocket/vocal-analysis-handlers.ts"
+    ],
+    "features": [
+      "pitch-detection",
+      "rhythm-analysis",
+      "vibrato-detection",
+      "quality-metrics"
+    ],
+    "dependencies": [
+      "Web Audio API",
+      "WebSocket",
+      "YIN Algorithm"
+    ],
+    "tests": [
+      "live-vocal-analysis.test.ts",
+      "websocket-handlers.test.ts"
+    ],
+    "criticalPaths": [
+      "websocket_connect",
+      "audio_capture",
+      "pitch_detection",
+      "message_send"
+    ]
+  },
+  "ai-memory": {
+    "files": [
+      "src/backend/services/ai-memory-service.ts"
+    ],
+    "features": [
+      "memory-storage",
+      "retrieval",
+      "search",
+      "context-building"
+    ],
+    "dependencies": [
+      "Prisma",
+      "PostgreSQL",
+      "OpenAI Embeddings"
+    ],
+    "tests": [
+      "ai-memory.test.ts"
+    ],
+    "criticalPaths": [
+      "db_connection",
+      "query_execution",
+      "embedding_generation"
+    ]
+  },
+  "voice-commands": {
+    "files": [
+      "src/services/voiceCommandService.ts"
+    ],
+    "features": [
+      "speech-recognition",
+      "command-matching",
+      "parameter-extraction"
+    ],
+    "dependencies": [
+      "Web Speech API"
+    ],
+    "tests": [
+      "voice-commands.test.ts"
+    ],
+    "criticalPaths": [
+      "recognition_init",
+      "transcript_capture",
+      "command_match",
+      "execution"
+    ]
+  },
+  "budget-alerts": {
+    "files": [
+      "src/backend/services/budget-management-service.ts"
+    ],
+    "features": [
+      "cost-calculation",
+      "threshold-detection",
+      "alert-creation"
+    ],
+    "dependencies": [
+      "Prisma",
+      "PostgreSQL"
+    ],
+    "tests": [
+      "budget-alerts.test.ts"
+    ],
+    "criticalPaths": [
+      "usage_retrieval",
+      "cost_calc",
+      "threshold_check",
+      "alert_store"
+    ]
+  }
+}

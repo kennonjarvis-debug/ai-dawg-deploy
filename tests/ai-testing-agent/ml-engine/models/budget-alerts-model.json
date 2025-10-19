@@ -1,0 +1,31 @@
+{
+  "workflowType": "budget-alerts",
+  "weights": {
+    "apiAvailable": -0.297097152341794,
+    "cpuUtilization": -0.3486222018216423,
+    "dayOfWeek": -0.5196999841051749,
+    "isWeekend": 0.10959750756356026,
+    "networkLatency": 1.282115300556635,
+    "systemMemory": -0.593195910931231,
+    "timeOfDay": -0.10586995024435847,
+    "userConcurrency": -0.18649426510570338
+  },
+  "bias": -0.4773979895521765,
+  "featureNames": [
+    "apiAvailable",
+    "cpuUtilization",
+    "dayOfWeek",
+    "isWeekend",
+    "networkLatency",
+    "systemMemory",
+    "timeOfDay",
+    "userConcurrency"
+  ],
+  "trainedAt": "2025-10-19T21:22:35.531Z",
+  "accuracy": 0.5909090909090909,
+  "precision": 0,
+  "recall": 0,
+  "f1Score": 0,
+  "trainingSize": 88,
+  "validationSize": 22
+}

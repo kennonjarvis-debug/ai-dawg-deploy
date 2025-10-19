@@ -1,0 +1,31 @@
+{
+  "workflowType": "voice-commands",
+  "weights": {
+    "apiAvailable": -0.12689352068931273,
+    "cpuUtilization": -0.24554657911584296,
+    "dayOfWeek": 0.41057073771311164,
+    "isWeekend": -0.29429146278726886,
+    "networkLatency": 0.24323897853948157,
+    "systemMemory": -0.2258580635403652,
+    "timeOfDay": -0.5013399041086759,
+    "userConcurrency": -0.14819102441241352
+  },
+  "bias": -0.6843922574198463,
+  "featureNames": [
+    "apiAvailable",
+    "cpuUtilization",
+    "dayOfWeek",
+    "isWeekend",
+    "networkLatency",
+    "systemMemory",
+    "timeOfDay",
+    "userConcurrency"
+  ],
+  "trainedAt": "2025-10-19T21:22:35.529Z",
+  "accuracy": 0.5909090909090909,
+  "precision": 0,
+  "recall": 0,
+  "f1Score": 0,
+  "trainingSize": 88,
+  "validationSize": 22
+}

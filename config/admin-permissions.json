@@ -1,0 +1,162 @@
+{
+  "version": "1.0.0",
+  "description": "Admin permissions and role definitions for DAWG AI Voice Test Control",
+  "roles": {
+    "admin": {
+      "name": "Administrator",
+      "permissions": [
+        "voice_test_control",
+        "run_all_tests",
+        "run_workflow_tests",
+        "create_tests",
+        "generate_tests",
+        "fix_tests",
+        "view_test_results",
+        "check_coverage",
+        "run_security_tests",
+        "test_deployment",
+        "view_audit_logs",
+        "manage_users"
+      ],
+      "rateLimits": {
+        "commandsPerMinute": 10,
+        "commandsPerHour": 100,
+        "maxConcurrentSessions": 3
+      },
+      "features": {
+        "voiceCommands": true,
+        "autoFix": true,
+        "productionDeployment": true,
+        "auditAccess": true
+      }
+    },
+    "developer": {
+      "name": "Developer",
+      "permissions": [
+        "run_workflow_tests",
+        "view_test_results",
+        "check_coverage",
+        "generate_tests"
+      ],
+      "rateLimits": {
+        "commandsPerMinute": 5,
+        "commandsPerHour": 50,
+        "maxConcurrentSessions": 2
+      },
+      "features": {
+        "voiceCommands": false,
+        "autoFix": false,
+        "productionDeployment": false,
+        "auditAccess": false
+      }
+    },
+    "tester": {
+      "name": "QA Tester",
+      "permissions": [
+        "run_workflow_tests",
+        "view_test_results",
+        "check_coverage"
+      ],
+      "rateLimits": {
+        "commandsPerMinute": 5,
+        "commandsPerHour": 50,
+        "maxConcurrentSessions": 1
+      },
+      "features": {
+        "voiceCommands": false,
+        "autoFix": false,
+        "productionDeployment": false,
+        "auditAccess": false
+      }
+    },
+    "viewer": {
+      "name": "Viewer",
+      "permissions": [
+        "view_test_results"
+      ],
+      "rateLimits": {
+        "commandsPerMinute": 2,
+        "commandsPerHour": 20,
+        "maxConcurrentSessions": 1
+      },
+      "features": {
+        "voiceCommands": false,
+        "autoFix": false,
+        "productionDeployment": false,
+        "auditAccess": false
+      }
+    }
+  },
+  "adminUsers": {
+    "description": "List of users with admin privileges",
+    "users": [
+      {
+        "userId": "admin-001",
+        "email": "admin@dawg-ai.com",
+        "name": "System Administrator",
+        "role": "admin",
+        "createdAt": "2025-01-01T00:00:00Z",
+        "features": {
+          "voiceTestControl": true,
+          "emergencyAccess": true
+        }
+      }
+    ]
+  },
+  "voiceCommandSettings": {
+    "enabled": true,
+    "requiredRole": "admin",
+    "confirmationThreshold": {
+      "description": "Confidence threshold below which confirmation is required",
+      "value": 0.85
+    },
+    "destructiveOperations": [
+      "fix_failing_tests",
+      "test_deployment"
+    ],
+    "alwaysConfirm": [
+      "test_deployment"
+    ],
+    "blockedInProduction": [
+      "fix_failing_tests"
+    ]
+  },
+  "rateLimitSettings": {
+    "enabled": true,
+    "windowMs": 60000,
+    "maxRequestsPerWindow": 10,
+    "blockDuration": 300000,
+    "bypassForEmergency": true
+  },
+  "auditSettings": {
+    "enabled": true,
+    "logAllCommands": true,
+    "retentionDays": 90,
+    "realTimeAlerts": {
+      "enabled": true,
+      "alertOn": [
+        "test_deployment",
+        "fix_failing_tests",
+        "rate_limit_exceeded"
+      ],
+      "channels": [
+        "slack",
+        "email",
+        "sms"
+      ]
+    }
+  },
+  "securitySettings": {
+    "requireMFA": true,
+    "sessionTimeout": 3600000,
+    "maxFailedAttempts": 3,
+    "lockoutDuration": 900000,
+    "ipWhitelist": [],
+    "allowedHours": {
+      "enabled": false,
+      "start": "06:00",
+      "end": "22:00",
+      "timezone": "America/Los_Angeles"
+    }
+  }
+}

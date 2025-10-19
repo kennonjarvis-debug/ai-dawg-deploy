@@ -1,0 +1,39 @@
+{
+  "slack": {
+    "enabled": false,
+    "webhookUrl": ""
+  },
+  "discord": {
+    "enabled": false,
+    "webhookUrl": ""
+  },
+  "email": {
+    "enabled": false,
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "",
+        "pass": ""
+      }
+    },
+    "from": "noreply@dawg-ai.com",
+    "to": []
+  },
+  "sms": {
+    "enabled": false,
+    "twilioAccountSid": "",
+    "twilioAuthToken": "",
+    "twilioPhoneNumber": "",
+    "recipients": []
+  },
+  "browser": {
+    "enabled": true
+  },
+  "alertThresholds": {
+    "criticalFailures": true,
+    "passRateDrop": 10,
+    "consecutiveFailures": 3
+  }
+}

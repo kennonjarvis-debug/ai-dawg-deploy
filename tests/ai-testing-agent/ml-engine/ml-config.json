@@ -1,0 +1,163 @@
+{
+  "model": {
+    "type": "logistic-regression",
+    "algorithm": "gradient-descent",
+    "learningRate": 0.01,
+    "iterations": 1000,
+    "regularization": {
+      "enabled": true,
+      "lambda": 0.1,
+      "type": "l2"
+    }
+  },
+  "features": {
+    "codeChange": {
+      "filesChanged": {
+        "weight": 1.0,
+        "description": "Number of files modified in the change"
+      },
+      "linesAdded": {
+        "weight": 0.8,
+        "description": "Number of lines added"
+      },
+      "linesDeleted": {
+        "weight": 0.7,
+        "description": "Number of lines deleted"
+      },
+      "fileType": {
+        "weight": 1.2,
+        "description": "Type of file changed (high-risk areas get higher weight)",
+        "riskMap": {
+          "ts": 1.0,
+          "tsx": 1.0,
+          "js": 1.0,
+          "jsx": 1.0,
+          "spec.ts": 0.5,
+          "test.ts": 0.5,
+          "json": 0.3
+        }
+      },
+      "pathPattern": {
+        "weight": 1.5,
+        "description": "Path pattern risk scoring",
+        "riskPaths": [
+          {
+            "pattern": "src/backend/services/",
+            "risk": 0.9
+          },
+          {
+            "pattern": "src/backend/ai-",
+            "risk": 0.95
+          },
+          {
+            "pattern": "src/audio/ai/",
+            "risk": 0.9
+          },
+          {
+            "pattern": "src/backend/realtime-",
+            "risk": 0.85
+          },
+          {
+            "pattern": "src/components/",
+            "risk": 0.6
+          },
+          {
+            "pattern": "tests/",
+            "risk": 0.3
+          },
+          {
+            "pattern": "docs/",
+            "risk": 0.1
+          }
+        ]
+      }
+    },
+    "testHistory": {
+      "recentFailures": {
+        "weight": 2.0,
+        "description": "Number of recent failures for this test",
+        "windowSize": 10
+      },
+      "failureRate": {
+        "weight": 1.8,
+        "description": "Historical failure rate"
+      },
+      "averageDuration": {
+        "weight": 0.5,
+        "description": "Average test duration (slower tests may have issues)"
+      },
+      "lastFailureTime": {
+        "weight": 1.3,
+        "description": "Time since last failure (recent failures increase risk)"
+      },
+      "consecutivePasses": {
+        "weight": -0.6,
+        "description": "Consecutive passes (negative weight - reduces risk)"
+      }
+    },
+    "testCorrelation": {
+      "relatedTestFailures": {
+        "weight": 1.4,
+        "description": "Failures in related/dependent tests"
+      },
+      "sameModuleFailures": {
+        "weight": 1.2,
+        "description": "Failures in tests for the same module"
+      }
+    },
+    "codeComplexity": {
+      "cyclomaticComplexity": {
+        "weight": 0.9,
+        "description": "Code complexity in changed files"
+      },
+      "nestedDepth": {
+        "weight": 0.7,
+        "description": "Nesting depth in changed code"
+      }
+    },
+    "temporalPatterns": {
+      "timeOfDay": {
+        "weight": 0.3,
+        "description": "Time-based failure patterns"
+      },
+      "dayOfWeek": {
+        "weight": 0.2,
+        "description": "Day-based failure patterns"
+      }
+    }
+  },
+  "training": {
+    "retrainThreshold": 10,
+    "minSamplesForTraining": 20,
+    "validationSplit": 0.2,
+    "enableContinuousLearning": true,
+    "saveModelCheckpoints": true
+  },
+  "prediction": {
+    "confidenceThreshold": 0.6,
+    "riskThresholds": {
+      "critical": 0.8,
+      "high": 0.6,
+      "medium": 0.4,
+      "low": 0.2
+    }
+  },
+  "prioritization": {
+    "strategy": "risk-weighted",
+    "maxTestsToRun": 100,
+    "alwaysRunCritical": true,
+    "skipThreshold": 0.1,
+    "timeLimitMinutes": 30
+  },
+  "storage": {
+    "databasePath": "tests/ml-data/training.db",
+    "maxHistoryDays": 90,
+    "modelCheckpointPath": "tests/ml-data/models/"
+  },
+  "logging": {
+    "logPredictions": true,
+    "logActualResults": true,
+    "enableMetrics": true,
+    "metricsPath": "tests/ml-data/metrics/"
+  }
+}

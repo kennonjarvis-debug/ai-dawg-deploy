@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-10-19T20:40:07.357Z",
+  "totalTests": 1,
+  "passed": 0,
+  "failed": 1,
+  "skipped": 0,
+  "duration": 87875,
+  "results": [
+    {
+      "testName": "AI Feature Initialization",
+      "status": "failed",
+      "duration": 1189,
+      "error": "Command failed: npm run test:unit -- --testNamePattern=\"AI Feature Initialization\"\nFAIL tests/ai-routing-integration.test.ts\n  ● Test suite failed to run\n\n    Jest encountered an unexpected token\n\n    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.\n\n    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.\n\n    By default \"node_modules\" folder is ignored by transformers.\n\n    Here's what you can do:\n     • If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.\n     • If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript\n     • To have some of your \"node_modules\" files transformed, you can specify a custom \"transformIgnorePatterns\" in your config.\n     • If you need a custom transformation specify a \"transform\" option in your config.\n     • If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the \"moduleNameMapper\" config option.\n\n    You'll find more details and examples of these config options in the docs:\n    https://jestjs.io/docs/configuration\n    For information about custom transformations, see:\n    https://jestjs.io/docs/code-transformation\n\n    Details:\n\n    /Users/benkennon/Projects_Archive/dawg/ai-dawg-deploy/tests/ai-routing-integration.test.ts:1\n    ({\"Object.<anonymous>\":function(module,exports,require,__dirname,__filename,jest){import { test, expect } from '@playwright/test';\n                                                                                      ^^^^^^\n\n    SyntaxError: Cannot use import statement outside a module\n\n      at Runtime.createScriptFromCode (node_modules/jest-runtime/build/index.js:1505:14)\n\nTest Suites: 1 failed, 1 total\nTests:       0 total\nSnapshots:   0 total\nTime:        0.319 s\nRan all test suites matching /tests\\/[^/]+.test.ts$/i with tests matching \"AI Feature Initialization\".\n"
+    }
+  ],
+  "recommendations": [
+    "Ensure that the Jest configuration is set up to handle ECMAScript modules. This can be done by setting 'type': 'module' in the package.json file or by configuring Jest to use Babel for transforming the test files. Additionally, verify that the 'transformIgnorePatterns' in the Jest configuration does not exclude the necessary files from being transformed.",
+    "Consider using 'require' statements instead of 'import' if ECMAScript module support is not feasible or necessary for the test environment."
+  ],
+  "criticalIssues": [
+    "The inability to run the AI Feature Initialization test suite due to a configuration issue is critical as it prevents validation of AI feature initialization, which is a fundamental aspect of the platform's functionality. Immediate attention is required to resolve the configuration issue to ensure that the AI features are properly tested and validated."
+  ]
+}

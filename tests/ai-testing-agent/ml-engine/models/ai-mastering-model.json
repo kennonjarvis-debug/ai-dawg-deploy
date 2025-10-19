@@ -1,0 +1,31 @@
+{
+  "workflowType": "ai-mastering",
+  "weights": {
+    "apiAvailable": -0.24656898618937778,
+    "cpuUtilization": 0.00038214712426710225,
+    "dayOfWeek": -0.21256047439686632,
+    "isWeekend": 0.401726830321797,
+    "networkLatency": -0.18170584266927242,
+    "systemMemory": -0.38693463195830613,
+    "timeOfDay": -0.2373444486382545,
+    "userConcurrency": -0.7086494898364697
+  },
+  "bias": 0.1545616294552347,
+  "featureNames": [
+    "apiAvailable",
+    "cpuUtilization",
+    "dayOfWeek",
+    "isWeekend",
+    "networkLatency",
+    "systemMemory",
+    "timeOfDay",
+    "userConcurrency"
+  ],
+  "trainedAt": "2025-10-19T21:22:35.522Z",
+  "accuracy": 0.9090909090909091,
+  "precision": 0,
+  "recall": 0,
+  "f1Score": 0,
+  "trainingSize": 88,
+  "validationSize": 22
+}

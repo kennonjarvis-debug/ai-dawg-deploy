@@ -1,0 +1,37 @@
+{
+  "workflowType": "melody-to-vocals",
+  "weights": {
+    "apiAvailable": -0.06844616590850106,
+    "cpuUtilization": -0.291660443627035,
+    "dayOfWeek": 0.24376308383787018,
+    "expertAIAvailable": -1.8286545636486755,
+    "expertAILatency": 1.6599068119825338,
+    "isWeekend": -0.0849471327939517,
+    "networkLatency": -0.6441740210395502,
+    "prevGenFails": 2.2273511286650605,
+    "systemMemory": 0.009679280752773526,
+    "timeOfDay": 0.44714748883974564,
+    "userConcurrency": 0.39404439793958485
+  },
+  "bias": -0.05187932909540619,
+  "featureNames": [
+    "apiAvailable",
+    "cpuUtilization",
+    "dayOfWeek",
+    "expertAIAvailable",
+    "expertAILatency",
+    "isWeekend",
+    "networkLatency",
+    "prevGenFails",
+    "systemMemory",
+    "timeOfDay",
+    "userConcurrency"
+  ],
+  "trainedAt": "2025-10-19T21:22:35.518Z",
+  "accuracy": 0.8333333333333334,
+  "precision": 0.8571428571428571,
+  "recall": 0.8571428571428571,
+  "f1Score": 0.8571428571428571,
+  "trainingSize": 96,
+  "validationSize": 24
+}

@@ -1,0 +1,310 @@
+{
+  "version": "1.0.0",
+  "name": "DAWG AI Testing Orchestrator",
+  "description": "Master orchestrator for coordinating all testing agents and workflows",
+
+  "agentPool": {
+    "minAgents": 2,
+    "maxAgents": 5,
+    "idleTimeout": 300000,
+    "taskQueueSize": 100,
+    "autoScaling": {
+      "enabled": true,
+      "scaleUpThreshold": 0.8,
+      "scaleDownThreshold": 0.2,
+      "cooldownPeriod": 60000
+    }
+  },
+
+  "gitWatcher": {
+    "enabled": true,
+    "polling": {
+      "interval": 10000,
+      "enabled": true
+    },
+    "paths": [
+      "src/**/*.ts",
+      "src/**/*.js",
+      "tests/**/*.ts",
+      "tests/**/*.spec.ts"
+    ],
+    "ignorePatterns": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.git/**",
+      "**/coverage/**"
+    ],
+    "criticalPaths": [
+      "src/backend/ai-brain-server.ts",
+      "src/backend/realtime-voice-server.ts",
+      "src/backend/services/udio-service.ts",
+      "src/audio/ai/SmartMixAssistant.ts",
+      "src/audio/ai/AIMasteringEngine.ts"
+    ],
+    "changeImpactThresholds": {
+      "critical": 50,
+      "high": 30,
+      "medium": 15,
+      "low": 5
+    }
+  },
+
+  "scheduler": {
+    "enabled": true,
+    "timezone": "UTC",
+    "schedules": [
+      {
+        "name": "hourly-smoke-tests",
+        "description": "Quick smoke tests every hour",
+        "cron": "0 * * * *",
+        "tests": ["smoke"],
+        "priority": "medium",
+        "enabled": true
+      },
+      {
+        "name": "every-4-hours-integration",
+        "description": "Integration tests every 4 hours",
+        "cron": "0 */4 * * *",
+        "tests": ["integration"],
+        "priority": "high",
+        "enabled": true
+      },
+      {
+        "name": "daily-full-suite",
+        "description": "Complete test suite once daily",
+        "cron": "0 0 * * *",
+        "tests": ["all"],
+        "priority": "high",
+        "enabled": true
+      },
+      {
+        "name": "weekly-performance",
+        "description": "Performance benchmarks weekly",
+        "cron": "0 0 * * 0",
+        "tests": ["performance", "load"],
+        "priority": "medium",
+        "enabled": true
+      },
+      {
+        "name": "nightly-ai-quality",
+        "description": "AI quality assessment nightly",
+        "cron": "0 2 * * *",
+        "tests": ["ai-quality", "ai-accuracy"],
+        "priority": "critical",
+        "enabled": true
+      }
+    ],
+    "smartScheduling": {
+      "enabled": true,
+      "learnFromHistory": true,
+      "adaptToLoad": true,
+      "minDataPoints": 3
+    }
+  },
+
+  "workflow": {
+    "autoCreatePR": true,
+    "blockOnCriticalFailure": true,
+    "retryAttempts": 3,
+    "retryDelay": 5000,
+    "timeout": 600000,
+    "workflows": {
+      "preRelease": {
+        "enabled": true,
+        "triggerOn": ["commit", "pr-created"],
+        "blockMerge": true,
+        "notifyOnFailure": true
+      },
+      "autoFix": {
+        "enabled": true,
+        "triggerOn": ["test-failure"],
+        "maxAttempts": 3,
+        "createPR": true,
+        "reviewRequired": true
+      },
+      "continuousMonitoring": {
+        "enabled": true,
+        "triggerOn": ["schedule"],
+        "interval": 300000,
+        "alertThresholds": {
+          "errorRate": 0.05,
+          "responseTime": 2000,
+          "availability": 0.99
+        }
+      },
+      "postDeployment": {
+        "enabled": true,
+        "triggerOn": ["deployment"],
+        "smokeTests": true,
+        "rollbackOnFailure": false
+      },
+      "regressionDetection": {
+        "enabled": true,
+        "triggerOn": ["test-failure"],
+        "compareWithBaseline": true,
+        "bisectCommits": true
+      }
+    }
+  },
+
+  "monitoring": {
+    "dashboardEnabled": true,
+    "dashboardPort": 3002,
+    "alertingEnabled": true,
+    "metricsRetention": 604800000,
+    "realTimeUpdates": true,
+    "metrics": {
+      "trackTaskDuration": true,
+      "trackSuccessRate": true,
+      "trackAgentUtilization": true,
+      "trackQueueLength": true,
+      "trackWorkflowExecutions": true
+    },
+    "alerts": {
+      "channels": ["console", "file", "webhook"],
+      "webhookURL": "${SLACK_WEBHOOK_URL}",
+      "thresholds": {
+        "criticalFailureCount": 1,
+        "highFailureRate": 0.2,
+        "longQueueLength": 20,
+        "slowTaskDuration": 600000
+      }
+    }
+  },
+
+  "integrations": {
+    "github": {
+      "enabled": true,
+      "apiURL": "https://api.github.com",
+      "token": "${GITHUB_TOKEN}",
+      "repo": "${GITHUB_REPO}",
+      "autoCreatePR": true,
+      "autoAssignReviewers": true,
+      "statusChecks": true
+    },
+    "slack": {
+      "enabled": false,
+      "webhookURL": "${SLACK_WEBHOOK_URL}",
+      "channels": {
+        "general": "#testing-alerts",
+        "critical": "#critical-alerts"
+      }
+    },
+    "dashboard": {
+      "enabled": true,
+      "url": "http://localhost:3002",
+      "apiKey": "${DASHBOARD_API_KEY}",
+      "updateInterval": 5000
+    },
+    "mlModel": {
+      "enabled": true,
+      "modelPath": "tests/ai-testing-agent/ml/model",
+      "retrainInterval": 86400000,
+      "minTrainingData": 100
+    },
+    "agentBrain": {
+      "enabled": true,
+      "storePath": "tests/ai-testing-agent/brain",
+      "vectorDB": "local",
+      "maxStorageSize": 1073741824
+    }
+  },
+
+  "testing": {
+    "defaultTimeout": 120000,
+    "maxConcurrentTests": 5,
+    "retryFailedTests": 3,
+    "captureScreenshots": true,
+    "captureVideos": "on-failure",
+    "generateReports": true,
+    "reportFormats": ["json", "html", "markdown"],
+    "testTypes": {
+      "smoke": {
+        "timeout": 30000,
+        "priority": "high",
+        "parallel": true
+      },
+      "integration": {
+        "timeout": 120000,
+        "priority": "high",
+        "parallel": false
+      },
+      "e2e": {
+        "timeout": 180000,
+        "priority": "medium",
+        "parallel": true
+      },
+      "performance": {
+        "timeout": 300000,
+        "priority": "medium",
+        "parallel": false
+      },
+      "ai-quality": {
+        "timeout": 240000,
+        "priority": "critical",
+        "parallel": false
+      }
+    }
+  },
+
+  "ai": {
+    "model": "gpt-4o",
+    "temperature": 0.1,
+    "maxTokens": 4096,
+    "timeout": 30000,
+    "capabilities": [
+      "code-analysis",
+      "test-generation",
+      "failure-analysis",
+      "auto-fix",
+      "risk-prediction",
+      "anomaly-detection",
+      "performance-optimization"
+    ],
+    "prompts": {
+      "codeAnalysis": "You are an expert code analyzer for DAWG AI. Analyze changes and predict impact.",
+      "riskPrediction": "You are an expert risk analyst. Predict risks based on code changes.",
+      "autoFix": "You are an expert developer. Generate fixes for test failures.",
+      "anomalyDetection": "You are an expert in anomaly detection. Identify unusual patterns."
+    }
+  },
+
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "destination": "file",
+    "filePath": "logs/orchestrator.log",
+    "maxFileSize": 10485760,
+    "maxFiles": 10,
+    "console": {
+      "enabled": true,
+      "colorize": true
+    }
+  },
+
+  "performance": {
+    "taskBatchSize": 10,
+    "taskProcessingInterval": 1000,
+    "agentScalingInterval": 60000,
+    "metricsCollectionInterval": 5000,
+    "cacheEnabled": true,
+    "cacheTTL": 300000
+  },
+
+  "security": {
+    "validateInputs": true,
+    "sanitizeOutputs": true,
+    "encryptSensitiveData": true,
+    "auditLog": true,
+    "maxExecutionTime": 3600000
+  },
+
+  "experimental": {
+    "predictiveScheduling": true,
+    "autoScaling": true,
+    "smartRetry": true,
+    "parallelWorkflows": false,
+    "distributedExecution": false
+  }
+}

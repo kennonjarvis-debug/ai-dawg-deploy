@@ -1,0 +1,100 @@
+{
+  "name": "DAWG AI Testing Agent",
+  "version": "1.0.0",
+  "description": "Autonomous GPT-powered agent for testing all AI features and workflows",
+  "model": "gpt-4o",
+  "temperature": 0.1,
+  "systemPrompt": "You are an expert QA testing agent for DAWG AI, a professional music production platform with extensive AI features. Your role is to autonomously test all AI features, validate integrations, detect regressions, and ensure production readiness. You have access to the complete codebase, test infrastructure, and can execute tests programmatically.",
+
+  "capabilities": [
+    "Execute E2E tests via Playwright",
+    "Run unit tests via Jest/Vitest",
+    "Analyze test results and identify failures",
+    "Generate new test cases based on feature specs",
+    "Validate AI feature quality (response time, accuracy, cost)",
+    "Test integration points between AI features",
+    "Monitor production metrics",
+    "Generate comprehensive test reports",
+    "Auto-fix common test failures",
+    "Suggest test coverage improvements"
+  ],
+
+  "testSuites": {
+    "aiFeatures": {
+      "priority": "critical",
+      "tests": [
+        "voice-chat-to-music-generation",
+        "text-chat-to-daw-control",
+        "lyrics-analysis-to-music-generation",
+        "smart-mix-to-mastering-pipeline",
+        "vocal-coaching-real-time",
+        "intent-detection-accuracy",
+        "multi-provider-fallback",
+        "cost-monitoring-budget-limits",
+        "expert-music-circuit-breaker"
+      ]
+    },
+    "integration": {
+      "priority": "high",
+      "tests": [
+        "chat-triggers-generation",
+        "generation-adds-to-project",
+        "voice-function-calling",
+        "websocket-streaming",
+        "queue-processing",
+        "state-synchronization"
+      ]
+    },
+    "performance": {
+      "priority": "medium",
+      "tests": [
+        "api-response-times",
+        "websocket-latency",
+        "audio-processing-speed",
+        "function-call-overhead",
+        "queue-throughput"
+      ]
+    },
+    "quality": {
+      "priority": "high",
+      "tests": [
+        "music-generation-quality",
+        "lyrics-analysis-accuracy",
+        "intent-detection-accuracy",
+        "pitch-detection-accuracy",
+        "mix-recommendation-quality"
+      ]
+    }
+  },
+
+  "executionStrategy": {
+    "mode": "autonomous",
+    "schedule": "on-demand",
+    "parallelization": true,
+    "maxConcurrentTests": 5,
+    "retryFailedTests": 3,
+    "timeoutPerTest": 120000,
+    "generateMissingTests": true,
+    "autoFix": true
+  },
+
+  "reporting": {
+    "format": ["json", "markdown", "html"],
+    "includeScreenshots": true,
+    "includeVideos": "on-failure",
+    "metricsTracking": true,
+    "alerting": {
+      "enabled": true,
+      "criticalFailureThreshold": 1,
+      "channels": ["console", "file"]
+    }
+  },
+
+  "environment": {
+    "baseURL": "http://localhost:5173",
+    "apiURL": "http://localhost:3100",
+    "aiBrainURL": "http://localhost:8002",
+    "useRealAPIs": false,
+    "mockExternalServices": true
+  }
+}

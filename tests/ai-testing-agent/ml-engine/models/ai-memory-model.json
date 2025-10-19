@@ -1,0 +1,31 @@
+{
+  "workflowType": "ai-memory",
+  "weights": {
+    "apiAvailable": -0.19069913949140474,
+    "cpuUtilization": 0.32851906123217367,
+    "dayOfWeek": 0.19761856645906395,
+    "isWeekend": -0.19652726623163863,
+    "networkLatency": 0.3618183045218233,
+    "systemMemory": -0.638405697868438,
+    "timeOfDay": 0.38090908824453323,
+    "userConcurrency": -0.8543681634230812
+  },
+  "bias": -0.7344198803874141,
+  "featureNames": [
+    "apiAvailable",
+    "cpuUtilization",
+    "dayOfWeek",
+    "isWeekend",
+    "networkLatency",
+    "systemMemory",
+    "timeOfDay",
+    "userConcurrency"
+  ],
+  "trainedAt": "2025-10-19T21:22:35.526Z",
+  "accuracy": 0.7727272727272727,
+  "precision": 0,
+  "recall": 0,
+  "f1Score": 0,
+  "trainingSize": 88,
+  "validationSize": 22
+}

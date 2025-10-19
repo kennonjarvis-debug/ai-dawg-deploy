@@ -1,0 +1,218 @@
+{
+  "testHistory": [
+    {
+      "testName": "voice-chat-to-music-generation",
+      "status": "passed",
+      "duration": 3200,
+      "priority": "critical",
+      "component": "voice-chat",
+      "timestamp": "2025-10-19T21:30:41.995Z"
+    },
+    {
+      "testName": "text-chat-to-daw-control",
+      "status": "passed",
+      "duration": 1800,
+      "priority": "critical",
+      "component": "text-chat",
+      "timestamp": "2025-10-19T21:30:43.029Z"
+    },
+    {
+      "testName": "lyrics-analysis-to-music-generation",
+      "status": "passed",
+      "duration": 4500,
+      "priority": "high",
+      "component": "lyrics-analysis",
+      "timestamp": "2025-10-19T21:30:44.038Z"
+    },
+    {
+      "testName": "smart-mix-to-mastering-pipeline",
+      "status": "failed",
+      "duration": 5200,
+      "error": "Audio processing timeout after 5000ms",
+      "priority": "high",
+      "component": "smart-mix",
+      "timestamp": "2025-10-19T21:30:45.044Z"
+    },
+    {
+      "testName": "vocal-coaching-real-time",
+      "status": "passed",
+      "duration": 2100,
+      "priority": "medium",
+      "component": "vocal-coaching",
+      "timestamp": "2025-10-19T21:30:46.053Z"
+    },
+    {
+      "testName": "intent-detection-accuracy",
+      "status": "passed",
+      "duration": 1500,
+      "priority": "high",
+      "component": "intent-detection",
+      "timestamp": "2025-10-19T21:30:47.059Z"
+    },
+    {
+      "testName": "multi-provider-fallback",
+      "status": "passed",
+      "duration": 3800,
+      "priority": "critical",
+      "component": "multi-provider",
+      "timestamp": "2025-10-19T21:30:48.067Z"
+    },
+    {
+      "testName": "cost-monitoring-budget-limits",
+      "status": "passed",
+      "duration": 900,
+      "priority": "medium",
+      "component": "cost-monitoring",
+      "timestamp": "2025-10-19T21:30:49.077Z"
+    },
+    {
+      "testName": "expert-music-circuit-breaker",
+      "status": "passed",
+      "duration": 1200,
+      "priority": "high",
+      "component": "circuit-breaker",
+      "timestamp": "2025-10-19T21:30:50.082Z"
+    },
+    {
+      "testName": "chat-triggers-generation",
+      "status": "failed",
+      "duration": 2800,
+      "error": "Failed to connect to generation service",
+      "priority": "high",
+      "component": "chat",
+      "timestamp": "2025-10-19T21:30:51.089Z"
+    },
+    {
+      "testName": "generation-adds-to-project",
+      "status": "passed",
+      "duration": 3500,
+      "priority": "high",
+      "component": "generation",
+      "timestamp": "2025-10-19T21:30:52.097Z"
+    },
+    {
+      "testName": "voice-function-calling",
+      "status": "passed",
+      "duration": 2200,
+      "priority": "critical",
+      "component": "voice",
+      "timestamp": "2025-10-19T21:30:53.101Z"
+    },
+    {
+      "testName": "websocket-streaming",
+      "status": "passed",
+      "duration": 1800,
+      "priority": "high",
+      "component": "websocket",
+      "timestamp": "2025-10-19T21:30:54.104Z"
+    },
+    {
+      "testName": "queue-processing",
+      "status": "passed",
+      "duration": 2500,
+      "priority": "medium",
+      "component": "queue",
+      "timestamp": "2025-10-19T21:30:55.107Z"
+    },
+    {
+      "testName": "state-synchronization",
+      "status": "passed",
+      "duration": 1600,
+      "priority": "high",
+      "component": "state",
+      "timestamp": "2025-10-19T21:30:56.111Z"
+    },
+    {
+      "testName": "api-response-times",
+      "status": "passed",
+      "duration": 1100,
+      "priority": "medium",
+      "component": "api",
+      "timestamp": "2025-10-19T21:30:57.115Z"
+    },
+    {
+      "testName": "websocket-latency",
+      "status": "passed",
+      "duration": 950,
+      "priority": "medium",
+      "component": "websocket",
+      "timestamp": "2025-10-19T21:30:58.120Z"
+    },
+    {
+      "testName": "audio-processing-speed",
+      "status": "failed",
+      "duration": 4200,
+      "error": "Processing took 4.2s, expected < 3s",
+      "priority": "medium",
+      "component": "audio-processing",
+      "timestamp": "2025-10-19T21:30:59.123Z"
+    },
+    {
+      "testName": "function-call-overhead",
+      "status": "passed",
+      "duration": 800,
+      "priority": "low",
+      "component": "function-calling",
+      "timestamp": "2025-10-19T21:31:00.129Z"
+    },
+    {
+      "testName": "queue-throughput",
+      "status": "passed",
+      "duration": 2300,
+      "priority": "medium",
+      "component": "queue",
+      "timestamp": "2025-10-19T21:31:01.138Z"
+    },
+    {
+      "testName": "music-generation-quality",
+      "status": "passed",
+      "duration": 6500,
+      "priority": "critical",
+      "component": "music-generation",
+      "timestamp": "2025-10-19T21:31:02.143Z"
+    },
+    {
+      "testName": "lyrics-analysis-accuracy",
+      "status": "passed",
+      "duration": 3200,
+      "priority": "high",
+      "component": "lyrics-analysis",
+      "timestamp": "2025-10-19T21:31:03.161Z"
+    },
+    {
+      "testName": "intent-detection-accuracy-v2",
+      "status": "passed",
+      "duration": 1700,
+      "priority": "high",
+      "component": "intent-detection",
+      "timestamp": "2025-10-19T21:31:04.166Z"
+    },
+    {
+      "testName": "pitch-detection-accuracy",
+      "status": "passed",
+      "duration": 2100,
+      "priority": "medium",
+      "component": "pitch-detection",
+      "timestamp": "2025-10-19T21:31:05.185Z"
+    },
+    {
+      "testName": "mix-recommendation-quality",
+      "status": "passed",
+      "duration": 4800,
+      "priority": "high",
+      "component": "smart-mix",
+      "timestamp": "2025-10-19T21:31:06.196Z"
+    }
+  ],
+  "completionHistory": [
+    {
+      "totalTests": 25,
+      "passed": 22,
+      "failed": 3,
+      "skipped": 0,
+      "duration": 66250,
+      "timestamp": "2025-10-19T21:31:07.214Z"
+    }
+  ],
+  "lastUpdated": "2025-10-19T21:31:07.220Z"
+}

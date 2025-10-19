@@ -1,0 +1,39 @@
+{
+  "workflowType": "freestyle",
+  "weights": {
+    "apiAvailable": 0.15253142447902476,
+    "audioContextOk": -0.4838660448083006,
+    "cpuUtilization": 0.8953605870692316,
+    "dayOfWeek": -0.45631315746997164,
+    "isWeekend": 0.8936977336552933,
+    "micPermission": -1.104606293564501,
+    "networkLatency": 0.42578605737379094,
+    "prevTranscriptionFails": 2.7109582966842725,
+    "systemMemory": 0.43478502964818105,
+    "timeOfDay": -0.40353827411794635,
+    "transcriptionAccuracy": -0.7090132108500519,
+    "userConcurrency": 0.40437680801883785
+  },
+  "bias": 0.1606142706022247,
+  "featureNames": [
+    "apiAvailable",
+    "audioContextOk",
+    "cpuUtilization",
+    "dayOfWeek",
+    "isWeekend",
+    "micPermission",
+    "networkLatency",
+    "prevTranscriptionFails",
+    "systemMemory",
+    "timeOfDay",
+    "transcriptionAccuracy",
+    "userConcurrency"
+  ],
+  "trainedAt": "2025-10-19T21:22:35.514Z",
+  "accuracy": 0.6666666666666666,
+  "precision": 0.6666666666666666,
+  "recall": 0.9473684210526315,
+  "f1Score": 0.782608695652174,
+  "trainingSize": 120,
+  "validationSize": 30
+}
