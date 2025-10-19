@@ -122,16 +122,16 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   const isLiveRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || 'http://localhost:8002';
+  const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || import.meta.env.VITE_API_URL || 'http://localhost:8002';
 
   // Auto-detect protocol and use environment variable for production
   const REALTIME_VOICE_URL = (() => {
-    const envUrl = import.meta.env.VITE_REALTIME_VOICE_URL;
+    const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_REALTIME_VOICE_URL;
     if (envUrl) return envUrl;
 
     // For local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:3100';
+      return import.meta.env.VITE_API_URL || 'http://localhost:3100';
     }
 
     // For production, use same host with appropriate protocol

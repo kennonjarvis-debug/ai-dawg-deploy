@@ -40,7 +40,7 @@ export const RealtimeVoiceWidget: React.FC<RealtimeVoiceWidgetProps> = ({
   const audioQueueRef = useRef<Int16Array[]>([]);
   const isPlayingRef = useRef(false);
 
-  const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || 'http://localhost:3100';
+  const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || import.meta.env.VITE_API_URL || 'http://localhost:3100';
 
   // Initialize WebSocket
   useEffect(() => {
