@@ -47,10 +47,8 @@ export default defineConfig({
               return 'ui-vendor';
             }
 
-            // Split audio/music libraries (Tone.js, etc.)
-            if (id.includes('tone') || id.includes('audiobuffer') || id.includes('pizzicato')) {
-              return 'audio-vendor';
-            }
+            // Don't split audio libraries - let Vite handle them automatically
+            // Tone.js has circular dependencies that break when manually chunked
 
             // Split WebSocket/Socket.io
             if (id.includes('socket.io-client') || id.includes('engine.io-client')) {
@@ -60,11 +58,6 @@ export default defineConfig({
             // Split state management (zustand)
             if (id.includes('zustand')) {
               return 'state-vendor';
-            }
-
-            // Split framer-motion animation library
-            if (id.includes('framer-motion')) {
-              return 'animation-vendor';
             }
 
             // Everything else goes into general vendor
