@@ -1,4 +1,4 @@
-// API Client for AI DAW Backend
+// API Client for DAWG AI Backend
 // Provides type-safe HTTP methods for all API endpoints
 
 import type {
@@ -131,6 +131,10 @@ export class APIClient {
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
+
+    // Add user ID header for WebSocket room matching
+    // Backend uses this to emit events to the correct WebSocket room
+    headers['x-user-id'] = 'user-123';
 
     // Add CSRF token for state-changing requests
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase())) {
@@ -559,9 +563,37 @@ export class APIClient {
     if (this.entitlementsCache && now - this.entitlementsCache.ts < 60000) {
       return this.entitlementsCache.data;
     }
-    const res = await this.request('GET', '/billing/entitlements') as { plan: string; features: Record<string, boolean>; limits: any };
-    this.entitlementsCache = { data: res, ts: now };
-    return res;
+
+    try {
+      const res = await this.request('GET', '/billing/entitlements') as { plan: string; features: Record<string, boolean>; limits: any };
+      this.entitlementsCache = { data: res, ts: now };
+      return res;
+    } catch (error: any) {
+      // If billing endpoint doesn't exist (404), return demo entitlements
+      if (error.status === 404 || import.meta.env.VITE_DEMO_MODE === 'true') {
+        console.log('Billing service not available, using demo entitlements');
+        const demoEntitlements = {
+          plan: 'FREE',
+          features: {
+            basic_recording: true,
+            basic_mixing: true,
+            ai_assistance: true,
+            cloud_storage: false,
+            advanced_effects: false,
+            collaboration: false,
+            unlimited_projects: false,
+          },
+          limits: {
+            max_projects: 3,
+            max_tracks_per_project: 8,
+            max_storage_gb: 1,
+          }
+        };
+        this.entitlementsCache = { data: demoEntitlements, ts: now };
+        return demoEntitlements;
+      }
+      throw error;
+    }
   }
 
   async createCheckout(plan?: 'PRO' | 'STUDIO', priceId?: string): Promise<{ url: string }> {

@@ -3,12 +3,23 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import WebSocket from 'ws';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { generateMusic, generateBeat } from './services/musicgen-service';
+import { getCachedVoiceFunctions, initializeFunctionCache } from './services/function-cache-service';
+import functionCacheRoutes from './routes/function-cache-routes';
 
 dotenv.config();
 
 const app = express();
 const server = createServer(app);
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Function cache routes
+app.use('/api/functions', functionCacheRoutes);
+
 const io = new SocketIOServer(server, {
   cors: { origin: '*' }
 });
@@ -19,1151 +30,314 @@ const PORT = process.env.PORT || 3100;
 console.log('🚀 OpenAI Realtime Voice Server Starting...');
 console.log(`✅ OpenAI API Key: ${OPENAI_API_KEY ? 'Configured' : 'MISSING'}`);
 
-// OpenAI Realtime API connection
-io.on('connection', (socket) => {
-  console.log('🎤 Client connected for LIVE voice');
+// Initialize function cache
+initializeFunctionCache()
+  .then(() => console.log('✅ Function cache ready'))
+  .catch((err) => console.error('❌ Function cache initialization failed:', err));
 
-  let openaiWs: WebSocket | null = null;
-  let isConnected = false;
+// ✨ SHARED OpenAI WebSocket (singleton pattern)
+let sharedOpenaiWs: WebSocket | null = null;
+let isConnected = false;
+let isAIResponding = false;
+let currentResponseId: string | null = null;
+let currentVoice = 'alloy';
 
-  // Connect to OpenAI Realtime API
-  socket.on('start-realtime', async () => {
-    if (openaiWs) {
-      console.log('⚠️  Already connected to OpenAI Realtime API');
-      return;
-    }
+// Conversation memory for context and learning
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+const conversationHistory: ConversationMessage[] = [];
+const MAX_HISTORY_LENGTH = 10;
 
-    try {
-      // Connect to OpenAI Realtime API WebSocket
-      const url = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
-      openaiWs = new WebSocket(url, {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'realtime=v1'
-        }
-      });
+// Initialize shared OpenAI WebSocket
+function initializeOpenAIConnection(voice: string = 'alloy') {
+  if (sharedOpenaiWs && isConnected) {
+    console.log('⚠️  Already connected to OpenAI');
+    return;
+  }
 
-      openaiWs.on('open', () => {
-        console.log('✅ Connected to OpenAI Realtime API');
-        isConnected = true;
-        socket.emit('realtime-connected');
+  currentVoice = voice;
+  console.log(`🎙️ Initializing shared OpenAI connection with voice: ${voice}`);
 
-        // Configure session with tools for DAW control
-        openaiWs?.send(JSON.stringify({
-          type: 'session.update',
-          session: {
-            modalities: ['text', 'audio'],
-            instructions: 'You are DAWG AI, a helpful music production assistant. Be conversational and friendly. Help with DAW controls, mixing, recording, and music production. You have access to tools to control the DAW - use them when the user asks you to perform actions. CRITICAL: When the user is recording and asks you to transcribe their freestyle lyrics, you MUST call update_lyrics with append=true CONTINUOUSLY as they speak each line or phrase in real-time - do NOT wait until they finish recording. Transcribe live, line by line, as the words come out.',
-            voice: 'alloy',
-            input_audio_format: 'pcm16',
-            output_audio_format: 'pcm16',
-            input_audio_transcription: {
-              model: 'whisper-1'
-            },
-            turn_detection: {
-              type: 'server_vad',
-              threshold: 0.5,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 500
-            },
-            tools: [
-              {
-                type: 'function',
-                name: 'start_recording',
-                description: 'Start recording audio in the DAW',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'stop_recording',
-                description: 'Stop recording audio in the DAW',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'play',
-                description: 'Start playback in the DAW',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'stop',
-                description: 'Stop playback in the DAW',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'update_lyrics',
-                description: 'Update or append lyrics to the lyrics widget. Use append=true when transcribing freestyle lyrics line by line.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    text: { type: 'string', description: 'The lyrics text to add or set' },
-                    append: { type: 'boolean', description: 'If true, append to existing lyrics. If false, replace all lyrics.' }
-                  },
-                  required: ['text', 'append']
-                }
-              },
-              {
-                type: 'function',
-                name: 'create_track',
-                description: 'Create a new track in the DAW',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'set_tempo',
-                description: 'Set the project tempo (BPM)',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    bpm: { type: 'number', description: 'The tempo in beats per minute' }
-                  },
-                  required: ['bpm']
-                }
-              },
-              {
-                type: 'function',
-                name: 'set_key',
-                description: 'Set the project key',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    key: { type: 'string', description: 'The musical key (e.g., C, Dm, F#)' }
-                  },
-                  required: ['key']
-                }
-              },
-              {
-                type: 'function',
-                name: 'apply_autotune',
-                description: 'Apply autotune effect to selected audio',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'apply_compression',
-                description: 'Apply automatic compression to selected audio',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'quantize_audio',
-                description: 'Quantize/time-align selected audio to the grid',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'smart_mix',
-                description: 'Apply AI-powered smart mixing to the project',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'master_audio',
-                description: 'Apply AI mastering to the project',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'generate_music',
-                description: 'Generate AI music with custom prompts. Examples: "create a stratocaster riff", "808s like metro boomin", "morgan wallen style country song", "trap beat with heavy bass"',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    prompt: { type: 'string', description: 'Detailed description of the music to generate (instruments, style, artist references, etc.)' },
-                    genre: { type: 'string', description: 'Genre (optional): pop, rock, hip-hop, electronic, country, etc.' },
-                    tempo: { type: 'number', description: 'Tempo in BPM (optional), default 120' },
-                    duration: { type: 'number', description: 'Duration in seconds (optional), default 30' }
-                  },
-                  required: ['prompt']
-                }
-              },
-              {
-                type: 'function',
-                name: 'save_project',
-                description: 'Save the current project',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'export_project',
-                description: 'Export the current project as audio',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'process_voice_memo',
-                description: 'Process a voice memo recording with AI: isolate vocals, transcribe, analyze musical intent, and compose a full song. This is a complete creative workflow from voice recording to finished track.',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              // REAL-TIME EFFECT CONTROL DURING RECORDING
-              {
-                type: 'function',
-                name: 'adjust_brightness',
-                description: 'Adjust brightness/high frequencies of the live monitoring mix in real-time. Use when user asks for "more brightness", "add air", "more highs", "brighter sound", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    amount: {
-                      type: 'string',
-                      enum: ['subtle', 'moderate', 'aggressive'],
-                      description: 'How much brightness to add - subtle (2dB), moderate (4dB), aggressive (6dB)'
-                    }
-                  },
-                  required: ['amount']
-                }
-              },
-              {
-                type: 'function',
-                name: 'adjust_compression',
-                description: 'Adjust compression on live monitoring mix in real-time. Use when user asks for "more compression", "tighter", "control dynamics", "more punch", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    amount: {
-                      type: 'string',
-                      enum: ['light', 'medium', 'heavy'],
-                      description: 'Compression intensity - light (2.5:1), medium (4:1), heavy (6:1)'
-                    }
-                  },
-                  required: ['amount']
-                }
-              },
-              {
-                type: 'function',
-                name: 'adjust_warmth',
-                description: 'Adjust warmth/low-mid frequencies in real-time. Use when user asks for "warmer", "more body", "fuller sound", "more low-mids", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    amount: {
-                      type: 'string',
-                      enum: ['subtle', 'moderate', 'heavy'],
-                      description: 'How much warmth to add - subtle (2dB @ 200Hz), moderate (3dB @ 150Hz), heavy (4dB @ 110Hz + Neve 1073)'
-                    }
-                  },
-                  required: ['amount']
-                }
-              },
-              {
-                type: 'function',
-                name: 'add_autotune',
-                description: 'Enable or adjust autotune on live monitoring in real-time. Use when user asks for "add autotune", "more tuning", "pitch correction", "t-pain effect", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    speed: {
-                      type: 'string',
-                      enum: ['natural', 'moderate', 'tpain'],
-                      description: 'Retune speed - natural (25ms, subtle), moderate (15ms, modern), tpain (0ms, robotic)'
-                    }
-                  },
-                  required: ['speed']
-                }
-              },
-              {
-                type: 'function',
-                name: 'add_reverb',
-                description: 'Add or adjust reverb on live monitoring in real-time. Use when user asks for "add reverb", "more space", "more room", "bigger sound", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    amount: {
-                      type: 'number',
-                      minimum: 0,
-                      maximum: 100,
-                      description: 'Reverb wet mix percentage (0-100)'
-                    },
-                    type: {
-                      type: 'string',
-                      enum: ['plate', 'room', 'hall'],
-                      description: 'Reverb type - plate (bright, tight), room (natural), hall (large, spacious)'
-                    }
-                  },
-                  required: ['amount', 'type']
-                }
-              },
-              {
-                type: 'function',
-                name: 'remove_harshness',
-                description: 'Reduce harsh high frequencies in real-time. Use when user asks for "less harsh", "too bright", "reduce sibilance", "softer highs", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    amount: {
-                      type: 'string',
-                      enum: ['light', 'moderate', 'heavy'],
-                      description: 'Amount of harshness reduction'
-                    }
-                  },
-                  required: ['amount']
-                }
-              },
-              {
-                type: 'function',
-                name: 'add_delay',
-                description: 'Add delay effect on live monitoring in real-time. Use when user asks for "add delay", "add echo", "slap delay", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    timing: {
-                      type: 'string',
-                      enum: ['eighth', 'quarter', 'dotted-eighth'],
-                      description: 'Delay timing relative to tempo'
-                    },
-                    feedback: {
-                      type: 'number',
-                      minimum: 0,
-                      maximum: 100,
-                      description: 'Delay feedback amount (0-100)'
-                    },
-                    mix: {
-                      type: 'number',
-                      minimum: 0,
-                      maximum: 100,
-                      description: 'Delay wet mix percentage (0-100)'
-                    }
-                  },
-                  required: ['timing', 'feedback', 'mix']
-                }
-              },
-              {
-                type: 'function',
-                name: 'adjust_presence',
-                description: 'Adjust vocal presence (3-6kHz range) in real-time. Use when user asks for "more presence", "upfront", "clearer vocals", "cut through the mix", etc. during recording.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    amount: {
-                      type: 'string',
-                      enum: ['subtle', 'moderate', 'aggressive'],
-                      description: 'How much presence to add'
-                    }
-                  },
-                  required: ['amount']
-                }
-              },
-              {
-                type: 'function',
-                name: 'reset_effects',
-                description: 'Reset all live monitoring effects to bypass/neutral. Use when user asks for "remove all effects", "dry signal", "no effects", "reset", etc. during recording.',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              // AI VOCAL PROCESSING
-              {
-                type: 'function',
-                name: 'analyze_vocal',
-                description: 'Analyze a vocal recording using AI to detect characteristics like brightness, warmth, sibilance, room tone, dynamic range. Use when user asks to "analyze my voice", "check this vocal", "what do you hear", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track containing the vocal recording to analyze'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'get_vocal_recommendations',
-                description: 'Get AI-recommended effects chain for a vocal recording based on genre and vocal characteristics. Use when user asks "what effects should I use", "how should I process this vocal", "recommend settings for country/pop/rock", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track containing the vocal recording'
-                    },
-                    genre: {
-                      type: 'string',
-                      enum: ['country', 'pop', 'rock', 'rnb', 'hip-hop', 'indie', 'folk', 'jazz'],
-                      description: 'Musical genre for tailored recommendations'
-                    },
-                    naturalSound: {
-                      type: 'boolean',
-                      description: 'Whether to prefer natural, minimal processing (default: false)'
-                    }
-                  },
-                  required: ['trackId', 'genre']
-                }
-              },
-              {
-                type: 'function',
-                name: 'apply_vocal_preset',
-                description: 'Apply a professional vocal effects preset to a track. Use when user asks for "clean vocal sound", "broadcast quality", "warm vocal", "modern pop vocal", "lofi effect", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to apply the preset to'
-                    },
-                    preset: {
-                      type: 'string',
-                      enum: ['clean', 'broadcast', 'warm', 'pop', 'lofi'],
-                      description: 'Preset to apply - clean (minimal), broadcast (professional), warm (rich), pop (modern/bright), lofi (vintage)'
-                    }
-                  },
-                  required: ['trackId', 'preset']
-                }
-              },
-              // AI NOISE REDUCTION
-              {
-                type: 'function',
-                name: 'learn_noise_profile',
-                description: 'Learn noise profile from a silent section or noise sample in the audio. Use when user says "learn the noise", "sample the background noise", "capture noise profile", etc. This must be done before noise reduction.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track containing audio to learn from'
-                    },
-                    startTime: {
-                      type: 'number',
-                      description: 'Start time in seconds for noise sample (optional, will auto-detect if not provided)'
-                    },
-                    duration: {
-                      type: 'number',
-                      description: 'Duration in seconds of noise sample (default 1 second)'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'apply_noise_reduction',
-                description: 'Apply AI-powered noise reduction to remove background noise, clicks, pops, and artifacts. Use when user asks to "clean up the audio", "remove noise", "reduce background sound", "fix the hiss", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    },
-                    preset: {
-                      type: 'string',
-                      enum: ['light', 'moderate', 'aggressive', 'voice', 'music'],
-                      description: 'Noise reduction preset - light (subtle), moderate (balanced), aggressive (maximum), voice (speech optimized), music (harmonic preservation)'
-                    },
-                    autoLearn: {
-                      type: 'boolean',
-                      description: 'Automatically detect and learn from silent sections (default: true)'
-                    }
-                  },
-                  required: ['trackId', 'preset']
-                }
-              },
-              {
-                type: 'function',
-                name: 'remove_clicks_pops',
-                description: 'Remove clicks, pops, and digital artifacts from audio using intelligent interpolation. Use when user mentions "remove clicks", "fix pops", "clean up artifacts", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    },
-                    sensitivity: {
-                      type: 'string',
-                      enum: ['low', 'medium', 'high'],
-                      description: 'Detection sensitivity - low (only obvious clicks), medium (balanced), high (aggressive)'
-                    }
-                  },
-                  required: ['trackId', 'sensitivity']
-                }
-              },
-              // AI STEM SEPARATION
-              {
-                type: 'function',
-                name: 'separate_stems',
-                description: 'Separate audio into individual stems: vocals, drums, bass, and other instruments using AI. Use when user asks to "separate the stems", "split the tracks", "isolate instruments", "break down the audio", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to separate into stems'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'isolate_vocals',
-                description: 'Extract and isolate only the vocals from audio. Use when user says "isolate vocals", "extract vocals", "get the vocals", "create acapella", "vocals only", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to extract vocals from'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'remove_vocals',
-                description: 'Remove vocals from audio to create instrumental version. Use when user asks for "remove vocals", "make instrumental", "karaoke version", "no vocals", "instrumental only", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to remove vocals from'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'isolate_drums',
-                description: 'Extract and isolate only the drums from audio. Use when user says "isolate drums", "extract drums", "get the drums", "drums only", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to extract drums from'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'remove_drums',
-                description: 'Remove drums from audio. Use when user asks to "remove drums", "no drums", "without drums", "mute drums", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to remove drums from'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'isolate_bass',
-                description: 'Extract and isolate only the bass from audio. Use when user says "isolate bass", "extract bass", "get the bass", "bass only", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to extract bass from'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'isolate_instruments',
-                description: 'Extract and isolate other instruments (everything except vocals, drums, bass). Use when user asks for "isolate instruments", "get the instruments", "other instruments", "melody only", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to extract instruments from'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              // BEAT DETECTION & ANALYSIS
-              {
-                type: 'function',
-                name: 'detect_bpm',
-                description: 'Detect the BPM (tempo) of an audio track using AI beat detection. Use when user asks "what\'s the BPM", "find the tempo", "analyze the beat", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to analyze'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'analyze_beats',
-                description: 'Comprehensive beat analysis including BPM, beat positions, time signature, downbeats, and measures. Use when user asks for detailed rhythm analysis, "where are the beats", "find downbeats", "what time signature", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to analyze'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'quantize_to_grid',
-                description: 'Quantize audio to the tempo grid with time-stretching. Use when user asks to "quantize", "align to grid", "fix timing", "tighten up the performance", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to quantize'
-                    },
-                    strength: {
-                      type: 'number',
-                      minimum: 0,
-                      maximum: 100,
-                      description: 'Quantization strength percentage (0-100). 0=no quantization, 100=perfect grid alignment'
-                    },
-                    gridDivision: {
-                      type: 'number',
-                      enum: [4, 8, 16, 32],
-                      description: 'Grid division - 4=quarter notes, 8=eighth notes, 16=sixteenth notes, 32=thirty-second notes'
-                    },
-                    swing: {
-                      type: 'number',
-                      minimum: 0,
-                      maximum: 100,
-                      description: 'Swing amount percentage (0-100). 0=straight, 50=triplet feel'
-                    }
-                  },
-                  required: ['trackId', 'strength', 'gridDivision']
-                }
-              },
-              {
-                type: 'function',
-                name: 'extract_midi',
-                description: 'Extract MIDI notes from monophonic audio (like vocals, bass, lead). Use when user asks to "convert to MIDI", "extract melody", "get the notes", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to extract MIDI from (must be monophonic)'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'detect_key',
-                description: 'Detect the musical key of an audio track. Use when user asks "what key is this in", "find the key", "analyze harmony", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to analyze'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              // AI MASTERING ENGINE
-              {
-                type: 'function',
-                name: 'analyze_mix',
-                description: 'Analyze the mix for mastering - measure LUFS loudness, dynamic range, stereo width, frequency balance, and detect issues. Use when user asks to "analyze the mix", "check the master", "how does it sound", "what needs fixing", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to analyze'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'auto_master',
-                description: 'Apply intelligent AI mastering to make track ready for distribution. Automatically analyzes and applies multi-band EQ, compression, stereo enhancement, and limiting. Use when user asks to "master this", "make it sound professional", "prepare for streaming", "make it louder", "master for Spotify", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to master'
-                    },
-                    targetStandard: {
-                      type: 'string',
-                      enum: ['streaming', 'club', 'aggressive'],
-                      description: 'Target loudness standard - streaming (-14 LUFS for Spotify/Apple Music), club (-9 LUFS for EDM/club play), aggressive (-6 LUFS for maximum loudness)'
-                    }
-                  },
-                  required: ['trackId', 'targetStandard']
-                }
-              },
-              {
-                type: 'function',
-                name: 'match_reference',
-                description: 'Master track to match the tone and loudness of a reference track. Analyzes both tracks and applies processing to make them sound similar. Use when user says "match this reference", "make it sound like [track]", "copy this tone", "sound like [artist]", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to master'
-                    },
-                    referenceTrackId: {
-                      type: 'string',
-                      description: 'ID of the reference track to match'
-                    }
-                  },
-                  required: ['trackId', 'referenceTrackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'apply_mastering_preset',
-                description: 'Apply a professional mastering preset (quick mastering without analysis). Use when user asks for specific mastering style like "bright master", "warm master", "loud master", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to master'
-                    },
-                    preset: {
-                      type: 'string',
-                      enum: ['streaming', 'club', 'aggressive', 'warm', 'bright', 'transparent'],
-                      description: 'Mastering preset - streaming (Spotify ready), club (EDM/loud), aggressive (maximum loudness), warm (analog sound), bright (modern/clear), transparent (minimal processing)'
-                    }
-                  },
-                  required: ['trackId', 'preset']
-                }
-              },
-              // ADAPTIVE EQ AI ENGINE
-              {
-                type: 'function',
-                name: 'analyze_eq',
-                description: 'Analyze audio and get intelligent EQ recommendations. Detects resonances, mud, harshness, and suggests corrective EQ. Use when user asks to "analyze the EQ", "check for problems", "what frequencies need fixing", "detect resonances", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to analyze'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'auto_eq_clarity',
-                description: 'Automatically apply EQ for maximum clarity and balance. Removes masking frequencies, enhances fundamentals, adds air. Use when user asks for "auto EQ", "make it clearer", "balance the frequencies", "EQ for clarity", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'match_eq_reference',
-                description: 'Match the EQ of a track to a reference track. Analyzes spectral differences and creates matching EQ. Use when user says "match this to [reference]", "EQ like [song]", "copy the tone from", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    sourceTrackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    },
-                    referenceTrackId: {
-                      type: 'string',
-                      description: 'ID of the reference track to match'
-                    }
-                  },
-                  required: ['sourceTrackId', 'referenceTrackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'apply_genre_eq',
-                description: 'Apply genre-specific EQ template designed by professionals. Use when user asks for "pop EQ", "rock sound", "hip-hop EQ", "make it sound like [genre]", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    },
-                    genre: {
-                      type: 'string',
-                      enum: ['pop', 'rock', 'hiphop', 'electronic', 'jazz', 'classical', 'country', 'metal', 'indie', 'rnb'],
-                      description: 'Genre style to apply'
-                    }
-                  },
-                  required: ['trackId', 'genre']
-                }
-              },
-              {
-                type: 'function',
-                name: 'fix_resonance',
-                description: 'Automatically detect and fix problematic resonances and ringing frequencies. Use when user mentions "fix the resonance", "remove ringing", "sounds boxy", "too harsh at [frequency]", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'remove_muddiness',
-                description: 'Remove low-mid muddiness (200-500Hz) for clarity. Use when user says "remove mud", "sounds muddy", "clean up the low mids", "too thick", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    },
-                    amount: {
-                      type: 'string',
-                      enum: ['light', 'moderate', 'heavy'],
-                      description: 'How much mud to remove'
-                    }
-                  },
-                  required: ['trackId', 'amount']
-                }
-              },
-              {
-                type: 'function',
-                name: 'add_air_presence',
-                description: 'Add high-frequency air and upper-mid presence for clarity and openness. Use when user asks to "add air", "more sparkle", "brighter", "more presence", "open up the sound", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to process'
-                    },
-                    airAmount: {
-                      type: 'number',
-                      minimum: 0,
-                      maximum: 5,
-                      description: 'Amount of high-frequency air to add (dB), typically 1-3'
-                    },
-                    presenceAmount: {
-                      type: 'number',
-                      minimum: 0,
-                      maximum: 5,
-                      description: 'Amount of upper-mid presence to add (dB), typically 1-3'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'dynamic_eq_analyze',
-                description: 'Analyze and apply dynamic EQ that adapts to loud vs quiet sections. Use when user wants "dynamic EQ", "EQ that adapts", "different EQ for loud parts", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: {
-                      type: 'string',
-                      description: 'ID of the track to analyze and process'
-                    }
-                  },
-                  required: ['trackId']
-                }
-              },
-              // ===== LOGIC PRO X-STYLE MIXER & ROUTING =====
-              {
-                type: 'function',
-                name: 'getTracks',
-                description: 'Get information about all tracks in the project for analysis and routing decisions',
-                parameters: { type: 'object', properties: {}, required: [] }
-              },
-              {
-                type: 'function',
-                name: 'createAuxTrack',
-                description: 'Create an aux/bus track for effects routing (like Logic Pro X). Use when user asks to "create a reverb bus", "add a delay aux", "set up parallel compression", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: 'Name for the aux track (e.g., "Reverb", "Delay", "Parallel Comp")' },
-                    channels: { type: 'string', enum: ['mono', 'stereo'], description: 'Mono or stereo', default: 'stereo' }
-                  },
-                  required: ['name']
-                }
-              },
-              {
-                type: 'function',
-                name: 'createAudioTrack',
-                description: 'Create a new audio track',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: 'Name for the track' },
-                    channels: { type: 'string', enum: ['mono', 'stereo'], description: 'Mono or stereo', default: 'stereo' }
-                  },
-                  required: ['name']
-                }
-              },
-              {
-                type: 'function',
-                name: 'createSend',
-                description: 'Create a send from a track to an aux track (Logic Pro X bus routing). Use when user asks to "route to reverb", "add send to delay", "send vocals to reverb bus", etc.',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    sourceTrackId: { type: 'string', description: 'ID of source track' },
-                    destinationTrackId: { type: 'string', description: 'ID of destination aux track' },
-                    preFader: { type: 'boolean', description: 'Pre-fader (for monitoring) or post-fader (for effects)', default: false },
-                    level: { type: 'number', description: 'Send level 0-1', minimum: 0, maximum: 1, default: 0.8 }
-                  },
-                  required: ['sourceTrackId', 'destinationTrackId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'removeSend',
-                description: 'Remove a send from a track',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    sourceTrackId: { type: 'string', description: 'ID of the track' },
-                    sendId: { type: 'string', description: 'ID of the send' }
-                  },
-                  required: ['sourceTrackId', 'sendId']
-                }
-              },
-              {
-                type: 'function',
-                name: 'setSendLevel',
-                description: 'Adjust the level of a send',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    sourceTrackId: { type: 'string', description: 'ID of the track' },
-                    sendId: { type: 'string', description: 'ID of the send' },
-                    level: { type: 'number', description: 'Send level 0-1', minimum: 0, maximum: 1 }
-                  },
-                  required: ['sourceTrackId', 'sendId', 'level']
-                }
-              },
-              {
-                type: 'function',
-                name: 'setTrackOutput',
-                description: 'Route track output to master or aux track',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: { type: 'string', description: 'ID of the track' },
-                    outputDestination: { type: 'string', description: 'Destination: "master" or aux track ID' }
-                  },
-                  required: ['trackId', 'outputDestination']
-                }
-              },
-              {
-                type: 'function',
-                name: 'setTrackVolume',
-                description: 'Set track volume fader',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: { type: 'string', description: 'ID of the track' },
-                    volume: { type: 'number', description: 'Volume 0-1 (1 = 0dB)', minimum: 0, maximum: 1 }
-                  },
-                  required: ['trackId', 'volume']
-                }
-              },
-              {
-                type: 'function',
-                name: 'setTrackPan',
-                description: 'Set track pan position',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: { type: 'string', description: 'ID of the track' },
-                    pan: { type: 'number', description: 'Pan -1 (left) to 1 (right)', minimum: -1, maximum: 1 }
-                  },
-                  required: ['trackId', 'pan']
-                }
-              },
-              {
-                type: 'function',
-                name: 'muteTrack',
-                description: 'Mute or unmute a track',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: { type: 'string', description: 'ID of the track' },
-                    mute: { type: 'boolean', description: 'true to mute, false to unmute' }
-                  },
-                  required: ['trackId', 'mute']
-                }
-              },
-              {
-                type: 'function',
-                name: 'soloTrack',
-                description: 'Solo or unsolo a track',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    trackId: { type: 'string', description: 'ID of the track' },
-                    solo: { type: 'boolean', description: 'true to solo, false to unsolo' }
-                  },
-                  required: ['trackId', 'solo']
-                }
-              }
-            ],
-            tool_choice: 'auto'
-          }
-        }));
-      });
-
-      openaiWs.on('message', (data) => {
-        try {
-          const event = JSON.parse(data.toString());
-
-          // Forward relevant events to client
-          switch (event.type) {
-            case 'session.created':
-            case 'session.updated':
-              console.log(`📋 ${event.type}`);
-              break;
-
-            case 'conversation.item.created':
-              console.log('💬 New conversation item');
-              break;
-
-            // User speech transcription (what the user said)
-            case 'conversation.item.input_audio_transcription.delta':
-              socket.emit('user-transcript-delta', { text: event.delta });
-              break;
-
-            case 'conversation.item.input_audio_transcription.completed':
-              // This is what the USER said
-              socket.emit('user-transcript-done', { text: event.transcript });
-              console.log('📝 User said:', event.transcript);
-              break;
-
-            // AI response text (from audio transcript)
-            case 'response.audio_transcript.delta':
-              socket.emit('ai-text-delta', { text: event.delta });
-              break;
-
-            case 'response.audio_transcript.done':
-              // This is what the AI is saying
-              socket.emit('ai-text-done', { text: event.transcript });
-              console.log('🤖 AI said:', event.transcript);
-              break;
-
-            case 'response.audio.delta':
-              // Stream audio back to client
-              socket.emit('audio-delta', { audio: event.delta });
-              break;
-
-            case 'response.audio.done':
-              console.log('🔊 Audio response complete');
-              socket.emit('audio-done');
-              break;
-
-            case 'response.done':
-              console.log('✅ Response complete');
-              break;
-
-            case 'error':
-              console.error('❌ OpenAI Error:', event.error);
-              socket.emit('error', { message: event.error.message });
-              break;
-
-            case 'input_audio_buffer.speech_started':
-              console.log('🗣️  User started speaking');
-              socket.emit('speech-started');
-              break;
-
-            case 'input_audio_buffer.speech_stopped':
-              console.log('🤐 User stopped speaking');
-              socket.emit('speech-stopped');
-              break;
-
-            // Function calling events
-            case 'response.function_call_arguments.delta':
-              // Function call arguments streaming (we'll wait for done)
-              break;
-
-            case 'response.function_call_arguments.done':
-              // Complete function call received
-              console.log('🔧 Function call:', event.name, event.arguments);
-              socket.emit('function-call', {
-                call_id: event.call_id,
-                name: event.name,
-                arguments: event.arguments
-              });
-              break;
-
-            default:
-              // Log unknown events for debugging
-              if (event.type) {
-                console.log(`🔔 ${event.type}`);
-              }
-          }
-        } catch (error) {
-          console.error('Error parsing OpenAI message:', error);
-        }
-      });
-
-      openaiWs.on('error', (error) => {
-        console.error('❌ OpenAI WebSocket error:', error);
-        socket.emit('error', { message: 'OpenAI connection error' });
-      });
-
-      openaiWs.on('close', () => {
-        console.log('🔌 Disconnected from OpenAI Realtime API');
-        isConnected = false;
-        socket.emit('realtime-disconnected');
-      });
-
-    } catch (error: any) {
-      console.error('Failed to connect to OpenAI Realtime API:', error);
-      socket.emit('error', { message: 'Failed to connect to OpenAI' });
+  const url = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
+  sharedOpenaiWs = new WebSocket(url, {
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'OpenAI-Beta': 'realtime=v1'
     }
   });
 
-  // Receive audio from client and forward to OpenAI
-  socket.on('audio-data', (data: { audio: string }) => {
-    if (!openaiWs || !isConnected) {
+  sharedOpenaiWs.on('open', () => {
+    console.log('✅ Connected to OpenAI Realtime API');
+    isConnected = true;
+
+    // Get cached voice functions (optimized for bandwidth)
+    const voiceFunctions = getCachedVoiceFunctions();
+    console.log(`📦 Using cached voice functions (${voiceFunctions.length} functions)`);
+
+    // Configure session
+    sharedOpenaiWs?.send(JSON.stringify({
+      type: 'session.update',
+      session: {
+        modalities: ['text', 'audio'],
+        instructions: 'You are a professional music producer AI assistant helping users create music in a DAW. Be concise, creative, and helpful. When users ask you to create beats or music, use the generate_music function. When they ask to start recording, use start_recording. When they hum a melody and want lyrics/vocals, use melody_to_vocals.',
+        voice: currentVoice,
+        input_audio_format: 'pcm16',
+        output_audio_format: 'pcm16',
+        input_audio_transcription: {
+          model: 'whisper-1'
+        },
+        turn_detection: {
+          type: 'server_vad',
+          threshold: 0.5,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 200
+        },
+        tools: voiceFunctions, // Use cached functions
+        tool_choice: 'auto',
+        temperature: 0.8
+      }
+    }));
+  });
+
+  sharedOpenaiWs.on('message', (data) => {
+    try {
+      const event = JSON.parse(data.toString());
+
+      // Log session events
+      if (event.type?.startsWith('session.') || event.type?.startsWith('conversation.item.') || event.type?.startsWith('input_audio_buffer.') || event.type?.startsWith('response.')) {
+        if (!event.type.includes('.delta')) {
+          console.log(`📋 ${event.type}`);
+        }
+      }
+
+      switch (event.type) {
+        case 'conversation.item.created':
+          console.log('💬 New conversation item');
+          break;
+
+        case 'conversation.item.input_audio_transcription.completed':
+          io.emit('user-transcript-done', { text: event.transcript });
+          console.log('📝 User said:', event.transcript);
+          // Add to conversation history
+          conversationHistory.push({
+            role: 'user',
+            content: event.transcript,
+            timestamp: new Date()
+          });
+          // Keep only last MAX_HISTORY_LENGTH messages
+          if (conversationHistory.length > MAX_HISTORY_LENGTH) {
+            conversationHistory.splice(0, conversationHistory.length - MAX_HISTORY_LENGTH);
+          }
+          break;
+
+        case 'response.audio_transcript.delta':
+          io.emit('ai-text-delta', { text: event.delta });
+          break;
+
+        case 'response.audio_transcript.done':
+          io.emit('ai-text-done', { text: event.transcript });
+          console.log('🤖 AI said:', event.transcript);
+          // Add to conversation history
+          if (event.transcript && event.transcript.trim()) {
+            conversationHistory.push({
+              role: 'assistant',
+              content: event.transcript,
+              timestamp: new Date()
+            });
+            // Keep only last MAX_HISTORY_LENGTH messages
+            if (conversationHistory.length > MAX_HISTORY_LENGTH) {
+              conversationHistory.splice(0, conversationHistory.length - MAX_HISTORY_LENGTH);
+            }
+          }
+          break;
+
+        case 'response.audio.delta':
+          io.emit('audio-delta', { audio: event.delta });
+          break;
+
+        case 'response.audio.done':
+          console.log('🔊 Audio response complete');
+          io.emit('audio-done');
+          break;
+
+        case 'response.created':
+          console.log('🤖 AI response started');
+          isAIResponding = true;
+          currentResponseId = event.response.id;
+          io.emit('response-started');
+          break;
+
+        case 'response.done':
+          console.log('✅ Response complete');
+          isAIResponding = false;
+          currentResponseId = null;
+          io.emit('response-done');
+          break;
+
+        case 'error':
+          // Suppress "no active response" errors (common race condition during interruptions)
+          const errorMessage = event.error?.message || '';
+          if (errorMessage.toLowerCase().includes('no active response') || errorMessage.toLowerCase().includes('cancellation failed')) {
+            console.debug('OpenAI: Response cancellation skipped (already finished)');
+          } else {
+            console.error('❌ OpenAI Error:', event.error);
+            io.emit('error', { message: event.error.message });
+          }
+          break;
+
+        case 'input_audio_buffer.speech_started':
+          console.log('🗣️  User started speaking');
+          io.emit('speech-started');
+
+          // Interrupt AI if it's currently responding
+          if (isAIResponding && currentResponseId) {
+            console.log('⚡ User interrupted AI - canceling response');
+            try {
+              sharedOpenaiWs?.send(JSON.stringify({
+                type: 'response.cancel'
+              }));
+              io.emit('ai-interrupted');
+            } catch (error: any) {
+              // Suppress "no active response" errors (race condition where response finished just as we tried to cancel)
+              const errorMsg = error.message?.toLowerCase() || '';
+              if (!errorMsg.includes('no active response') && !errorMsg.includes('cancellation failed')) {
+                console.error('Error canceling response:', error);
+              } else {
+                console.debug('Response already finished, ignoring cancellation error');
+              }
+            }
+            isAIResponding = false;
+            currentResponseId = null;
+          }
+          break;
+
+        case 'input_audio_buffer.speech_stopped':
+          console.log('🤐 User stopped speaking');
+          io.emit('speech-stopped');
+          break;
+
+        case 'response.function_call_arguments.done':
+          console.log('🔧 Function call:', event.name, event.arguments);
+
+          if (event.name === 'change_my_voice') {
+            try {
+              const args = JSON.parse(event.arguments);
+              console.log(`🎙️ AI changing voice to: ${args.voice}`);
+
+              sharedOpenaiWs?.send(JSON.stringify({
+                type: 'session.update',
+                session: {
+                  voice: args.voice
+                }
+              }));
+
+              sharedOpenaiWs?.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: event.call_id,
+                  output: JSON.stringify({
+                    success: true,
+                    message: `Voice changed to ${args.voice}`
+                  })
+                }
+              }));
+
+              sharedOpenaiWs?.send(JSON.stringify({
+                type: 'response.create'
+              }));
+
+              io.emit('voice-changed', { voice: args.voice });
+            } catch (error) {
+              console.error('Error handling voice change:', error);
+            }
+          } else {
+            // Forward function calls to ALL clients
+            console.log(`📤 Broadcasting function call to all clients: ${event.name}`);
+            io.emit('function-call', {
+              call_id: event.call_id,
+              name: event.name,
+              arguments: event.arguments
+            });
+            console.log(`📨 Function call broadcasted`);
+          }
+          break;
+
+        case 'rate_limits.updated':
+          console.log('🔔 rate_limits.updated');
+          break;
+
+        default:
+          if (event.type && !event.type.includes('.delta')) {
+            console.log(`🔔 ${event.type}`);
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Error processing OpenAI message:', error);
+    }
+  });
+
+  sharedOpenaiWs.on('error', (error) => {
+    console.error('❌ OpenAI WebSocket error:', error);
+    isConnected = false;
+  });
+
+  sharedOpenaiWs.on('close', () => {
+    console.log('🔌 Disconnected from OpenAI Realtime API');
+    isConnected = false;
+    sharedOpenaiWs = null;
+  });
+}
+
+// Client connection handler
+io.on('connection', (socket) => {
+  console.log(`🎤 Client connected (ID: ${socket.id})`);
+
+  socket.on('start-realtime', (data?: { voice?: string; projectContext?: any }) => {
+    const voice = data?.voice || 'alloy';
+    initializeOpenAIConnection(voice);
+
+    // If project context is provided, add it as a conversation item
+    if (data?.projectContext && sharedOpenaiWs) {
+      let contextMessage = 'Current project state:\n';
+      if (data.projectContext.project_name) contextMessage += `Project: ${data.projectContext.project_name}\n`;
+      if (data.projectContext.tempo) contextMessage += `Tempo: ${data.projectContext.tempo} BPM\n`;
+      if (data.projectContext.key) contextMessage += `Key: ${data.projectContext.key}\n`;
+      if (data.projectContext.time_signature) contextMessage += `Time Signature: ${data.projectContext.time_signature}\n`;
+      if (data.projectContext.track_count) contextMessage += `Tracks: ${data.projectContext.track_count}\n`;
+      if (data.projectContext.lyrics) contextMessage += `Lyrics:\n${data.projectContext.lyrics}\n`;
+
+      console.log('📋 Adding project context to conversation');
+
+      // Add context as a user message
+      sharedOpenaiWs.send(JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{
+            type: 'input_text',
+            text: contextMessage
+          }]
+        }
+      }));
+    }
+
+    socket.emit('realtime-started');
+  });
+
+  socket.on('send-audio', (data: { audio: string }) => {
+    if (!sharedOpenaiWs || !isConnected) {
       console.warn('⚠️  Not connected to OpenAI');
       return;
     }
 
     try {
-      // Forward audio to OpenAI (base64 PCM16 audio)
-      openaiWs.send(JSON.stringify({
+      sharedOpenaiWs.send(JSON.stringify({
         type: 'input_audio_buffer.append',
         audio: data.audio
       }));
@@ -1172,17 +346,15 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Receive function results from client and send back to OpenAI
   socket.on('function-result', (data: { call_id: string; output: any }) => {
-    if (!openaiWs || !isConnected) {
+    if (!sharedOpenaiWs || !isConnected) {
       console.warn('⚠️  Not connected to OpenAI');
       return;
     }
 
     try {
-      console.log('✅ Function result:', data.call_id, data.output);
-      // Send function call output back to OpenAI
-      openaiWs.send(JSON.stringify({
+      console.log('✅ Function result received:', data.call_id);
+      sharedOpenaiWs.send(JSON.stringify({
         type: 'conversation.item.create',
         item: {
           type: 'function_call_output',
@@ -1190,8 +362,7 @@ io.on('connection', (socket) => {
           output: JSON.stringify(data.output)
         }
       }));
-      // Trigger response generation
-      openaiWs.send(JSON.stringify({
+      sharedOpenaiWs.send(JSON.stringify({
         type: 'response.create'
       }));
     } catch (error) {
@@ -1199,85 +370,43 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Stop realtime session
+  socket.on('change-voice', (data: { voice: string }) => {
+    if (!sharedOpenaiWs || !isConnected) {
+      console.warn('⚠️  Not connected to OpenAI');
+      return;
+    }
+
+    try {
+      console.log(`🎤 Changing voice to: ${data.voice}`);
+      currentVoice = data.voice;
+      sharedOpenaiWs.send(JSON.stringify({
+        type: 'session.update',
+        session: {
+          voice: data.voice
+        }
+      }));
+      io.emit('voice-changed', { voice: data.voice });
+    } catch (error) {
+      console.error('Error changing voice:', error);
+    }
+  });
+
   socket.on('stop-realtime', () => {
-    console.log('🛑 Stopping realtime session');
-    if (openaiWs) {
-      openaiWs.close();
-      openaiWs = null;
-    }
-    isConnected = false;
+    console.log('🛑 Client requested to stop realtime session');
+    // Don't close shared WebSocket when one client disconnects
+    socket.emit('realtime-stopped');
   });
 
-  // Cleanup on disconnect
   socket.on('disconnect', () => {
-    console.log('👋 Client disconnected');
-    if (openaiWs) {
-      openaiWs.close();
-      openaiWs = null;
+    console.log(`👋 Client disconnected (ID: ${socket.id})`);
+    // Only close OpenAI connection if NO clients are connected
+    if (io.sockets.sockets.size === 0 && sharedOpenaiWs) {
+      console.log('🛑 Last client disconnected - closing OpenAI connection');
+      sharedOpenaiWs.close();
+      sharedOpenaiWs = null;
+      isConnected = false;
     }
   });
-});
-
-// Add Express middleware for JSON
-app.use(express.json());
-
-// MusicGen API endpoint
-app.post('/api/v1/ai/dawg', async (req, res) => {
-  try {
-    const { prompt, genre, mood, tempo, duration, style, project_id } = req.body;
-
-    if (!prompt && style !== 'beat') {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
-
-    console.log('🎵 Music generation request with MusicGen:', { prompt, genre, tempo, duration, style });
-
-    // Use beat-specific generation if style is 'beat' or 'drums'
-    let result;
-    if (style === 'beat' || style === 'drums') {
-      result = await generateBeat({
-        genre: genre || 'hip-hop',
-        tempo: tempo || 120,
-        duration: duration || 15,
-      });
-    } else {
-      result = await generateMusic({
-        prompt,
-        genre,
-        mood,
-        tempo,
-        duration,
-        style,
-      });
-    }
-
-    if (!result.success) {
-      return res.status(500).json({
-        error: result.error || 'Failed to generate music',
-        message: result.message,
-      });
-    }
-
-    res.json({
-      success: true,
-      message: result.message || 'Music generated successfully with MusicGen',
-      audio_url: result.audio_url,
-      job_id: result.job_id,
-      prompt,
-      genre,
-      tempo,
-      duration,
-    });
-
-    console.log('✅ MusicGen generation complete:', result.audio_url);
-  } catch (error: any) {
-    console.error('❌ Music generation error:', error);
-    res.status(500).json({
-      error: 'Failed to generate music',
-      message: error.message,
-    });
-  }
 });
 
 server.listen(PORT, () => {

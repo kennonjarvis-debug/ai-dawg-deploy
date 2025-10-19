@@ -102,12 +102,18 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   const [isConnected, setIsConnected] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const [currentTranscriptType, setCurrentTranscriptType] = useState<'user' | 'ai' | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<string>(() => {
+    // Load saved voice preference from localStorage
+    return localStorage.getItem('dawg-ai-voice') || 'alloy';
+  });
+  const [showVoiceMenu, setShowVoiceMenu] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null); // For text chat (port 8002)
-  const voiceSocketRef = useRef<Socket | null>(null); // For realtime voice (port 3100)
+  const voiceSocketRef = useRef<Socket | null>(null); // Unified voice server (port 3100)
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -117,78 +123,51 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const AI_BRAIN_URL = import.meta.env.VITE_AI_BRAIN_URL || 'http://localhost:8002';
-  const REALTIME_VOICE_URL = 'http://localhost:3100'; // Realtime voice server
 
-  // Initialize WebSocket connection
+  // Auto-detect protocol and use environment variable for production
+  const REALTIME_VOICE_URL = (() => {
+    const envUrl = import.meta.env.VITE_REALTIME_VOICE_URL;
+    if (envUrl) return envUrl;
+
+    // For local development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:3100';
+    }
+
+    // For production, use same host with appropriate protocol
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    return `${protocol}//${window.location.hostname}`;
+  })();
+
+  // Initialize Voice WebSocket connection (unified on port 3100)
   useEffect(() => {
-    socketRef.current = io(AI_BRAIN_URL, {
+    voiceSocketRef.current = io(REALTIME_VOICE_URL, {
       transports: ['websocket'],
-      reconnection: true
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      timeout: 10000
     });
 
-    socketRef.current.on('connect', () => {
-      console.log('✅ Connected to AI Brain');
+    voiceSocketRef.current.on('connect', () => {
+      console.log('🎤 Connected to Unified Voice Server');
     });
 
-    socketRef.current.on('disconnect', () => {
-      console.log('❌ Disconnected from AI Brain');
+    voiceSocketRef.current.on('disconnect', (reason) => {
+      console.log('🔌 Disconnected from Unified Voice Server:', reason);
     });
 
-    // OpenAI Realtime API events
-    socketRef.current.on('realtime-connected', () => {
-      console.log('🎤 OpenAI Realtime API connected');
-      setIsConnected(true);
-      toast.success('🔴 LIVE voice active!');
-    });
-
-    socketRef.current.on('realtime-disconnected', () => {
-      console.log('🔌 OpenAI Realtime API disconnected');
-      setIsConnected(false);
-    });
-
-    socketRef.current.on('speech-started', () => {
-      console.log('🗣️ User started speaking');
-      setIsSpeaking(true);
-    });
-
-    socketRef.current.on('speech-stopped', () => {
-      console.log('🤐 User stopped speaking');
-      setIsSpeaking(false);
-    });
-
-    // User speech transcript (what the user said)
-    socketRef.current.on('user-transcript-delta', (data: { text: string }) => {
-      setCurrentTranscript(prev => prev + data.text);
-    });
-
-    socketRef.current.on('user-transcript-done', (data: { text: string }) => {
-      console.log('📝 User said:', data.text);
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        type: 'user',
-        content: data.text,
-        timestamp: new Date()
-      }]);
-      setCurrentTranscript('');
-    });
-
-    // AI response text (what the AI is saying)
-    socketRef.current.on('ai-text-delta', (data: { text: string }) => {
-      // Could show AI thinking in real-time if needed
-    });
-
-    socketRef.current.on('ai-text-done', (data: { text: string }) => {
-      console.log('🤖 AI said:', data.text);
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        type: 'assistant',
-        content: data.text,
-        timestamp: new Date()
-      }]);
+    voiceSocketRef.current.on('connect_error', (error) => {
+      // Suppress common transient errors during development
+      if (error.message.includes('websocket error') || error.message.includes('xhr poll error')) {
+        console.debug('Voice server connection error (retrying...):', error.message);
+      } else {
+        console.error('Voice server connection error:', error);
+      }
     });
 
     // Handle function calls from AI
-    socketRef.current.on('function-call', (data: { call_id: string; name: string; arguments: string }) => {
+    voiceSocketRef.current.on('function-call', (data: { call_id: string; name: string; arguments: string }) => {
       console.log('🔧 Function call received:', data.name, data.arguments);
 
       let result = { success: false, message: 'Function not implemented' };
@@ -278,6 +257,10 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
             if (onSmartMix) {
               onSmartMix();
               result = { success: true, message: 'Smart mix applied' };
+              toast.loading('🎚️ AI Smart Mix in progress...', {
+                duration: 15000,
+                id: 'smart-mix-progress'
+              });
             }
             break;
 
@@ -285,6 +268,10 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
             if (onMaster) {
               onMaster();
               result = { success: true, message: 'Mastering applied' };
+              toast.loading('✨ AI Mastering in progress...', {
+                duration: 20000,
+                id: 'master-progress'
+              });
             }
             break;
 
@@ -292,8 +279,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
             if (onGenerateMusic && args.prompt) {
               onGenerateMusic(args.prompt, args.genre, args.tempo, args.duration);
               result = { success: true, message: `Generating: ${args.prompt}` };
-              // Show user-friendly message
-              toast.success(`🎵 Generating music: "${args.prompt}"${args.genre ? ` (${args.genre})` : ''}`);
+              // Toast is handled by handleAutoMusic in DAWDashboard - don't duplicate here
             }
             break;
 
@@ -530,7 +516,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
       }
 
       // Send result back to server
-      socketRef.current?.emit('function-result', {
+      voiceSocketRef.current?.emit('function-result', {
         call_id: data.call_id,
         output: result
       });
@@ -538,34 +524,138 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
       console.log('✅ Function result sent:', result);
     });
 
-    socketRef.current.on('audio-delta', (data: { audio: string }) => {
-      // Queue audio for playback
-      const audioData = base64ToInt16Array(data.audio);
-      audioQueueRef.current.push(audioData);
-      if (!isPlayingRef.current) {
-        playAudioQueue();
-      }
+    voiceSocketRef.current.on('realtime-connected', () => {
+      console.log('🎤 OpenAI Realtime API connected');
+      setIsConnected(true);
+      toast.success('🔴 LIVE voice active!');
     });
 
-    socketRef.current.on('audio-done', () => {
-      console.log('🔊 Audio response complete');
+    voiceSocketRef.current.on('realtime-disconnected', () => {
+      console.log('🔌 OpenAI Realtime API disconnected');
+      setIsConnected(false);
+    });
+
+    voiceSocketRef.current.on('speech-started', () => {
+      console.log('🗣️ User started speaking');
+      setIsSpeaking(true);
+    });
+
+    voiceSocketRef.current.on('speech-stopped', () => {
+      console.log('🤐 User stopped speaking');
+      setIsSpeaking(false);
+    });
+
+    voiceSocketRef.current.on('user-transcript-delta', (data: { text: string }) => {
+      setCurrentTranscriptType('user');
+      setCurrentTranscript(prev => prev + data.text);
+    });
+
+    voiceSocketRef.current.on('user-transcript-done', (data: { text: string }) => {
+      console.log('📝 User said:', data.text);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'user',
+        content: data.text,
+        timestamp: new Date()
+      }]);
+      setCurrentTranscript('');
+      setCurrentTranscriptType(null);
+    });
+
+    voiceSocketRef.current.on('ai-text-delta', (data: { text: string }) => {
+      // Append to transcript (type already set in response-started)
+      setCurrentTranscript(prev => prev + data.text);
+    });
+
+    voiceSocketRef.current.on('ai-text-done', (data: { text: string }) => {
+      console.log('🤖 AI said:', data.text);
+      console.log('📊 AI text length:', data.text?.length || 0);
+
+      if (!data.text || data.text.trim() === '') {
+        console.warn('⚠️ AI text is empty, not adding message');
+        setCurrentTranscript('');
+        setCurrentTranscriptType(null);
+        return;
+      }
+
+      setMessages(prev => {
+        const newMessage = {
+          id: `ai-${Date.now()}`,
+          type: 'assistant' as const,
+          content: data.text,
+          timestamp: new Date()
+        };
+        const newMessages = [...prev, newMessage];
+        console.log('📊 New messages array length:', newMessages.length);
+        console.log('📊 Added AI message:', newMessage.content.substring(0, 100));
+        return newMessages;
+      });
+      setCurrentTranscript('');
+      setCurrentTranscriptType(null);
+    });
+
+    voiceSocketRef.current.on('audio-delta', (data: { audio: string }) => {
+      playAudioResponse(data.audio);
+    });
+
+    voiceSocketRef.current.on('audio-done', () => {
+      console.log('🔊 Audio playback complete');
+    });
+
+    // AI response state tracking
+    voiceSocketRef.current.on('response-started', () => {
+      console.log('🤖 AI started responding');
+      setIsAISpeaking(true);
+      // Reset transcript for new AI response
+      setCurrentTranscript('');
+      setCurrentTranscriptType('ai');
+    });
+
+    voiceSocketRef.current.on('response-done', () => {
+      console.log('✅ AI finished responding');
+      setIsAISpeaking(false);
+    });
+
+    // Handle interruption
+    voiceSocketRef.current.on('ai-interrupted', () => {
+      console.log('⚡ AI was interrupted by user');
+      setIsAISpeaking(false);
+
+      // Stop audio playback immediately
+      if (audioContextRef.current && audioContextRef.current.state === 'running') {
+        audioContextRef.current.suspend();
+      }
+
+      // Clear audio queue
+      audioQueueRef.current = [];
+    });
+
+    voiceSocketRef.current.on('voice-changed', (data: { voice: string }) => {
+      console.log('🎙️ Voice changed to:', data.voice);
+      setSelectedVoice(data.voice);
     });
 
     // Handle errors
-    socketRef.current.on('error', (data: { message: string }) => {
+    voiceSocketRef.current.on('error', (data: { message: string }) => {
       console.error('❌ Error:', data.message);
       toast.error(data.message);
     });
 
     return () => {
       stopLiveVoice();
-      socketRef.current?.disconnect();
+      voiceSocketRef.current?.disconnect();
     };
-  }, [AI_BRAIN_URL]);
+  }, [REALTIME_VOICE_URL]);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Debug: Log messages array changes
+  useEffect(() => {
+    console.log('📋 Messages array updated. Total messages:', messages.length);
+    console.log('📋 Messages:', messages.map(m => `${m.type}: ${m.content.substring(0, 50)}...`));
   }, [messages]);
 
   // Handle flash animation when feature is triggered
@@ -742,6 +832,30 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
         }
         break;
 
+      case 'generate_music':
+        if (onGenerateMusic && args.prompt) {
+          onGenerateMusic(args.prompt, args.genre, args.tempo, args.duration);
+          result = { success: true, message: `Generating: ${args.prompt}` };
+          // Toast is handled by handleAutoMusic in DAWDashboard - don't duplicate here
+        }
+        break;
+
+      case 'generateBeats':
+        console.log('🎵 generateBeats case reached with args:', args);
+        console.log('🎵 onGenerateMusic exists?', !!onGenerateMusic);
+        if (onGenerateMusic && args.genre) {
+          // Convert generateBeats params to generate_music format
+          const prompt = `${args.genre} beat`;
+          const duration = args.bars ? Math.ceil((args.bars * 240) / (args.tempo || 120)) : 30; // Estimate duration from bars
+          console.log('🎵 Calling onGenerateMusic with:', { prompt, genre: args.genre, tempo: args.tempo, duration });
+          onGenerateMusic(prompt, args.genre, args.tempo, duration);
+          result = { success: true, message: `Generating ${args.genre} beat` };
+          // Toast is handled by handleAutoMusic in DAWDashboard - don't duplicate here
+        } else {
+          console.warn('🎵 generateBeats: Missing onGenerateMusic or genre', { onGenerateMusic: !!onGenerateMusic, genre: args.genre });
+        }
+        break;
+
       default:
         console.warn(`Unknown function: ${name}`);
     }
@@ -844,7 +958,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
       let lastSendTime = Date.now();
 
       processor.onaudioprocess = (e) => {
-        if (!isLiveRef.current || !socketRef.current?.connected) return;
+        if (!isLiveRef.current || !voiceSocketRef.current?.connected) return;
 
         const inputData = e.inputBuffer.getChannelData(0);
 
@@ -870,9 +984,9 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
             offset += chunk.length;
           }
 
-          // Convert to base64 and send to backend
+          // Convert to base64 and send to voice server
           const base64 = int16ArrayToBase64(combined);
-          socketRef.current?.emit('audio-data', { audio: base64 });
+          voiceSocketRef.current?.emit('send-audio', { audio: base64 });
 
           audioChunks = [];
           lastSendTime = now;
@@ -886,8 +1000,11 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
       isLiveRef.current = true;
       setIsLive(true);
 
-      // Start realtime session
-      socketRef.current?.emit('start-realtime');
+      // Start realtime session with saved voice preference and project context
+      voiceSocketRef.current?.emit('start-realtime', {
+        voice: selectedVoice,
+        projectContext: projectContext
+      });
 
       toast.success('🔴 LIVE! Start talking...');
 
@@ -921,11 +1038,42 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     }
 
     // Stop realtime session
-    socketRef.current?.emit('stop-realtime');
+    voiceSocketRef.current?.emit('stop-realtime');
 
     setIsLive(false);
     setIsConnected(false);
     toast.info('Voice stopped');
+  };
+
+  // Change AI voice
+  const changeVoice = (voice: string) => {
+    setSelectedVoice(voice);
+    // Save to localStorage for persistence
+    localStorage.setItem('dawg-ai-voice', voice);
+    voiceSocketRef.current?.emit('change-voice', { voice });
+    toast.success(`Voice changed to ${voice}`);
+    setShowVoiceMenu(false);
+  };
+
+  // Play audio response from server
+  const playAudioResponse = (base64Audio: string) => {
+    try {
+      // Decode base64 to binary
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Convert to Int16Array
+      const audioData = new Int16Array(bytes.buffer);
+
+      // Add to queue and play
+      audioQueueRef.current.push(audioData);
+      playAudioQueue();
+    } catch (error) {
+      console.error('Error playing audio response:', error);
+    }
   };
 
   // Play audio queue with improved buffering to reduce crackling
@@ -937,6 +1085,12 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
     if (!audioContextRef.current) {
       console.warn('[AIChatWidget] Cannot play audio: AudioContext not initialized. Start live voice first.');
       return;
+    }
+
+    // Resume AudioContext if it's suspended (e.g., after AI was interrupted)
+    if (audioContextRef.current.state === 'suspended') {
+      console.log('[AIChatWidget] Resuming suspended AudioContext');
+      await audioContextRef.current.resume();
     }
 
     isPlayingRef.current = true;
@@ -1017,7 +1171,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
   return (
     <div
       data-testid="ai-chat-widget"
-      className="flex flex-col h-full bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-lg transition-all duration-300"
+      className="flex flex-col h-[420px] w-full max-w-md bg-bg-surface backdrop-blur-xl border border-border-strong rounded-2xl shadow-lg transition-all duration-300"
       style={{
         animation: isFlashing ? 'yellowFlash 0.5s ease-in-out 6' : undefined,
         borderColor: isFlashing ? '#FFD700' : undefined,
@@ -1025,14 +1179,59 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
       }}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border-base flex items-center justify-between">
+      <div className="flex-shrink-0 px-4 py-3 border-b border-border-base flex items-center justify-between">
         <h3 className="text-xs font-medium tracking-wide text-text-dim uppercase">AI CHAT</h3>
-        {isSpeaking && (
-          <div className="flex items-center gap-1 text-xs text-blue-400">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-            Speaking...
+
+        <div className="flex items-center gap-3">
+          {isSpeaking && (
+            <div className="flex items-center gap-1 text-xs text-blue-400">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+              Speaking...
+            </div>
+          )}
+
+          {isAISpeaking && (
+            <div className="flex items-center gap-1 text-xs text-purple-400">
+              <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" />
+              AI responding...
+            </div>
+          )}
+
+          {/* Voice Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setShowVoiceMenu(!showVoiceMenu)}
+              className="px-2 py-1 text-[10px] rounded-md bg-bg-surface-2 hover:bg-bg-surface-hover text-text-muted hover:text-primary transition-all ring-1 ring-border-base hover:ring-primary/50 flex items-center gap-1"
+              title="Change AI voice"
+            >
+              <Volume2 className="w-3 h-3" />
+              <span className="font-medium">{selectedVoice}</span>
+            </button>
+
+            {showVoiceMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowVoiceMenu(false)} />
+                <div className="absolute top-full right-0 mt-1 bg-bg-surface-2 border border-border-strong rounded-lg shadow-2xl z-20 min-w-[120px]">
+                  <div className="p-1 space-y-0.5">
+                    {['alloy', 'echo', 'shimmer', 'ash', 'ballad', 'coral', 'sage', 'verse'].map((voice) => (
+                      <button
+                        key={voice}
+                        onClick={() => changeVoice(voice)}
+                        className={`w-full px-2 py-1.5 text-xs text-left rounded transition-colors ${
+                          voice === selectedVoice
+                            ? 'bg-primary text-text-base'
+                            : 'text-text-muted hover:bg-bg-surface-hover'
+                        }`}
+                      >
+                        {voice.charAt(0).toUpperCase() + voice.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -1060,8 +1259,12 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
         ))}
 
         {currentTranscript && (
-          <div className="flex justify-end">
-            <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-primary/20 text-text-base border border-primary/50">
+          <div className={`flex ${currentTranscriptType === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+              currentTranscriptType === 'user'
+                ? 'bg-primary/20 text-text-base border border-primary/50'
+                : 'bg-bg-surface-2/50 text-text-base border border-purple-500/50'
+            }`}>
               <p className="whitespace-pre-wrap text-sm">{currentTranscript}...</p>
             </div>
           </div>
@@ -1086,7 +1289,7 @@ export const AIChatWidget: React.FC<AIChatWidgetProps> = ({
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-border-base">
+      <div className="flex-shrink-0 p-4 border-t border-border-base">
         <div className="flex items-center gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
