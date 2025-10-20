@@ -4,8 +4,9 @@
 	import { authStore } from '$lib/stores/authStore';
 	import { onMount } from 'svelte';
 	import { getAudioEngine } from '$lib/audio';
-	import { page } from '$app/stores';
+	import { page, navigating } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import SkeletonLoader from '../components/SkeletonLoader.svelte';
 
 	let isTestMode = false;
 
@@ -95,9 +96,21 @@
 		</div>
 	</nav>
 
+	<!-- Loading indicator during navigation -->
+	{#if $navigating}
+		<div class="fixed top-0 left-0 right-0 h-1 z-50">
+			<div class="h-full bg-accent-primary animate-pulse"></div>
+		</div>
+	{/if}
+
 	<!-- Main Content (with top padding for fixed nav) -->
 	<div class="pt-20">
-		<slot />
+		{#if $navigating}
+			<!-- Show skeleton during route transitions for better perceived performance -->
+			<SkeletonLoader variant={$navigating.to?.route.id?.includes('daw') ? 'daw' : 'page'} />
+		{:else}
+			<slot />
+		{/if}
 	</div>
 
 	<!-- Test mode: floating quantize button for E2E tests -->
