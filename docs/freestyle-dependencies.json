@@ -1,0 +1,126 @@
+{
+  "name": "dawg-ai-freestyle-orchestrator",
+  "description": "Required dependencies for Freestyle Orchestrator",
+  "dependencies": {
+    "openai": "^4.20.0",
+    "replicate": "^0.25.0",
+    "axios": "^1.6.0",
+    "socket.io": "^4.6.0",
+    "socket.io-client": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/web-audio-api": "^0.0.42",
+    "typescript": "^5.3.0"
+  },
+  "notes": {
+    "openai": "Used for Whisper (transcription), GPT-4 (intent detection), and TTS (speech synthesis)",
+    "replicate": "Used for Demucs stem separation service",
+    "axios": "HTTP client for API requests",
+    "socket.io": "WebSocket server for real-time events",
+    "socket.io-client": "WebSocket client for UI updates"
+  },
+  "optionalDependencies": {
+    "musicgen": "^1.0.0",
+    "udio-api": "^1.0.0",
+    "crepe": "^1.0.0",
+    "basic-pitch": "^1.0.0"
+  },
+  "optionalNotes": {
+    "musicgen": "For AI beat generation (Meta MusicGen)",
+    "udio-api": "For high-quality beat generation (Udio)",
+    "crepe": "For advanced pitch detection and melody extraction",
+    "basic-pitch": "For polyphonic pitch tracking (Spotify's model)"
+  },
+  "installation": {
+    "npm": "npm install openai replicate axios socket.io socket.io-client",
+    "yarn": "yarn add openai replicate axios socket.io socket.io-client",
+    "pnpm": "pnpm add openai replicate axios socket.io socket.io-client"
+  },
+  "environmentVariables": {
+    "OPENAI_API_KEY": {
+      "required": true,
+      "description": "OpenAI API key for Whisper, GPT-4, and TTS",
+      "example": "sk-proj-...",
+      "getFrom": "https://platform.openai.com/api-keys"
+    },
+    "REPLICATE_API_TOKEN": {
+      "required": true,
+      "description": "Replicate API token for Demucs stem separation",
+      "example": "r8_...",
+      "getFrom": "https://replicate.com/account/api-tokens"
+    },
+    "UDIO_API_KEY": {
+      "required": false,
+      "description": "Udio API key for beat generation (optional)",
+      "example": "udio_...",
+      "getFrom": "https://udio.com/api"
+    },
+    "MUSICGEN_API_KEY": {
+      "required": false,
+      "description": "MusicGen API key for beat generation (optional)",
+      "example": "mg_...",
+      "getFrom": "https://replicate.com"
+    }
+  },
+  "estimatedCosts": {
+    "perSession": {
+      "whisperTranscription": {
+        "cost": "$0.006",
+        "unit": "per minute",
+        "service": "OpenAI Whisper"
+      },
+      "gpt4Intent": {
+        "cost": "$0.001",
+        "unit": "per request",
+        "service": "OpenAI GPT-4"
+      },
+      "demucsSeparation": {
+        "cost": "$0.05",
+        "unit": "per 30 seconds",
+        "service": "Replicate Demucs"
+      },
+      "melodyExtraction": {
+        "cost": "$0.02",
+        "unit": "per minute",
+        "service": "Custom ML (future)"
+      },
+      "lyricsEnhancement": {
+        "cost": "$0.01",
+        "unit": "per analysis",
+        "service": "OpenAI GPT-4"
+      },
+      "ttsSynthesis": {
+        "cost": "$0.015",
+        "unit": "per response",
+        "service": "OpenAI TTS"
+      },
+      "total": "$0.10",
+      "notes": "For a typical 1-minute freestyle session with all features enabled"
+    },
+    "optimization": {
+      "skipStemSeparation": "Save $0.05 for a cappella recordings",
+      "cacheBeatGeneration": "Reuse beats to save $0.50 per beat",
+      "batchLyricEnhancement": "Process multiple sessions together"
+    }
+  },
+  "systemRequirements": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0",
+    "memory": ">=512MB",
+    "storage": "~100MB for dependencies",
+    "network": "Reliable internet for API calls"
+  },
+  "browserRequirements": {
+    "webAudio": "Web Audio API support",
+    "mediaRecorder": "MediaRecorder API support",
+    "speechRecognition": "Web Speech API support (optional)",
+    "webSockets": "WebSocket support",
+    "supportedBrowsers": [
+      "Chrome 90+",
+      "Firefox 88+",
+      "Safari 14+",
+      "Edge 90+"
+    ]
+  }
+}

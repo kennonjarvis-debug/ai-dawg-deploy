@@ -1,7 +1,7 @@
 /**
  * Multi-Track Recorder Widget
  *
- * Simultaneous recording of up to 8 tracks with individual controls
+ * Simultaneous recording of up to 16 tracks with individual controls
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -147,8 +147,8 @@ export const MultiTrackRecorderWidget: React.FC<MultiTrackRecorderWidgetProps> =
   };
 
   const addTrack = () => {
-    if (tracks.length >= 8) {
-      toast.error('Maximum 8 tracks allowed');
+    if (tracks.length >= 16) {
+      toast.error('Maximum 16 tracks allowed');
       return;
     }
 
@@ -242,7 +242,7 @@ export const MultiTrackRecorderWidget: React.FC<MultiTrackRecorderWidgetProps> =
           <h4 className="text-sm font-semibold text-gray-400">Tracks</h4>
           <button
             onClick={addTrack}
-            disabled={tracks.length >= 8 || isRecording}
+            disabled={tracks.length >= 16 || isRecording}
             className="text-xs bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-3 py-1 rounded transition-colors"
           >
             + Add Track

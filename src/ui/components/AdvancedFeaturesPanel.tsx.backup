@@ -8,9 +8,8 @@
  * 4. Freestyle Session
  * 5. AI Memory
  * 6. Melody-to-Vocals
- * 7. AI Mix Vocals (Auto-Routing)
- * 8. AI Mastering
- * 9. Voice Commands
+ * 7. AI Mastering
+ * 8. Voice Commands
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -784,7 +783,7 @@ export const AdvancedFeaturesPanel: React.FC<AdvancedFeaturesPanelProps> = ({
           </div>
         </FeatureCard>
 
-        {/* 9. Voice Commands */}
+        {/* 8. Voice Commands */}
         <FeatureCard
           title="Voice Commands"
           icon={<Volume2 className="w-5 h-5" />}
@@ -819,7 +818,7 @@ export const AdvancedFeaturesPanel: React.FC<AdvancedFeaturesPanelProps> = ({
       {/* Footer */}
       <div className="sticky bottom-0 bg-gray-900 border-t border-gray-700 p-4">
         <div className="text-xs text-gray-500 text-center">
-          {Object.values(features).filter(f => f.enabled).length} of 9 features enabled
+          {Object.values(features).filter(f => f.enabled).length} of 8 features enabled
         </div>
       </div>
     </div>

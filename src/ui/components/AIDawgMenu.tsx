@@ -15,7 +15,7 @@ interface AIDawgMenuProps {
   onAIComp: () => void;
   onAITimeAlign: () => void;
   onAIPitch: () => void;
-  onAIMix: () => void;
+  onAIMix: (style?: string) => void;
   onAIMaster: () => void;
   onAIMusic: () => void;
   onAIDawg: () => void;
@@ -26,6 +26,7 @@ interface AIDawgMenuProps {
   onGenerateInstrument: (type?: string) => void;
   onComposeFullSong: (style?: string) => void;
   onVoiceMemo: () => void;
+  onToggleMultiTrackRecorder: () => void;
 }
 
 export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
@@ -44,12 +45,14 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
   onGenerateInstrument,
   onComposeFullSong,
   onVoiceMemo,
+  onToggleMultiTrackRecorder,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showGenreSubmenu, setShowGenreSubmenu] = useState(false);
   const [showBeatStyleSubmenu, setShowBeatStyleSubmenu] = useState(false);
   const [showInstrumentSubmenu, setShowInstrumentSubmenu] = useState(false);
   const [showCompositionSubmenu, setShowCompositionSubmenu] = useState(false);
+  const [showMixStyleSubmenu, setShowMixStyleSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const genres = [
@@ -85,6 +88,14 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
     { id: 'rock-track', label: 'Rock Song', emoji: '🤘' },
   ];
 
+  const mixStyles = [
+    { id: 'clean', label: 'Clean Mix', emoji: '✨', description: 'Transparent, natural sound' },
+    { id: 'warm', label: 'Warm Mix', emoji: '🔥', description: 'Analog warmth, vintage vibe' },
+    { id: 'punchy', label: 'Punchy Mix', emoji: '💥', description: 'Aggressive, in-your-face' },
+    { id: 'radio-ready', label: 'Radio-Ready', emoji: '📻', description: 'Competitive loudness' },
+    { id: 'auto', label: 'AI Auto (Intelligent)', emoji: '🤖', description: 'Let AI choose the best style' },
+  ];
+
   const menuItems: AIDawgMenuItem[] = [
     // DAWG AI FEATURES
     {
@@ -100,6 +111,13 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
       label: 'AI Voice Memo',
       icon: <Mic className="w-5 h-5" />,
       action: onVoiceMemo,
+      category: 'ai',
+    },
+    {
+      id: 'multi-track-recorder',
+      label: 'Multi-Track Recorder',
+      icon: <Radio className="w-5 h-5" />,
+      action: onToggleMultiTrackRecorder,
       category: 'ai',
     },
     {
@@ -130,7 +148,7 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
       id: 'ai-mix',
       label: 'AI Mix',
       icon: <Sliders className="w-5 h-5" />,
-      action: onAIMix,
+      action: () => setShowMixStyleSubmenu(!showMixStyleSubmenu),
       requiresSelection: true,
       category: 'ai',
     },
@@ -200,6 +218,7 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
         setShowBeatStyleSubmenu(false);
         setShowInstrumentSubmenu(false);
         setShowCompositionSubmenu(false);
+        setShowMixStyleSubmenu(false);
       }
     };
 
@@ -219,7 +238,7 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
     }
 
     // Don't close menu for submenu items
-    const submenuItems = ['apply-genre-preset', 'ai-beat-generation', 'ai-instrument-gen', 'ai-full-composition'];
+    const submenuItems = ['apply-genre-preset', 'ai-beat-generation', 'ai-instrument-gen', 'ai-full-composition', 'ai-mix'];
     if (!submenuItems.includes(item.id)) {
       item.action();
       setIsOpen(false);
@@ -227,6 +246,7 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
       setShowBeatStyleSubmenu(false);
       setShowInstrumentSubmenu(false);
       setShowCompositionSubmenu(false);
+      setShowMixStyleSubmenu(false);
     } else {
       item.action();
     }
@@ -254,6 +274,12 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
     onComposeFullSong(styleId);
     setIsOpen(false);
     setShowCompositionSubmenu(false);
+  };
+
+  const handleMixStyleSelect = (styleId: string) => {
+    onAIMix(styleId);
+    setIsOpen(false);
+    setShowMixStyleSubmenu(false);
   };
 
   const getCategoryLabel = (category: string) => {
@@ -347,7 +373,29 @@ export const AIDawgMenu: React.FC<AIDawgMenuProps> = ({
                         {item.id === 'ai-full-composition' && (
                           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCompositionSubmenu ? '-rotate-90' : 'rotate-0'}`} />
                         )}
+                        {item.id === 'ai-mix' && (
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showMixStyleSubmenu ? '-rotate-90' : 'rotate-0'}`} />
+                        )}
                       </button>
+
+                      {/* Mix Style Submenu */}
+                      {item.id === 'ai-mix' && showMixStyleSubmenu && !isDisabled && (
+                        <div className="bg-black/60 border-t border-white/10 py-2">
+                          {mixStyles.map((style) => (
+                            <button
+                              key={style.id}
+                              onClick={() => handleMixStyleSelect(style.id)}
+                              className="w-full flex items-center gap-3 px-8 py-2 hover:bg-purple-500/20 transition-all group"
+                            >
+                              <span className="text-lg">{style.emoji}</span>
+                              <div className="flex-1 text-left">
+                                <div className="text-sm text-gray-300 font-medium">{style.label}</div>
+                                <div className="text-xs text-gray-500 group-hover:text-gray-400">{style.description}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Genre Submenu */}
                       {item.id === 'apply-genre-preset' && showGenreSubmenu && !isDisabled && (

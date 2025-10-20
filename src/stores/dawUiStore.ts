@@ -26,6 +26,7 @@ interface DawUiState {
   showAIHub: boolean;
   showAuxTrackDialog: boolean;
   showAiModal: boolean;
+  showMultiTrackRecorder: boolean;
 
   // Save state
   lastSaved: Date | null;
@@ -59,6 +60,7 @@ interface DawUiState {
   setShowAIHub: (show: boolean) => void;
   setShowAuxTrackDialog: (show: boolean) => void;
   setShowAiModal: (show: boolean) => void;
+  setShowMultiTrackRecorder: (show: boolean) => void;
 
   // Actions - Save state
   setLastSaved: (date: Date | null) => void;
@@ -99,6 +101,7 @@ const initialState = {
   showAIHub: false,
   showAuxTrackDialog: false,
   showAiModal: false,
+  showMultiTrackRecorder: false,
   lastSaved: null,
   isSaving: false,
   openMenu: null,
@@ -124,6 +127,7 @@ export const useDawUiStore = create<DawUiState>()(
       setShowAIHub: (show) => set({ showAIHub: show }),
       setShowAuxTrackDialog: (show) => set({ showAuxTrackDialog: show }),
       setShowAiModal: (show) => set({ showAiModal: show }),
+      setShowMultiTrackRecorder: (show) => set({ showMultiTrackRecorder: show }),
 
       // Save state actions
       setLastSaved: (date) => set({ lastSaved: date }),
@@ -174,6 +178,7 @@ export const useDawUiStore = create<DawUiState>()(
 export const useActivePanel = () => useDawUiStore((state) => state.activePanel);
 export const useShowSettings = () => useDawUiStore((state) => state.showSettings);
 export const useShowAIHub = () => useDawUiStore((state) => state.showAIHub);
+export const useShowMultiTrackRecorder = () => useDawUiStore((state) => state.showMultiTrackRecorder);
 export const useAiJobs = () => useDawUiStore((state) => state.aiJobs);
 export const useUpsell = () => useDawUiStore((state) => state.upsell);
 export const useLyrics = () => useDawUiStore((state) => state.lyrics);

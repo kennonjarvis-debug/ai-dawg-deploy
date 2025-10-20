@@ -25,6 +25,19 @@
 // TYPES & INTERFACES
 // ============================================================================
 
+export interface MasteringProgressEvent {
+  step: number;                     // Current step (0-4)
+  stepName: string;                 // e.g., "Analyzing Audio"
+  stepDescription: string;
+  stepProgress: number;             // Progress within current step (0-100)
+  overallProgress: number;          // Overall progress (0-100)
+  currentLUFS?: number;             // Current loudness measurement
+  targetLUFS?: number;              // Target loudness
+  estimatedTimeRemaining?: number;  // Seconds
+}
+
+export type ProgressCallback = (event: MasteringProgressEvent) => void;
+
 export interface MasteringAnalysis {
   // Loudness metrics (ITU-R BS.1770)
   integratedLUFS: number;           // Overall loudness
@@ -125,10 +138,16 @@ export class AIMasteringEngine {
   private rightChannel: Float32Array | null = null;
   private sampleRate: number = 48000;
 
+  // Progress tracking
+  private progressCallback: ProgressCallback | null = null;
+  private currentProgress: number = 0;
+  private startTime: number = 0;
+
   /**
    * Initialize the mastering engine with an audio context
    */
-  constructor(audioContext?: AudioContext) {
+  constructor(audioContext?: AudioContext, progressCallback?: ProgressCallback) {
+    this.progressCallback = progressCallback || null;
     if (audioContext) {
       this.audioContext = audioContext;
       this.sampleRate = this.audioContext.sampleRate;
@@ -139,6 +158,32 @@ export class AIMasteringEngine {
       // For Node.js environment - use provided context or null
       this.audioContext = null;
       this.sampleRate = 48000; // Default sample rate
+    }
+  }
+
+  /**
+   * Set progress callback
+   */
+  setProgressCallback(callback: ProgressCallback | null): void {
+    this.progressCallback = callback;
+  }
+
+  /**
+   * Emit progress event
+   */
+  private emitProgress(event: Partial<MasteringProgressEvent>): void {
+    if (this.progressCallback) {
+      const fullEvent: MasteringProgressEvent = {
+        step: event.step || 0,
+        stepName: event.stepName || '',
+        stepDescription: event.stepDescription || '',
+        stepProgress: event.stepProgress || 0,
+        overallProgress: event.overallProgress || 0,
+        currentLUFS: event.currentLUFS,
+        targetLUFS: event.targetLUFS,
+        estimatedTimeRemaining: event.estimatedTimeRemaining
+      };
+      this.progressCallback(fullEvent);
     }
   }
 
@@ -160,6 +205,15 @@ export class AIMasteringEngine {
   analyzeMix(audioBuffer: AudioBuffer): MasteringAnalysis {
     console.log('[AIMasteringEngine] Starting comprehensive mix analysis...');
 
+    // Emit progress: Step 1 - Analyzing
+    this.emitProgress({
+      step: 0,
+      stepName: 'Analyzing Audio',
+      stepDescription: 'Measuring loudness, dynamics, and frequency balance',
+      stepProgress: 0,
+      overallProgress: 0
+    });
+
     // Store channels for processing
     this.leftChannel = audioBuffer.getChannelData(0);
     this.rightChannel = audioBuffer.numberOfChannels > 1
@@ -168,19 +222,50 @@ export class AIMasteringEngine {
     this.sampleRate = audioBuffer.sampleRate;
 
     // 1. Loudness analysis (LUFS)
+    this.emitProgress({
+      step: 0,
+      stepName: 'Analyzing Audio',
+      stepDescription: 'Measuring loudness, dynamics, and frequency balance',
+      stepProgress: 20,
+      overallProgress: 4
+    });
     const integratedLUFS = this.calculateIntegratedLUFS(audioBuffer);
     const loudnessRange = this.calculateLoudnessRange(audioBuffer);
 
     // 2. Peak analysis
+    this.emitProgress({
+      step: 0,
+      stepName: 'Analyzing Audio',
+      stepDescription: 'Measuring loudness, dynamics, and frequency balance',
+      stepProgress: 40,
+      overallProgress: 8,
+      currentLUFS: integratedLUFS
+    });
     const truePeak = this.calculateTruePeak(audioBuffer);
     const peakToLoudnessRatio = truePeak - integratedLUFS; // PLR in dB
 
     // 3. Stereo analysis
+    this.emitProgress({
+      step: 0,
+      stepName: 'Analyzing Audio',
+      stepDescription: 'Measuring loudness, dynamics, and frequency balance',
+      stepProgress: 60,
+      overallProgress: 12,
+      currentLUFS: integratedLUFS
+    });
     const stereoWidth = this.calculateStereoWidth(this.leftChannel, this.rightChannel);
     const stereoCorrelation = this.calculateStereoCorrelation(this.leftChannel, this.rightChannel);
     const hasStereoImbalance = this.detectStereoImbalance(this.leftChannel, this.rightChannel);
 
     // 4. Frequency balance analysis
+    this.emitProgress({
+      step: 0,
+      stepName: 'Analyzing Audio',
+      stepDescription: 'Measuring loudness, dynamics, and frequency balance',
+      stepProgress: 80,
+      overallProgress: 16,
+      currentLUFS: integratedLUFS
+    });
     const frequencyBalance = this.analyzeFrequencyBalance(audioBuffer);
     const spectralBalance = this.determineSpectralBalance(frequencyBalance);
 
@@ -194,6 +279,14 @@ export class AIMasteringEngine {
     });
 
     // 6. Determine overall quality
+    this.emitProgress({
+      step: 0,
+      stepName: 'Analyzing Audio',
+      stepDescription: 'Measuring loudness, dynamics, and frequency balance',
+      stepProgress: 100,
+      overallProgress: 20,
+      currentLUFS: integratedLUFS
+    });
     const overallQuality = this.assessOverallQuality(issues, integratedLUFS, peakToLoudnessRatio);
 
     const analysis: MasteringAnalysis = {
@@ -1016,15 +1109,49 @@ export class AIMasteringEngine {
     chain: MasteringChain
   }> {
     console.log('[AIMasteringEngine] Starting auto-master process...');
+    this.startTime = Date.now();
 
-    // 1. Analyze
+    // 1. Analyze (0-20%)
     const analysis = this.analyzeMix(audioBuffer);
 
-    // 2. Generate chain
+    const targetLUFS = this.getTargetLUFS(targetStandard);
+
+    // 2. Generate chain (20-25%)
+    this.emitProgress({
+      step: 1,
+      stepName: 'Generating Processing Chain',
+      stepDescription: 'Creating optimized mastering settings',
+      stepProgress: 0,
+      overallProgress: 20,
+      currentLUFS: analysis.integratedLUFS,
+      targetLUFS
+    });
+
     const chain = this.generateMasteringChain(analysis, targetStandard);
 
-    // 3. Apply chain
-    const masteredBuffer = await this.applyMasteringChain(audioBuffer, chain);
+    this.emitProgress({
+      step: 1,
+      stepName: 'Generating Processing Chain',
+      stepDescription: 'Creating optimized mastering settings',
+      stepProgress: 100,
+      overallProgress: 25,
+      currentLUFS: analysis.integratedLUFS,
+      targetLUFS
+    });
+
+    // 3. Apply chain (25-100%)
+    const masteredBuffer = await this.applyMasteringChain(audioBuffer, chain, analysis.integratedLUFS, targetLUFS);
+
+    // Complete
+    this.emitProgress({
+      step: 4,
+      stepName: 'Complete',
+      stepDescription: 'Mastering finished successfully',
+      stepProgress: 100,
+      overallProgress: 100,
+      currentLUFS: targetLUFS,
+      targetLUFS
+    });
 
     console.log('[AIMasteringEngine] Auto-master complete!');
 
@@ -1040,9 +1167,20 @@ export class AIMasteringEngine {
    */
   private async applyMasteringChain(
     inputBuffer: AudioBuffer,
-    chain: MasteringChain
+    chain: MasteringChain,
+    currentLUFS?: number,
+    targetLUFS?: number
   ): Promise<AudioBuffer> {
     console.log('[AIMasteringEngine] Applying mastering chain...');
+
+    const estimateTimeRemaining = () => {
+      if (!this.startTime) return undefined;
+      const elapsed = (Date.now() - this.startTime) / 1000;
+      const progressFraction = this.currentProgress / 100;
+      if (progressFraction === 0) return undefined;
+      const totalEstimated = elapsed / progressFraction;
+      return Math.max(0, totalEstimated - elapsed);
+    };
 
     // Create offline audio context for processing
     const offlineContext = new OfflineAudioContext(
@@ -1057,13 +1195,35 @@ export class AIMasteringEngine {
 
     let currentNode: AudioNode = source;
 
-    // 1. Apply stereo enhancement (if present)
+    // 1. Apply stereo enhancement (if present) - 25-40%
+    this.emitProgress({
+      step: 2,
+      stepName: 'Applying EQ',
+      stepDescription: 'Multi-band equalization and tonal shaping',
+      stepProgress: 0,
+      overallProgress: 25,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
     if (chain.stereoEnhancement) {
       // TODO: Implement M/S processing for stereo enhancement
       // For now, pass through
     }
 
-    // 2. Apply multi-band EQ
+    // 2. Apply multi-band EQ - 40-60%
+    this.emitProgress({
+      step: 2,
+      stepName: 'Applying EQ',
+      stepDescription: 'Multi-band equalization and tonal shaping',
+      stepProgress: 50,
+      overallProgress: 40,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
     for (const band of chain.multiBandEQ) {
       const filter = offlineContext.createBiquadFilter();
 
@@ -1083,7 +1243,29 @@ export class AIMasteringEngine {
       currentNode = filter;
     }
 
-    // 3. Apply multi-band compression
+    this.emitProgress({
+      step: 2,
+      stepName: 'Applying EQ',
+      stepDescription: 'Multi-band equalization and tonal shaping',
+      stepProgress: 100,
+      overallProgress: 60,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
+    // 3. Apply multi-band compression - 60-70%
+    this.emitProgress({
+      step: 3,
+      stepName: 'Compressing',
+      stepDescription: 'Multi-band compression for controlled dynamics',
+      stepProgress: 0,
+      overallProgress: 60,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
     // Note: Web Audio API doesn't have multi-band compressor
     // In production, would use custom DSP or AudioWorklet
     const compressor = offlineContext.createDynamicsCompressor();
@@ -1095,10 +1277,53 @@ export class AIMasteringEngine {
     currentNode.connect(compressor);
     currentNode = compressor;
 
-    // 4. Apply harmonic enhancement
+    this.emitProgress({
+      step: 3,
+      stepName: 'Compressing',
+      stepDescription: 'Multi-band compression for controlled dynamics',
+      stepProgress: 100,
+      overallProgress: 70,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
+    // 4. Apply harmonic enhancement - 70-80%
+    this.emitProgress({
+      step: 4,
+      stepName: 'Enhancing Stereo',
+      stepDescription: 'Stereo width optimization and imaging',
+      stepProgress: 0,
+      overallProgress: 70,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
     // TODO: Implement harmonic saturation
 
-    // 5. Apply final limiter
+    this.emitProgress({
+      step: 4,
+      stepName: 'Enhancing Stereo',
+      stepDescription: 'Stereo width optimization and imaging',
+      stepProgress: 100,
+      overallProgress: 80,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
+    // 5. Apply final limiter - 80-95%
+    this.emitProgress({
+      step: 5,
+      stepName: 'Final Limiting',
+      stepDescription: 'Precise limiting to target loudness',
+      stepProgress: 0,
+      overallProgress: 80,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
     const limiter = offlineContext.createDynamicsCompressor();
     limiter.threshold.value = chain.limiter.threshold;
     limiter.ratio.value = 20; // High ratio for limiting
@@ -1110,9 +1335,30 @@ export class AIMasteringEngine {
     // Output
     limiter.connect(offlineContext.destination);
 
+    this.emitProgress({
+      step: 5,
+      stepName: 'Final Limiting',
+      stepDescription: 'Precise limiting to target loudness',
+      stepProgress: 50,
+      overallProgress: 90,
+      currentLUFS,
+      targetLUFS,
+      estimatedTimeRemaining: estimateTimeRemaining()
+    });
+
     // Process
     source.start(0);
     const renderedBuffer = await offlineContext.startRendering();
+
+    this.emitProgress({
+      step: 5,
+      stepName: 'Final Limiting',
+      stepDescription: 'Precise limiting to target loudness',
+      stepProgress: 100,
+      overallProgress: 95,
+      currentLUFS,
+      targetLUFS
+    });
 
     console.log('[AIMasteringEngine] Mastering chain applied successfully');
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum, Upload } from 'lucide-react';
+import { ArrowLeft, Music2, Sparkles, LogOut, ChevronDown, Plus, FolderOpen, Save, Settings, Scissors, AlignCenter, Music, Volume2, Sliders, Zap, TrendingUp, Wand2, CreditCard, Mic, Drum, Upload, Radio } from 'lucide-react';
 import { TransportBar, Timeline, LoginForm, RegisterForm, CollaboratorList, AIDawgMenu, AIProcessingModal, AIChatWidget, MixerPanel, UpsellModal, GenreSelector, ProjectSettingsModal, AIFeatureHub, Widget, AuxTrackDialog, MusicGenerationProgressBar } from './components';
+import { MultiTrackRecorderWidget } from './components/MultiTrackRecorderWidget';
 import type { MusicGenerationProgress } from './components';
 import { apiClient } from '../api/client';
 import { wsClient } from '../api/websocket';
@@ -67,6 +68,8 @@ export const DAWDashboard: React.FC = () => {
     setShowAIHub,
     showAuxTrackDialog,
     setShowAuxTrackDialog,
+    showMultiTrackRecorder,
+    setShowMultiTrackRecorder,
     lyrics,
     setLyrics,
     expandedWidget,
@@ -1623,6 +1626,14 @@ export const DAWDashboard: React.FC = () => {
         return;
       }
 
+      // Cmd/Ctrl+Shift+R: Toggle Multi-Track Recorder
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'KeyR') {
+        e.preventDefault();
+        setShowMultiTrackRecorder(!showMultiTrackRecorder);
+        toast.info(showMultiTrackRecorder ? 'Multi-Track Recorder hidden' : 'Multi-Track Recorder opened');
+        return;
+      }
+
       // L: Toggle Loop
       if (e.code === 'KeyL' && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
         e.preventDefault();
@@ -1703,7 +1714,7 @@ export const DAWDashboard: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saveProject, handleNewTrack, handleExportProject, handleImportAudio, selectedClipIds]);
+  }, [saveProject, handleNewTrack, handleExportProject, handleImportAudio, selectedClipIds, showMultiTrackRecorder, setShowMultiTrackRecorder]);
 
   // Show loading state while project loads
   if (isLoadingProject || !currentProject) {
@@ -1777,6 +1788,22 @@ export const DAWDashboard: React.FC = () => {
                       <Mic className="w-5 h-5 text-primary" />
                       <span className="flex-1 text-left text-sm text-text-base">
                         AI Voice Memo
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMultiTrackRecorder(!showMultiTrackRecorder);
+                        setOpenMenu(null);
+                        toast.info(showMultiTrackRecorder ? 'Multi-Track Recorder hidden' : 'Multi-Track Recorder opened');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary-hover/20 hover:text-text-base transition-all"
+                    >
+                      <Radio className="w-5 h-5 text-primary" />
+                      <span className="flex-1 text-left text-sm text-text-base">
+                        Multi-Track Recorder
+                      </span>
+                      <span className="text-xs text-text-dim">
+                        {showMultiTrackRecorder ? '✓ Open' : ''}
                       </span>
                     </button>
                     <button
@@ -2236,6 +2263,28 @@ export const DAWDashboard: React.FC = () => {
               </div>
             </Widget>
           </div>
+
+          {/* Multi-Track Recorder Widget - Conditional Full Width */}
+          {showMultiTrackRecorder && (
+            <div className="lg:col-span-12">
+              <Widget
+                title="MULTI-TRACK RECORDER"
+                defaultSize={{ width: '100%', height: 600 }}
+                minHeight={400}
+              >
+                <div className="h-full overflow-auto">
+                  <MultiTrackRecorderWidget
+                    projectId={currentProject?.id || ''}
+                    userId={currentUser?.id || ''}
+                    onRecordingComplete={(sessionId) => {
+                      toast.success('Multi-track recording completed!');
+                      // Optionally reload project or update tracks
+                    }}
+                  />
+                </div>
+              </Widget>
+            </div>
+          )}
         </div>
       </div>
 

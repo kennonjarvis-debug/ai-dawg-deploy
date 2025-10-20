@@ -67,3 +67,4 @@ export const disposeRoutingEngine = (): void => {
 // Re-export types for convenience
 export * from './types';
 export { RoutingEngine } from './RoutingEngine';
+export { AutoRoutingEngine } from './AutoRoutingEngine';
