@@ -59,20 +59,21 @@ export const useMultiTrackRecording = () => {
 
       console.log(`[MultiTrackRecording] Recording ${armedTracks.length} armed track(s)`);
 
+      // Request microphone access ONCE for all tracks (avoid browser permission conflicts)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 2, // Always request stereo, we can downmix if needed
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          sampleRate: 44100,
+        },
+      });
+
       // Start recording on each armed track
       for (const track of armedTracks) {
         try {
-          // Request microphone access
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              channelCount: track.channels === 'stereo' ? 2 : 1,
-              echoCancellation: false,
-              noiseSuppression: false,
-              autoGainControl: false,
-              sampleRate: 44100,
-            },
-          });
-
+          // Share the same stream across all tracks
           mediaStreamsRef.current.set(track.id, stream);
 
           // Create media recorder for this track

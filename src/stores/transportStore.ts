@@ -145,8 +145,8 @@ export const useTransportStore = create<TransportState>((set, get) => ({
   },
 
   stop: () => {
-    set({ isPlaying: false, currentTime: 0 });
-    console.log('[Transport] Stopped');
+    set({ isPlaying: false, isRecording: false, currentTime: 0 });
+    console.log('[Transport] Stopped - playback and recording stopped');
   },
 
   togglePlay: () => {
