@@ -65,30 +65,45 @@ export default defineConfig(({ mode }) => ({
 	} : {
 		// Production build optimizations
 		minify: 'terser',
+		target: 'es2020', // Modern browsers only = smaller bundle
+		cssCodeSplit: true, // Split CSS for better caching
 		terserOptions: {
 			compress: {
 				drop_console: true, // Remove console.log in production
 				drop_debugger: true,
-				pure_funcs: ['console.log', 'console.debug']
+				pure_funcs: ['console.log', 'console.debug'],
+				passes: 2, // Multiple passes for better compression
+				unsafe_comps: true,
+				unsafe_math: true
+			},
+			mangle: {
+				safari10: false // Don't support Safari 10, smaller output
+			},
+			format: {
+				comments: false // Remove all comments
 			}
 		},
 		rollupOptions: {
+			treeshake: {
+				preset: 'recommended',
+				moduleSideEffects: 'no-external' // Assume no side effects from node_modules
+			},
 			output: {
 				// Manual chunk splitting for better caching
 				manualChunks: (id) => {
-					// Voice control features in separate chunk
+					// Voice control features in separate chunk (lazy load)
 					if (id.includes('WhisperGPTService') ||
 					    id.includes('VoiceController') ||
 					    id.includes('VoiceMemo')) {
 						return 'voice-control';
 					}
 
-					// Audio engine in separate chunk
+					// Audio engine in separate chunk (lazy load)
 					if (id.includes('tone') || id.includes('/audio/')) {
 						return 'audio-engine';
 					}
 
-					// Vendor libraries
+					// Vendor libraries - split by package for better caching
 					if (id.includes('node_modules')) {
 						if (id.includes('@anthropic-ai')) {
 							return 'anthropic-sdk';
@@ -99,9 +114,13 @@ export default defineConfig(({ mode }) => ({
 						if (id.includes('svelte')) {
 							return 'svelte-vendor';
 						}
+						// Group other vendors
 						return 'vendor';
 					}
-				}
+				},
+				// Optimize chunk naming for better caching
+				chunkFileNames: '_app/immutable/chunks/[name]-[hash].js',
+				assetFileNames: '_app/immutable/assets/[name]-[hash][extname]'
 			}
 		},
 		// Chunk size warning threshold
