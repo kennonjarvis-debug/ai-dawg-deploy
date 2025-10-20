@@ -246,9 +246,7 @@ async function trackSeparationUsage(
       model: result.metadata.model,
     });
 
-    // Example: Update user's monthly separation count
-    // await billingService.incrementSeparationCount(userId);
-    // await billingService.addCost(userId, result.metadata.cost);
+    // TODO: Integrate with billing service to track usage and costs
   } catch (error: any) {
     logger.error('[SeparationJob] Failed to track usage', {
       userId,
@@ -325,10 +323,9 @@ export async function cancelSeparationJob(jobId: string): Promise<void> {
     throw new Error('Job not found');
   }
 
-  // Cancel Demucs prediction if it's running
+  // TODO: Store predictionId in job data and implement cancellation
   try {
-    // TODO: Store predictionId in job data and cancel it
-    // await demucsService.cancelPrediction(predictionId);
+    // Cancel Demucs prediction if it's running
   } catch (error) {
     logger.warn('[SeparationQueue] Could not cancel Demucs prediction', { jobId });
   }

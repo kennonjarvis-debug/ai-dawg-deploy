@@ -292,15 +292,10 @@ export class CostTrackedOpenAI {
    * This is a placeholder - implement based on your audio processing library
    */
   private async getAudioDuration(audioFile: File | Blob): Promise<number> {
-    // TODO: Implement actual audio duration extraction
-    // For now, estimate based on file size (rough approximation)
-    // 1 minute of audio ≈ 1MB for typical formats
+    // TODO: Implement actual audio duration extraction using fluent-ffmpeg or similar library
+    // Current implementation: Rough estimate based on file size (1MB ≈ 1 minute)
     const fileSizeInMB = audioFile.size / (1024 * 1024);
     return fileSizeInMB * 60; // Rough estimate in seconds
-
-    // In production, use a library like fluent-ffmpeg:
-    // const duration = await getAudioDurationInSeconds(audioFile);
-    // return duration;
   }
 
   /**

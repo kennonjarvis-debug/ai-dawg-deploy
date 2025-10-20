@@ -25,6 +25,7 @@ import { timeStretcher } from '../audio/ai/TimeStretcher';
 import { pitchShifter } from '../audio/ai/PitchShifter';
 import { getAudioEngine } from '../audio/AudioEngine';
 import { getPlaybackEngine } from '../audio/PlaybackEngine';
+import { logger } from '../backend/utils/logger';
 import { getMetronomeEngine } from '../audio/MetronomeEngine';
 
 export const DAWDashboard: React.FC = () => {
@@ -105,7 +106,7 @@ export const DAWDashboard: React.FC = () => {
     // Always connect WebSocket (even in demo mode)
     const token = apiClient.getToken() || 'demo-token';
     if (!wsClient.isConnected()) {
-      console.log('[DAWDashboard] Connecting WebSocket with token:', token ? '✓' : '✗');
+      logger.info('[DAWDashboard] Connecting WebSocket with token:', { hasToken: !!token });
       wsClient.connect(token);
     }
 
@@ -220,7 +221,7 @@ export const DAWDashboard: React.FC = () => {
           try {
             // Time-stretch if needed
             if (needsTimeStretch) {
-              console.log(`[AI] Time-stretching clip ${clip.name} from ${clip.detectedBPM} to ${projectBPM} BPM`);
+              logger.info(`[AI] Time-stretching clip ${clip.name}`, { from: clip.detectedBPM, to: projectBPM });
               const result = await timeStretcher.stretchToMatchBPM(
                 processedBuffer,
                 clip.detectedBPM,
@@ -232,7 +233,7 @@ export const DAWDashboard: React.FC = () => {
 
             // Pitch-shift if needed
             if (needsPitchShift) {
-              console.log(`[AI] Pitch-shifting clip ${clip.name} from ${clip.detectedKey} to ${projectKey}`);
+              logger.info(`[AI] Pitch-shifting clip ${clip.name}`, { from: clip.detectedKey, to: projectKey });
               const result = await pitchShifter.shiftToMatchKey(
                 processedBuffer,
                 clip.detectedKey,
@@ -254,7 +255,7 @@ export const DAWDashboard: React.FC = () => {
               duration: 3000,
             });
           } catch (error) {
-            console.error(`Failed to process clip ${clip.name}:`, error);
+            logger.error(`Failed to process clip ${clip.name}:`, { error });
             toast.error(`Failed to adjust ${clip.name}`);
           }
         }
@@ -309,7 +310,7 @@ export const DAWDashboard: React.FC = () => {
           navigate('/app');
         }
       } catch (error) {
-        console.error('Failed to load project:', error);
+        logger.error('Failed to load project:', { error });
         toast.error('Failed to load project');
         navigate('/app');
       } finally {
@@ -340,7 +341,7 @@ export const DAWDashboard: React.FC = () => {
       navigate('/login');
       toast.success('Logged out successfully');
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed:', { error });
       toast.error('Logout failed');
     }
   };
@@ -352,7 +353,7 @@ export const DAWDashboard: React.FC = () => {
 
     // Skip auto-save for demo projects
     if (currentProject.id.startsWith('demo-')) {
-      console.log('[Demo Mode] Skipping auto-save for demo project');
+      logger.debug('[Demo Mode] Skipping auto-save for demo project');
       return;
     }
 
@@ -368,24 +369,15 @@ export const DAWDashboard: React.FC = () => {
     } catch (error: any) {
       // Only log errors for non-demo projects
       if (!error?.response?.status || error.response.status !== 404) {
-        console.error('Auto-save failed:', error);
+        logger.error('Auto-save failed:', { error });
       }
     } finally {
       setIsSaving(false);
     }
   }, [currentProject, isSaving]);
 
-  // DISABLED: Auto-save every 30 seconds - causing errors with undefined project IDs
-  // Users can manually save with Cmd+S or through the File menu
-  // useEffect(() => {
-  //   if (!currentProject?.id) return;
-  //
-  //   const interval = setInterval(() => {
-  //     saveProject();
-  //   }, 30000); // 30 seconds
-  //
-  //   return () => clearInterval(interval);
-  // }, [currentProject, saveProject]);
+  // TODO: Fix auto-save undefined project ID bug
+  // Auto-save disabled temporarily - use Cmd+S to save manually
 
   // Save on project close
   useEffect(() => {
@@ -482,13 +474,13 @@ export const DAWDashboard: React.FC = () => {
           setUploadProgress(null);
           return; // Success
         } catch (uploadError) {
-          console.warn('Backend upload failed/timeout, falling back to local import:', uploadError);
+          logger.warn('Backend upload failed/timeout, falling back to local import:', { error: uploadError });
           setUploadProgress({ fileName: file.name, progress: 15, step: 'Backend unavailable, processing locally...' });
         }
       }
 
       // Fallback: Import file directly using Web Audio API
-      console.log(`[Upload] Starting decode for ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+      logger.info(`[Upload] Starting decode for ${file.name}`, { sizeMB: (file.size / 1024 / 1024).toFixed(2) });
       setUploadProgress({ fileName: file.name, progress: 20, step: 'Reading audio file...' });
 
       const engine = getAudioEngine();
@@ -549,7 +541,7 @@ export const DAWDashboard: React.FC = () => {
           detectedBPM = Math.round(bpmResult.bpm);
         }
       } catch (analysisError) {
-        console.log('[Upload] Quick analysis timeout/failed, using defaults');
+        logger.debug('[Upload] Quick analysis timeout/failed, using defaults');
       }
 
       setUploadProgress({ fileName: file.name, progress: 75, step: 'Generating waveform...' });
@@ -583,7 +575,7 @@ export const DAWDashboard: React.FC = () => {
       setTimeout(() => setUploadProgress(null), 1500);
 
     } catch (error) {
-      console.error('[Upload] Error:', error);
+      logger.error('[Upload] Error:', { error });
       setUploadProgress(null);
       throw error;
     }
@@ -620,32 +612,32 @@ export const DAWDashboard: React.FC = () => {
             toast.success(`Imported ${file.name}`);
             continue; // Success, move to next file
           } catch (uploadError) {
-            console.warn('Backend upload failed/timeout, falling back to local import:', uploadError);
+            logger.warn('Backend upload failed/timeout, falling back to local import:', { error: uploadError });
             setUploadProgress({ fileName: file.name, progress: 15, step: 'Backend unavailable, processing locally...' });
           }
         }
 
         // Fallback: Import file directly using Web Audio API (no backend needed)
-        console.log(`[Upload] Starting decode for ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        logger.info(`[Upload] Starting decode for ${file.name}`, { sizeMB: (file.size / 1024 / 1024).toFixed(2) });
         setUploadProgress({ fileName: file.name, progress: 20, step: 'Reading audio file...' });
 
         // Use shared AudioContext from AudioEngine (required for playback compatibility!)
         const engine = getAudioEngine();
         const audioContext = await engine.getOrCreateAudioContext();
-        console.log(`[Upload] Using shared AudioContext (sample rate: ${audioContext.sampleRate}Hz)`);
+        logger.debug(`[Upload] Using shared AudioContext`, { sampleRate: audioContext.sampleRate });
 
         // Initialize playback/metronome engines with AudioContext for playback to work
         const playbackEngine = getPlaybackEngine();
         const metronomeEngine = getMetronomeEngine();
         playbackEngine.initialize(audioContext);
         metronomeEngine.initialize(audioContext);
-        console.log(`[Upload] Playback engines initialized with AudioContext`);
+        logger.debug('[Upload] Playback engines initialized with AudioContext');
 
-        console.log(`[Upload] Reading file as ArrayBuffer...`);
+        logger.debug('[Upload] Reading file as ArrayBuffer...');
         setUploadProgress({ fileName: file.name, progress: 25, step: 'Reading audio file...' });
         const arrayBuffer = await file.arrayBuffer();
         setUploadProgress({ fileName: file.name, progress: 35, step: 'Decoding audio...' });
-        console.log(`[Upload] ArrayBuffer loaded, decoding audio...`);
+        logger.debug('[Upload] ArrayBuffer loaded, decoding audio...');
 
         // Add timeout to decode operation (30 seconds max)
         const decodePromise = audioContext.decodeAudioData(arrayBuffer);
@@ -655,17 +647,17 @@ export const DAWDashboard: React.FC = () => {
 
         const audioBuffer = await Promise.race([decodePromise, timeoutPromise])
           .catch(err => {
-            console.error('[Upload] Decode failed:', err);
+            logger.error('[Upload] Decode failed:', { error: err });
             setUploadProgress(null);
             throw new Error(`Failed to decode audio: ${err.message}`);
           });
 
-        console.log(`[Upload] Audio decoded successfully - Duration: ${audioBuffer.duration}s`);
+        logger.info(`[Upload] Audio decoded successfully`, { duration: audioBuffer.duration });
         setUploadProgress({ fileName: file.name, progress: 55, step: 'Analyzing audio properties...' });
 
         // SKIP BPM/Key detection for now - it's blocking the main thread
         // TODO: Move to Web Worker in the future
-        console.log(`[Upload] Skipping BPM/Key detection (blocks main thread)`);
+        logger.debug('[Upload] Skipping BPM/Key detection (blocks main thread)');
         setUploadProgress({ fileName: file.name, progress: 60, step: 'Detecting BPM and key...' });
         let detectedBPM: number | undefined = 120; // Default BPM
         let detectedKey: string | undefined = 'C'; // Default key
@@ -678,7 +670,7 @@ export const DAWDashboard: React.FC = () => {
           const sampleDuration = Math.min(audioBuffer.duration, maxSampleDuration);
           const sampleSize = Math.floor(audioBuffer.sampleRate * sampleDuration);
 
-          console.log(`[Upload] Attempting quick analysis (${sampleDuration}s sample)...`);
+          logger.debug(`[Upload] Attempting quick analysis`, { sampleDuration });
 
           // Create tiny sample
           const sampleBuffer = audioContext.createBuffer(
@@ -704,35 +696,35 @@ export const DAWDashboard: React.FC = () => {
           const bpmResult = await Promise.race([bpmPromise, bpmTimeout]) as any;
           if (bpmResult?.bpm) {
             detectedBPM = Math.round(bpmResult.bpm);
-            console.log(`[Upload] BPM detected: ${detectedBPM}`);
+            logger.info(`[Upload] BPM detected`, { bpm: detectedBPM });
           }
         } catch (analysisError) {
-          console.log('[Upload] Quick analysis timeout/failed, using defaults');
+          logger.debug('[Upload] Quick analysis timeout/failed, using defaults');
         }
 
         setUploadProgress({ fileName: file.name, progress: 70, step: 'Analysis complete...' });
 
         // Generate waveform data using AudioEngine
         setUploadProgress({ fileName: file.name, progress: 75, step: 'Generating waveform...' });
-        console.log(`[Upload] Generating waveform...`);
+        logger.debug('[Upload] Generating waveform...');
         // Use same engine instance from above
         const waveformData = engine.getWaveformData(audioBuffer, 1000);
-        console.log(`[Upload] Waveform generated (${waveformData.length} points)`);
+        logger.debug(`[Upload] Waveform generated`, { points: waveformData.length });
         setUploadProgress({ fileName: file.name, progress: 80, step: 'Creating audio data...' });
 
         // Create audio URL from WAV export
         setUploadProgress({ fileName: file.name, progress: 85, step: 'Preparing audio data...' });
-        console.log(`[Upload] Exporting as WAV...`);
+        logger.debug('[Upload] Exporting as WAV...');
         const blob = engine.exportAsWAV(audioBuffer);
         const audioUrl = URL.createObjectURL(blob);
-        console.log(`[Upload] Audio URL created: ${audioUrl}`);
+        logger.debug('[Upload] Audio URL created');
 
         // Create new track for the imported audio
         setUploadProgress({ fileName: file.name, progress: 90, step: 'Adding to timeline...' });
-        console.log(`[Upload] Adding to timeline...`);
+        logger.debug('[Upload] Adding to timeline...');
         const trackName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
         const createdTrack = addTrack(trackName);
-        console.log(`[Upload] Track created: ${createdTrack.id}`);
+        logger.debug(`[Upload] Track created`, { trackId: createdTrack.id });
 
         // Create clip immediately (no need to wait, addTrack is synchronous)
         setUploadProgress({ fileName: file.name, progress: 95, step: 'Creating clip...' });
@@ -755,7 +747,7 @@ export const DAWDashboard: React.FC = () => {
         const verifyClip = useTimelineStore.getState().tracks
           .find(t => t.id === createdTrack.id)?.clips[0];
 
-        console.log(`[Upload] Clip created successfully:`, {
+        logger.info('[Upload] Clip created successfully:', {
           hasAudioBuffer: !!audioBuffer,
           hasWaveform: !!waveformData,
           hasAudioUrl: !!audioUrl,
@@ -773,10 +765,10 @@ export const DAWDashboard: React.FC = () => {
 
         // Clear progress after a short delay
         setTimeout(() => setUploadProgress(null), 1500);
-        console.log(`[Upload] Complete! Total time: ${elapsedTime}s`);
+        logger.info(`[Upload] Complete!`, { totalTime: elapsedTime });
 
       } catch (error) {
-        console.error('Import failed:', error);
+        logger.error('Import failed:', { error });
         setUploadProgress(null);
         toast.error(`Failed to import ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -796,7 +788,7 @@ export const DAWDashboard: React.FC = () => {
     } catch (error: any) {
       // Silently update local state for demo projects (which don't exist in backend)
       if (error?.response?.status === 404 || currentProject.id.startsWith('demo-')) {
-        console.log('[Demo Mode] Updating project settings locally:', settings);
+        logger.debug('[Demo Mode] Updating project settings locally:', { settings });
         setCurrentProject({ ...currentProject, ...settings });
         // Update transport store directly for demo mode
         if (settings.bpm) {
@@ -806,7 +798,7 @@ export const DAWDashboard: React.FC = () => {
           useTransportStore.setState({ key: settings.key });
         }
       } else {
-        console.error('Failed to update project settings:', error);
+        logger.error('Failed to update project settings:', { error });
         toast.error('Failed to update settings');
       }
     }
@@ -1023,7 +1015,7 @@ export const DAWDashboard: React.FC = () => {
   };
 
   const handleAutoMusic = async (prompt: string, genre?: string, tempo?: number, duration?: number) => {
-    console.log('🎵 handleAutoMusic called with:', { prompt, genre, tempo, duration });
+    logger.info('handleAutoMusic called', { prompt, genre, tempo, duration });
 
     // Supported genres from backend
     const supportedGenres = ['trap', 'lo-fi', 'boom bap', 'house', 'drill', 'drum and bass', 'techno', 'hip hop', 'r&b', 'pop', 'edm', 'dubstep', 'jazz', 'rock'];
@@ -1052,38 +1044,38 @@ export const DAWDashboard: React.FC = () => {
 
     // Check if it's already a supported genre
     if (supportedGenres.includes(normalizedGenre)) {
-      console.log(`🎵 Genre "${genre}" is already supported`);
+      logger.debug(`Genre "${genre}" is already supported`);
     }
     // Check if it's in our mapping
     else if (genreMap[normalizedGenre]) {
-      console.log(`🎵 Mapping genre "${genre}" -> "${genreMap[normalizedGenre]}"`);
+      logger.debug(`Mapping genre "${genre}" -> "${genreMap[normalizedGenre]}"`);
       normalizedGenre = genreMap[normalizedGenre];
     }
     // Handle compound genres (e.g., "country-pop" -> "pop")
     else if (normalizedGenre.includes('-') || normalizedGenre.includes(' ')) {
       const parts = normalizedGenre.split(/[-\s]+/);
-      console.log(`🎵 Compound genre detected: "${genre}", parts:`, parts);
+      logger.debug(`Compound genre detected: "${genre}"`, { parts });
 
       // Try to find a supported genre in the parts
       const supportedPart = parts.find(part => supportedGenres.includes(part));
       if (supportedPart) {
-        console.log(`🎵 Using supported part: "${supportedPart}"`);
+        logger.debug(`Using supported part: "${supportedPart}"`);
         normalizedGenre = supportedPart;
       } else {
         // Try to find a mapped genre in the parts
         const mappedPart = parts.find(part => genreMap[part]);
         if (mappedPart) {
-          console.log(`🎵 Mapping compound part "${mappedPart}" -> "${genreMap[mappedPart]}"`);
+          logger.debug(`Mapping compound part "${mappedPart}" -> "${genreMap[mappedPart]}"`);
           normalizedGenre = genreMap[mappedPart];
         } else {
-          console.log(`🎵 No supported parts found in "${genre}", defaulting to "pop"`);
+          logger.debug(`No supported parts found in "${genre}", defaulting to "pop"`);
           normalizedGenre = 'pop';
         }
       }
     }
     // Unknown genre, default to pop
     else {
-      console.log(`🎵 Unknown genre "${genre}", defaulting to "pop"`);
+      logger.debug(`Unknown genre "${genre}", defaulting to "pop"`);
       normalizedGenre = 'pop';
     }
 
@@ -1109,7 +1101,7 @@ export const DAWDashboard: React.FC = () => {
       });
       updateAiJob(jobId, { status: 'processing', progress: 20 });
 
-      console.log('🎵 Making API call to /api/generate/beat...');
+      logger.info('Making API call to /api/generate/beat...');
       // Call beat generation API
       const response = await fetch('/api/generate/beat', {
         method: 'POST',
@@ -1135,7 +1127,7 @@ export const DAWDashboard: React.FC = () => {
 
       // Update progress - almost done
       // Job queued successfully - track/clip will be added via WebSocket event
-      console.log('🎵 Beat generation job queued:', { jobId, generationId: data.generationId });
+      logger.info('Beat generation job queued:', { jobId, generationId: data.generationId });
 
       setMusicGenProgress({
         isGenerating: true,
@@ -1166,7 +1158,7 @@ export const DAWDashboard: React.FC = () => {
       }, 5000);
 
     } catch (error: any) {
-      console.error('🎵 Music generation error:', error);
+      logger.error('Music generation error:', { error });
       // Dismiss any loading toasts from AIChatWidget
       toast.dismiss('music-gen-progress');
 
@@ -1382,17 +1374,17 @@ export const DAWDashboard: React.FC = () => {
 
   // Debug WebSocket connection status
   useEffect(() => {
-    console.log('🔌 WebSocket connection status:', {
+    logger.info('WebSocket connection status:', {
       isConnected: wsClient.isConnected(),
       reconnectAttempts: wsClient.getReconnectAttempts(),
     });
 
     // Log connection state changes
     const onConnected = () => {
-      console.log('✅ WebSocket connected to backend');
+      logger.info('WebSocket connected to backend');
     };
     const onDisconnected = (data: any) => {
-      console.warn('⚠️ WebSocket disconnected:', data);
+      logger.warn('WebSocket disconnected:', { data });
     };
 
     const u1 = wsClient.on('connected', onConnected);
@@ -1406,7 +1398,7 @@ export const DAWDashboard: React.FC = () => {
 
   // WebSocket listener for beat generation completion - adds track/clip to timeline
   useEffect(() => {
-    console.log('🎵 Registering daw:audio:loaded event handler');
+    logger.debug('Registering daw:audio:loaded event handler');
 
     const onAudioLoaded = (data: {
       generationId: string;
@@ -1425,7 +1417,7 @@ export const DAWDashboard: React.FC = () => {
       };
       autoPlay: boolean;
     }) => {
-      console.log('🎵 daw:audio:loaded event received:', data);
+      logger.info('daw:audio:loaded event received:', { data });
 
       // Create track
       const newTrack = addTrack(data.trackName);
@@ -1444,7 +1436,7 @@ export const DAWDashboard: React.FC = () => {
             audioUrl: data.clip.audioUrl,
           });
 
-          console.log(`🎵 Track "${data.trackName}" added to timeline with clip`);
+          logger.info(`Track "${data.trackName}" added to timeline with clip`);
           toast.success(`Beat added to timeline: ${data.trackName}`);
 
           // Update progress to complete
@@ -1456,7 +1448,7 @@ export const DAWDashboard: React.FC = () => {
             message: 'Beat added to timeline!',
           });
         } else {
-          console.error('🎵 Failed to find newly created track');
+          logger.error('Failed to find newly created track');
           toast.error('Failed to add beat to timeline');
         }
       }, 100);
@@ -1497,7 +1489,7 @@ export const DAWDashboard: React.FC = () => {
         toast.success('Demo project created!');
         handleOpenProject(demoProject);
       } catch (error) {
-        console.error('Failed to create demo project:', error);
+        logger.error('Failed to create demo project:', { error });
       }
     };
 
@@ -2150,7 +2142,7 @@ export const DAWDashboard: React.FC = () => {
                         const latestTrack = allTracks[allTracks.length - 1];
                         if (latestTrack) {
                           updateTrack(latestTrack.id, { isArmed: true });
-                          console.log(`Created and armed track: ${trackName}`);
+                          logger.info(`Created and armed track: ${trackName}`);
 
                           // Wait for microphone to be ready before starting recording
                           toast.info('🎤 Requesting microphone access...');

@@ -299,8 +299,7 @@ export async function logMonitoringEvent(
 ): Promise<void> {
   console.log(`[MelodyVocals Analytics] ${eventType}:`, data);
 
-  // You could also send to external monitoring service (DataDog, New Relic, etc.)
-  // await sendToMonitoring(eventType, data);
+  // TODO: Integrate with external monitoring service (DataDog, New Relic, etc.)
 }
 
 /**

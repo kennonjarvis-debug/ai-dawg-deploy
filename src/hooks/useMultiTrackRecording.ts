@@ -4,6 +4,7 @@ import { useTimelineStore } from '../stores/timelineStore';
 import { getAudioEngine } from '../audio/AudioEngine';
 import { getRoutingEngine } from '../audio/routing';
 import { toast } from 'sonner';
+import { logger } from '../backend/utils/logger';
 
 /**
  * Multi-track recording hook with Pro Tools-style functionality
@@ -35,7 +36,7 @@ export const useMultiTrackRecording = () => {
    */
   const startRecording = useCallback(async () => {
     try {
-      console.log('[MultiTrackRecording] Starting recording...');
+      logger.info('[MultiTrackRecording] Starting recording...');
 
       // Get or create audio context
       if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
@@ -57,7 +58,7 @@ export const useMultiTrackRecording = () => {
         return;
       }
 
-      console.log(`[MultiTrackRecording] Recording ${armedTracks.length} armed track(s)`);
+      logger.info('[MultiTrackRecording] Recording armed tracks', { count: armedTracks.length });
 
       // Request microphone access ONCE for all tracks (avoid browser permission conflicts)
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -119,16 +120,16 @@ export const useMultiTrackRecording = () => {
                 track.id,
                 audioContext.destination
               );
-              console.log(`[MultiTrackRecording] Routing input through plugins for track: ${track.name}`);
+              logger.debug(`[MultiTrackRecording] Routing input through plugins for track: ${track.name}`);
             } catch (error) {
-              console.warn(`[MultiTrackRecording] Failed to route through plugins, using direct monitoring:`, error);
+              logger.warn(`[MultiTrackRecording] Failed to route through plugins, using direct monitoring:`, { error });
               // Fallback: direct connection for monitoring
               gainNode.connect(audioContext.destination);
             }
           } else {
             // No routing engine: direct connection for monitoring
             gainNode.connect(audioContext.destination);
-            console.log(`[MultiTrackRecording] Direct monitoring (no routing engine) for track: ${track.name}`);
+            logger.debug(`[MultiTrackRecording] Direct monitoring (no routing engine) for track: ${track.name}`);
           }
 
           // Update track to show it's recording
@@ -142,9 +143,9 @@ export const useMultiTrackRecording = () => {
           // Start waveform animation for this track
           updateLiveWaveform(track.id, analyser);
 
-          console.log(`[MultiTrackRecording] Started recording on track: ${track.name}`);
+          logger.info(`[MultiTrackRecording] Started recording on track: ${track.name}`);
         } catch (error) {
-          console.error(`[MultiTrackRecording] Failed to start recording on track ${track.name}:`, error);
+          logger.error(`[MultiTrackRecording] Failed to start recording on track ${track.name}:`, { error });
           toast.error(`Failed to record on track "${track.name}"`);
         }
       }
@@ -156,7 +157,7 @@ export const useMultiTrackRecording = () => {
 
       toast.success(`Recording ${armedTracks.length} track${armedTracks.length > 1 ? 's' : ''}!`);
     } catch (error) {
-      console.error('[MultiTrackRecording] Failed to start recording:', error);
+      logger.error('[MultiTrackRecording] Failed to start recording:', { error });
       toast.error('Failed to start recording. Please check microphone permissions.');
     }
   }, [tracks, currentTime, isPlaying, updateTrack]);
@@ -166,71 +167,111 @@ export const useMultiTrackRecording = () => {
    */
   const stopRecording = useCallback(async () => {
     try {
-      console.log('[MultiTrackRecording] Stopping recording...');
+      logger.info('[MultiTrackRecording] Stopping recording...');
 
       const recordingDuration = currentTime - recordingStartTimeRef.current;
+      const stoppingTracks = Array.from(mediaRecordersRef.current.entries());
 
-      // Stop all media recorders
-      for (const [trackId, mediaRecorder] of mediaRecordersRef.current.entries()) {
-        if (mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
+      logger.info(`[MultiTrackRecording] Processing recordings...`, { count: stoppingTracks.length });
 
-          // Wait for final data
-          await new Promise<void>(resolve => {
-            mediaRecorder.onstop = async () => {
-              try {
-                const chunks = audioChunksRef.current.get(trackId) || [];
-                if (chunks.length === 0) {
-                  console.warn(`[MultiTrackRecording] No audio data for track ${trackId}`);
-                  resolve();
-                  return;
-                }
+      // Process all recordings in parallel
+      const processPromises = stoppingTracks.map(([trackId, mediaRecorder]) => {
+        return new Promise<void>(resolve => {
+          // Set up the onstop handler BEFORE calling stop()
+          const handleStop = async () => {
+            try {
+              logger.debug(`[MultiTrackRecording] Processing recording for track ${trackId}...`);
 
-                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+              const chunks = audioChunksRef.current.get(trackId) || [];
+              logger.debug(`[MultiTrackRecording] Track ${trackId} has ${chunks.length} audio chunks`);
 
-                // Convert WebM to AudioBuffer
-                const audioEngine = getAudioEngine();
-                const audioContext = await audioEngine.getOrCreateAudioContext();
-                const arrayBuffer = await audioBlob.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-                // Generate waveform
-                const waveformData = audioEngine.getWaveformData(audioBuffer, 1000);
-
-                // Export as WAV for better compatibility
-                const wavBlob = audioEngine.exportAsWAV(audioBuffer);
-                const audioUrl = URL.createObjectURL(wavBlob);
-
-                // Find track
-                const track = tracks.find(t => t.id === trackId);
-                if (!track) {
-                  resolve();
-                  return;
-                }
-
-                // Create clip from recording
-                const clipName = `${track.name} - ${new Date().toLocaleTimeString()}`;
-                addClip(trackId, {
-                  name: clipName,
-                  startTime: recordingStartTimeRef.current,
-                  duration: recordingDuration,
-                  audioBuffer,
-                  waveformData,
-                  audioUrl,
-                  color: track.color,
-                });
-
-                console.log(`[MultiTrackRecording] Created clip for track: ${track.name}`);
-                toast.success(`Recorded: ${clipName}`);
-              } catch (error) {
-                console.error(`[MultiTrackRecording] Failed to process recording for track ${trackId}:`, error);
-                toast.error('Failed to process recording');
+              if (chunks.length === 0) {
+                logger.warn(`[MultiTrackRecording] No audio data for track ${trackId}`);
+                resolve();
+                return;
               }
+
+              const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+              logger.debug(`[MultiTrackRecording] Created blob for track ${trackId}, size: ${audioBlob.size} bytes`);
+
+              // Convert WebM to AudioBuffer
+              const audioEngine = getAudioEngine();
+              const audioContext = await audioEngine.getOrCreateAudioContext();
+              const arrayBuffer = await audioBlob.arrayBuffer();
+              logger.debug(`[MultiTrackRecording] Decoding audio for track ${trackId}...`);
+              const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+              logger.debug(`[MultiTrackRecording] Decoded audio for track ${trackId}: ${audioBuffer.duration}s`);
+
+              // Generate waveform
+              const waveformData = audioEngine.getWaveformData(audioBuffer, 1000);
+              logger.debug(`[MultiTrackRecording] Generated waveform for track ${trackId}`);
+
+              // Export as WAV for better compatibility
+              const wavBlob = audioEngine.exportAsWAV(audioBuffer);
+              const audioUrl = URL.createObjectURL(wavBlob);
+              logger.debug(`[MultiTrackRecording] Exported WAV for track ${trackId}`);
+
+              // Find track
+              const track = tracks.find(t => t.id === trackId);
+              if (!track) {
+                logger.error(`[MultiTrackRecording] Track not found: ${trackId}`);
+                resolve();
+                return;
+              }
+
+              // Create clip from recording
+              const clipName = `${track.name} - ${new Date().toLocaleTimeString()}`;
+              logger.debug(`[MultiTrackRecording] Adding clip to track ${trackId}: ${clipName}`);
+
+              addClip(trackId, {
+                name: clipName,
+                startTime: recordingStartTimeRef.current,
+                duration: recordingDuration,
+                audioBuffer,
+                waveformData,
+                audioUrl,
+                color: track.color,
+              });
+
+              logger.info(`[MultiTrackRecording] Successfully created clip for track: ${track.name}`);
+              toast.success(`Recorded: ${clipName}`);
+            } catch (error) {
+              logger.error(`[MultiTrackRecording] Failed to process recording for track ${trackId}:`, { error });
+              toast.error(`Failed to process recording for track ${trackId}`);
+            }
+            resolve();
+          };
+
+          // Attach the handler BEFORE stopping
+          if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.onstop = handleStop;
+
+            // Add a timeout fallback in case onstop never fires
+            const timeout = setTimeout(() => {
+              logger.warn(`[MultiTrackRecording] Timeout waiting for track ${trackId} to stop`);
               resolve();
+            }, 5000);
+
+            // Clear timeout when stop completes
+            const originalHandler = handleStop;
+            mediaRecorder.onstop = async () => {
+              clearTimeout(timeout);
+              await originalHandler();
             };
-          });
-        }
-      }
+
+            // Now trigger the stop
+            logger.debug(`[MultiTrackRecording] Stopping MediaRecorder for track ${trackId}...`);
+            mediaRecorder.stop();
+          } else {
+            logger.warn(`[MultiTrackRecording] MediaRecorder for track ${trackId} already inactive`);
+            resolve();
+          }
+        });
+      });
+
+      // Wait for all recordings to be processed
+      await Promise.all(processPromises);
+      logger.info('[MultiTrackRecording] All recordings processed');
 
       // Clean up
       cleanup();
@@ -247,7 +288,7 @@ export const useMultiTrackRecording = () => {
 
       toast.success('Recording stopped');
     } catch (error) {
-      console.error('[MultiTrackRecording] Failed to stop recording:', error);
+      logger.error('[MultiTrackRecording] Failed to stop recording:', { error });
       toast.error('Failed to stop recording');
     }
   }, [tracks, currentTime, updateTrack, addClip]);
@@ -335,7 +376,7 @@ export const useMultiTrackRecording = () => {
 
             nodes.push(source);
           } catch (error) {
-            console.error(`[MultiTrackRecording] Failed to start playback for clip:`, error);
+            logger.error(`[MultiTrackRecording] Failed to start playback for clip:`, { error });
           }
         }
       }
@@ -387,7 +428,7 @@ export const useMultiTrackRecording = () => {
     }
     playbackNodesRef.current.clear();
 
-    console.log('[MultiTrackRecording] Cleaned up resources');
+    logger.debug('[MultiTrackRecording] Cleaned up resources');
   }, []);
 
   /**

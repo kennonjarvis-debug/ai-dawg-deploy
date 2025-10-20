@@ -255,11 +255,32 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
       id: `clip-${Date.now()}`,
       trackId,
     };
-    set((state) => ({
-      tracks: state.tracks.map((t) =>
+
+    console.log('[TimelineStore] Adding clip to track:', {
+      trackId,
+      clipId: newClip.id,
+      clipName: newClip.name,
+      startTime: newClip.startTime,
+      duration: newClip.duration,
+      hasAudioBuffer: !!newClip.audioBuffer,
+      hasWaveform: !!newClip.waveformData,
+    });
+
+    set((state) => {
+      const track = state.tracks.find(t => t.id === trackId);
+      if (!track) {
+        console.error('[TimelineStore] Track not found:', trackId);
+        return state;
+      }
+
+      const updatedTracks = state.tracks.map((t) =>
         t.id === trackId ? { ...t, clips: [...t.clips, newClip] } : t
-      ),
-    }));
+      );
+
+      console.log('[TimelineStore] Clip added successfully. Track now has', track.clips.length + 1, 'clips');
+
+      return { tracks: updatedTracks };
+    });
   },
 
   removeClip: (clipId: string) => {

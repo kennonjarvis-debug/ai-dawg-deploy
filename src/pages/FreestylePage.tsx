@@ -52,17 +52,8 @@ export const FreestylePage: React.FC = () => {
         if (state?.beatUrl) {
           setBeatUrl(state.beatUrl);
           setBeatFileId(state.beatFileId);
-        } else {
-          // Try to find a beat from project audio files
-          // TODO: Implement audio file listing API
-          // const audioFiles = await apiClient.getProjectAudioFiles(projectId);
-          // const beatFile = audioFiles.find(f => f.tags?.includes('beat') || f.tags?.includes('instrumental'));
-          // if (beatFile) {
-          //   setBeatFileId(beatFile.id);
-          //   const { url } = await apiClient.getAudioDownloadUrl(beatFile.id);
-          //   setBeatUrl(url);
-          // }
         }
+        // TODO: Implement audio file listing API to auto-find beats from project
       } catch (error) {
         console.error('Failed to load project:', error);
         toast.error('Failed to load project');

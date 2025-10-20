@@ -12,6 +12,7 @@ import type { NoiseProfile, ProcessingMetrics } from './ai/AINoiseReduction';
 import { BeatAnalyzer, type BeatAnalysisResult, type QuantizeOptions, type MIDIExtractionResult } from './ai/BeatAnalyzer';
 import { AdaptiveEQ, type EQAnalysisResult, type ReferenceMatch, type GenreEQStyle, type GenreEQTemplate } from './ai/AdaptiveEQ';
 import { AIMasteringEngine } from './ai/AIMasteringEngine';
+import { logger } from '../backend/utils/logger';
 
 export interface RecordingState {
   isRecording: boolean;
@@ -118,9 +119,9 @@ export class AudioEngine {
       // Note: effectsChain, stemSeparator, masteringEngine, adaptiveEQ
       // will be initialized lazily when AudioContext is created
 
-      console.log('[AudioEngine] Initialized (AudioContext deferred until user gesture)');
+      logger.debug('[AudioEngine] Initialized (AudioContext deferred until user gesture)');
     } catch (error) {
-      console.error('[AudioEngine] Failed to initialize:', error);
+      logger.error('[AudioEngine] Failed to initialize:', { error });
       throw new Error('Failed to initialize audio engine');
     }
   }
@@ -143,8 +144,8 @@ export class AudioEngine {
       sampleRate: this.config.sampleRate,
     });
 
-    console.log('[AudioEngine] AudioContext created - Sample Rate:', this.audioContext.sampleRate);
-    console.log('[AudioEngine] Context State:', this.audioContext.state);
+    logger.debug('[AudioEngine] AudioContext created - Sample Rate:', { sampleRate: this.audioContext.sampleRate });
+    logger.debug('[AudioEngine] Context State:', { state: this.audioContext.state });
 
     // Initialize plugins that need AudioContext
     if (!this.effectsChain) {
@@ -164,7 +165,7 @@ export class AudioEngine {
       this.adaptiveEQ = new AdaptiveEQ(this.audioContext.sampleRate);
     }
 
-    console.log('[AudioEngine] AudioContext-dependent plugins initialized');
+    logger.debug('[AudioEngine] AudioContext-dependent plugins initialized');
   }
 
   /**
@@ -218,9 +219,9 @@ export class AudioEngine {
       this.sourceNode.connect(this.analyserNode);
       this.analyserNode.connect(this.gainNode);
 
-      console.log('[AudioEngine] Microphone access granted');
+      logger.info('[AudioEngine] Microphone access granted');
     } catch (error: any) {
-      console.error('[AudioEngine] Microphone access denied:', error);
+      logger.error('[AudioEngine] Microphone access denied:', { error });
 
       // Provide specific error messages
       if (error.name === 'NotAllowedError' || error.message?.includes('NotAllowedError')) {
@@ -241,7 +242,7 @@ export class AudioEngine {
     if (trackId) {
       this.monitoringTrackId = trackId;
     }
-    console.log('[AudioEngine] Routing engine set', trackId ? `for track ${trackId}` : '');
+    logger.debug('[AudioEngine] Routing engine set', { trackId: trackId || 'none' });
   }
 
   /**
@@ -273,19 +274,19 @@ export class AudioEngine {
             this.monitoringTrackId,
             this.audioContext.destination
           );
-          console.log('[AudioEngine] Input monitoring with plugins:', mode, 'trackId:', this.monitoringTrackId);
+          logger.debug('[AudioEngine] Input monitoring with plugins:', { mode, trackId: this.monitoringTrackId });
         } catch (error) {
-          console.warn('[AudioEngine] Failed to route through plugins, using direct connection:', error);
+          logger.warn('[AudioEngine] Failed to route through plugins, using direct connection:', { error });
           // Fallback to direct connection
           this.gainNode.connect(this.audioContext.destination);
         }
       } else {
         // Direct connection without plugins
         this.gainNode.connect(this.audioContext.destination);
-        console.log('[AudioEngine] Input monitoring (direct):', mode);
+        logger.debug('[AudioEngine] Input monitoring (direct):', { mode });
       }
     } else {
-      console.log('[AudioEngine] Input monitoring off');
+      logger.debug('[AudioEngine] Input monitoring off');
     }
   }
 
@@ -408,7 +409,7 @@ export class AudioEngine {
       }
     }, 100);
 
-    console.log('[AudioEngine] Recording started on track:', trackId);
+    logger.info('[AudioEngine] Recording started on track:', { trackId });
   }
 
   /**
@@ -435,7 +436,7 @@ export class AudioEngine {
 
     // Combine all chunks into one buffer
     if (this.recordingState.recordedChunks.length === 0) {
-      console.warn('[AudioEngine] No audio recorded');
+      logger.warn('[AudioEngine] No audio recorded');
       return null;
     }
 
@@ -461,7 +462,7 @@ export class AudioEngine {
 
     this.recordingState.recordedBuffer = buffer;
 
-    console.log('[AudioEngine] Recording stopped - Duration:', buffer.duration.toFixed(2), 's');
+    logger.info('[AudioEngine] Recording stopped - Duration:', { duration: buffer.duration.toFixed(2) + 's' });
 
     // Trigger completion callback
     if (this.onRecordingComplete && this.recordingState.trackId) {
@@ -492,7 +493,7 @@ export class AudioEngine {
       this.punchStartTime = this.getCurrentTime();
       this.startRecording(trackId);
       this.recordingState.isPunched = true;
-      console.log('[AudioEngine] Punched in at', this.punchStartTime);
+      logger.info('[AudioEngine] Punched in at', { time: this.punchStartTime });
     }
   }
 
@@ -516,7 +517,7 @@ export class AudioEngine {
           endTime: punchEndTime,
           trackId: this.recordingState.trackId,
         };
-        console.log('[AudioEngine] Punched out at', punchEndTime, 'duration:', punchEndTime - this.punchStartTime);
+        logger.info('[AudioEngine] Punched out at', { time: punchEndTime, duration: punchEndTime - this.punchStartTime });
       }
 
       this.punchStartTime = null;
@@ -559,14 +560,14 @@ export class AudioEngine {
     // Resume AudioContext if suspended (required by Chrome autoplay policy)
     if (this.audioContext && this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
-      console.log('[AudioEngine] AudioContext resumed');
+      logger.debug('[AudioEngine] AudioContext resumed');
     }
 
     this.isPlayingState = true;
     if (this.audioContext) {
       this.playbackStartTime = this.audioContext.currentTime;
     }
-    console.log('[AudioEngine] Playing');
+    logger.debug('[AudioEngine] Playing');
   }
 
   /**
@@ -578,7 +579,7 @@ export class AudioEngine {
       this.currentPlaybackTime = this.getCurrentTime();
     }
     this.isPlayingState = false;
-    console.log('[AudioEngine] Stopped');
+    logger.debug('[AudioEngine] Stopped');
   }
 
   private currentPlaybackTime: number = 0;
@@ -603,7 +604,7 @@ export class AudioEngine {
     if (this.audioContext) {
       this.playbackStartTime = this.audioContext.currentTime;
     }
-    console.log('[AudioEngine] Seek to', time);
+    logger.debug('[AudioEngine] Seek to', { time });
   }
 
   /**
@@ -673,7 +674,7 @@ export class AudioEngine {
     if (this.audioContext) {
       this.audioContext.close();
     }
-    console.log('[AudioEngine] Cleaned up');
+    logger.debug('[AudioEngine] Cleaned up');
   }
 
   /**
@@ -703,7 +704,7 @@ export class AudioEngine {
   simulateError(error: Error): void {
     // Cleanup recording state
     this.cleanupRecording();
-    console.error('[AudioEngine] Simulated error:', error);
+    logger.error('[AudioEngine] Simulated error:', { error });
   }
 
   /**
@@ -902,7 +903,7 @@ export class AudioEngine {
       throw new Error('Multi-track recording already in progress.');
     }
 
-    console.log('[AudioEngine] Starting multi-track recording for', trackIds.length, 'tracks');
+    logger.info('[AudioEngine] Starting multi-track recording for', { trackCount: trackIds.length });
 
     // Reset multi-track state
     this.multiTrackRecording = {
@@ -960,7 +961,7 @@ export class AudioEngine {
       return null;
     }
 
-    console.log('[AudioEngine] Stopping multi-track recording');
+    logger.info('[AudioEngine] Stopping multi-track recording');
 
     this.multiTrackRecording.isRecording = false;
 
@@ -975,7 +976,7 @@ export class AudioEngine {
     // Process each track's recordings
     this.multiTrackRecording.tracks.forEach((trackState, trackId) => {
       if (trackState.chunks.length === 0) {
-        console.warn('[AudioEngine] No audio recorded for track:', trackId);
+        logger.warn('[AudioEngine] No audio recorded for track:', { trackId });
         return;
       }
 
@@ -1002,7 +1003,7 @@ export class AudioEngine {
       trackState.buffer = buffer;
       results.set(trackId, buffer);
 
-      console.log('[AudioEngine] Track', trackId, 'recorded:', buffer.duration.toFixed(2), 's');
+      logger.info('[AudioEngine] Track recorded:', { trackId, duration: buffer.duration.toFixed(2) + 's' });
     });
 
     // Trigger completion callback
@@ -1061,7 +1062,7 @@ export class AudioEngine {
       await this.audioContext.close();
     }
 
-    console.log('[AudioEngine] Disposed');
+    logger.debug('[AudioEngine] Disposed');
   }
 
   /**
@@ -1069,17 +1070,17 @@ export class AudioEngine {
    */
   analyzeVocal(audioBuffer: AudioBuffer, genre?: string): VocalAnalysis | null {
     if (!this.vocalProcessor) {
-      console.warn('[AudioEngine] VocalProcessor not initialized');
+      logger.warn('[AudioEngine] VocalProcessor not initialized');
       return null;
     }
 
     try {
       const analysis = this.vocalProcessor.analyzeVocal(audioBuffer);
       this.lastVocalAnalysis = analysis;
-      console.log('[AudioEngine] Vocal analysis complete:', analysis);
+      logger.debug('[AudioEngine] Vocal analysis complete:', { analysis });
       return analysis;
     } catch (error) {
-      console.error('[AudioEngine] Vocal analysis failed:', error);
+      logger.error('[AudioEngine] Vocal analysis failed:', { error });
       return null;
     }
   }
@@ -1093,7 +1094,7 @@ export class AudioEngine {
     userPreferences?: { naturalSound?: boolean; heavyProduction?: boolean }
   ) {
     if (!this.vocalProcessor) {
-      console.warn('[AudioEngine] VocalProcessor not initialized');
+      logger.warn('[AudioEngine] VocalProcessor not initialized');
       return null;
     }
 
@@ -1102,10 +1103,10 @@ export class AudioEngine {
       if (!analysis) return null;
 
       const effectChain = this.vocalProcessor.recommendEffects(analysis, genre, userPreferences);
-      console.log('[AudioEngine] Effect chain recommended:', effectChain);
+      logger.debug('[AudioEngine] Effect chain recommended:', { effectChain });
       return effectChain;
     } catch (error) {
-      console.error('[AudioEngine] Effect recommendation failed:', error);
+      logger.error('[AudioEngine] Effect recommendation failed:', { error });
       return null;
     }
   }
@@ -1133,17 +1134,17 @@ export class AudioEngine {
    */
   async separateStems(audioBuffer: AudioBuffer): Promise<StemSeparationResult | null> {
     if (!this.stemSeparator) {
-      console.warn('[AudioEngine] StemSeparator not initialized');
+      logger.warn('[AudioEngine] StemSeparator not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Starting stem separation...');
+      logger.info('[AudioEngine] Starting stem separation...');
       const result = await this.stemSeparator.separateStems(audioBuffer);
-      console.log('[AudioEngine] Stem separation complete:', result.metadata);
+      logger.info('[AudioEngine] Stem separation complete:', { metadata: result.metadata });
       return result;
     } catch (error) {
-      console.error('[AudioEngine] Stem separation failed:', error);
+      logger.error('[AudioEngine] Stem separation failed:', { error });
       return null;
     }
   }
@@ -1156,17 +1157,17 @@ export class AudioEngine {
     stemType: 'vocals' | 'drums' | 'bass' | 'other'
   ): Promise<AudioBuffer | null> {
     if (!this.stemSeparator) {
-      console.warn('[AudioEngine] StemSeparator not initialized');
+      logger.warn('[AudioEngine] StemSeparator not initialized');
       return null;
     }
 
     try {
-      console.log(`[AudioEngine] Isolating ${stemType}...`);
+      logger.info(`[AudioEngine] Isolating ${stemType}...`);
       const result = await this.stemSeparator.isolateStem(audioBuffer, stemType);
-      console.log(`[AudioEngine] ${stemType} isolated successfully`);
+      logger.info(`[AudioEngine] ${stemType} isolated successfully`);
       return result;
     } catch (error) {
-      console.error(`[AudioEngine] Failed to isolate ${stemType}:`, error);
+      logger.error(`[AudioEngine] Failed to isolate ${stemType}:`, { error });
       return null;
     }
   }
@@ -1176,12 +1177,12 @@ export class AudioEngine {
    */
   async removeVocals(audioBuffer: AudioBuffer): Promise<AudioBuffer | null> {
     if (!this.stemSeparator || !this.audioContext) {
-      console.warn('[AudioEngine] StemSeparator not initialized');
+      logger.warn('[AudioEngine] StemSeparator not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Removing vocals...');
+      logger.info('[AudioEngine] Removing vocals...');
       const result = await this.stemSeparator.separateStems(audioBuffer);
 
       // Combine drums, bass, and other (everything except vocals)
@@ -1202,10 +1203,10 @@ export class AudioEngine {
         }
       }
 
-      console.log('[AudioEngine] Vocals removed successfully');
+      logger.info('[AudioEngine] Vocals removed successfully');
       return instrumental;
     } catch (error) {
-      console.error('[AudioEngine] Failed to remove vocals:', error);
+      logger.error('[AudioEngine] Failed to remove vocals:', { error });
       return null;
     }
   }
@@ -1215,12 +1216,12 @@ export class AudioEngine {
    */
   async removeDrums(audioBuffer: AudioBuffer): Promise<AudioBuffer | null> {
     if (!this.stemSeparator || !this.audioContext) {
-      console.warn('[AudioEngine] StemSeparator not initialized');
+      logger.warn('[AudioEngine] StemSeparator not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Removing drums...');
+      logger.info('[AudioEngine] Removing drums...');
       const result = await this.stemSeparator.separateStems(audioBuffer);
 
       // Combine vocals, bass, and other (everything except drums)
@@ -1241,10 +1242,10 @@ export class AudioEngine {
         }
       }
 
-      console.log('[AudioEngine] Drums removed successfully');
+      logger.info('[AudioEngine] Drums removed successfully');
       return noDrums;
     } catch (error) {
-      console.error('[AudioEngine] Failed to remove drums:', error);
+      logger.error('[AudioEngine] Failed to remove drums:', { error });
       return null;
     }
   }
@@ -1283,7 +1284,7 @@ export class AudioEngine {
     duration?: number
   ): NoiseProfile | null {
     if (!this.aiNoiseReduction) {
-      console.warn('[AudioEngine] AINoiseReduction not initialized');
+      logger.warn('[AudioEngine] AINoiseReduction not initialized');
       return null;
     }
 
@@ -1294,16 +1295,16 @@ export class AudioEngine {
         // Auto-detect silent section
         const success = this.aiNoiseReduction.autoLearnNoiseProfile(audioBuffer);
         if (!success) {
-          console.warn('[AudioEngine] Failed to auto-learn noise profile');
+          logger.warn('[AudioEngine] Failed to auto-learn noise profile');
           return null;
         }
       }
 
       const profile = this.aiNoiseReduction.getNoiseProfile();
-      console.log('[AudioEngine] Noise profile learned successfully');
+      logger.info('[AudioEngine] Noise profile learned successfully');
       return profile;
     } catch (error) {
-      console.error('[AudioEngine] Noise profile learning failed:', error);
+      logger.error('[AudioEngine] Noise profile learning failed:', { error });
       return null;
     }
   }
@@ -1317,7 +1318,7 @@ export class AudioEngine {
     autoLearn: boolean = true
   ): AudioBuffer | null {
     if (!this.aiNoiseReduction) {
-      console.warn('[AudioEngine] AINoiseReduction not initialized');
+      logger.warn('[AudioEngine] AINoiseReduction not initialized');
       return null;
     }
 
@@ -1330,7 +1331,7 @@ export class AudioEngine {
 
       // Auto-learn noise profile if requested and no profile exists
       if (autoLearn && !this.aiNoiseReduction.getNoiseProfile()) {
-        console.log('[AudioEngine] Auto-learning noise profile...');
+        logger.debug('[AudioEngine] Auto-learning noise profile...');
         this.aiNoiseReduction.autoLearnNoiseProfile(audioBuffer);
       }
 
@@ -1338,7 +1339,7 @@ export class AudioEngine {
       const processedBuffer = this.aiNoiseReduction.processAudio(audioBuffer);
       const metrics = this.aiNoiseReduction.getMetrics();
 
-      console.log('[AudioEngine] Noise reduction applied:', {
+      logger.info('[AudioEngine] Noise reduction applied:', {
         preset,
         noiseReduced: metrics.noiseReduced.toFixed(2) + ' dB',
         clicksRemoved: metrics.clicksRemoved,
@@ -1348,7 +1349,7 @@ export class AudioEngine {
 
       return processedBuffer;
     } catch (error) {
-      console.error('[AudioEngine] Noise reduction failed:', error);
+      logger.error('[AudioEngine] Noise reduction failed:', { error });
       return null;
     }
   }
@@ -1361,7 +1362,7 @@ export class AudioEngine {
     sensitivity: 'low' | 'medium' | 'high' = 'medium'
   ): AudioBuffer | null {
     if (!this.aiNoiseReduction) {
-      console.warn('[AudioEngine] AINoiseReduction not initialized');
+      logger.warn('[AudioEngine] AINoiseReduction not initialized');
       return null;
     }
 
@@ -1383,7 +1384,7 @@ export class AudioEngine {
       const processedBuffer = this.aiNoiseReduction.processAudio(audioBuffer);
       const metrics = this.aiNoiseReduction.getMetrics();
 
-      console.log('[AudioEngine] Click/pop removal complete:', {
+      logger.info('[AudioEngine] Click/pop removal complete:', {
         sensitivity,
         clicksRemoved: metrics.clicksRemoved,
         processingTime: metrics.processingTime.toFixed(2) + ' ms',
@@ -1397,7 +1398,7 @@ export class AudioEngine {
 
       return processedBuffer;
     } catch (error) {
-      console.error('[AudioEngine] Click/pop removal failed:', error);
+      logger.error('[AudioEngine] Click/pop removal failed:', { error });
       return null;
     }
   }
@@ -1428,7 +1429,7 @@ export class AudioEngine {
   clearNoiseProfile(): void {
     if (this.aiNoiseReduction) {
       this.aiNoiseReduction.clearNoiseProfile();
-      console.log('[AudioEngine] Noise profile cleared');
+      logger.debug('[AudioEngine] Noise profile cleared');
     }
   }
 
@@ -1450,7 +1451,7 @@ export class AudioEngine {
   getSmartMixAssistant() {
     // Placeholder for integration with SmartMixAssistant
     // In production, this would be initialized like other AI plugins
-    console.log('[AudioEngine] Smart Mix Assistant access - to be integrated');
+    logger.debug('[AudioEngine] Smart Mix Assistant access - to be integrated');
     return null;
   }
 
@@ -1463,15 +1464,15 @@ export class AudioEngine {
    */
   analyzeEQ(audioBuffer: AudioBuffer): EQAnalysisResult | null {
     if (!this.adaptiveEQ) {
-      console.warn('[AudioEngine] AdaptiveEQ not initialized');
+      logger.warn('[AudioEngine] AdaptiveEQ not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Analyzing audio for EQ recommendations...');
+      logger.info('[AudioEngine] Analyzing audio for EQ recommendations...');
       const analysis = this.adaptiveEQ.analyzeAudio(audioBuffer);
 
-      console.log('[AudioEngine] EQ Analysis complete:', {
+      logger.info('[AudioEngine] EQ Analysis complete:', {
         resonances: analysis.resonances.length,
         maskingIssues: analysis.maskingIssues.length,
         problems: analysis.problems.length,
@@ -1481,7 +1482,7 @@ export class AudioEngine {
 
       return analysis;
     } catch (error) {
-      console.error('[AudioEngine] EQ analysis failed:', error);
+      logger.error('[AudioEngine] EQ analysis failed:', { error });
       return null;
     }
   }
@@ -1491,21 +1492,21 @@ export class AudioEngine {
    */
   autoEQForClarity(audioBuffer: AudioBuffer): EQAnalysisResult['recommendations'] | null {
     if (!this.adaptiveEQ) {
-      console.warn('[AudioEngine] AdaptiveEQ not initialized');
+      logger.warn('[AudioEngine] AdaptiveEQ not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Applying auto-EQ for clarity...');
+      logger.info('[AudioEngine] Applying auto-EQ for clarity...');
       const recommendations = this.adaptiveEQ.autoEQForClarity(audioBuffer);
 
-      console.log('[AudioEngine] Auto-EQ complete:', {
+      logger.info('[AudioEngine] Auto-EQ complete:', {
         recommendations: recommendations.length,
       });
 
       return recommendations;
     } catch (error) {
-      console.error('[AudioEngine] Auto-EQ failed:', error);
+      logger.error('[AudioEngine] Auto-EQ failed:', { error });
       return null;
     }
   }
@@ -1518,15 +1519,15 @@ export class AudioEngine {
     referenceBuffer: AudioBuffer
   ): ReferenceMatch | null {
     if (!this.adaptiveEQ) {
-      console.warn('[AudioEngine] AdaptiveEQ not initialized');
+      logger.warn('[AudioEngine] AdaptiveEQ not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Matching EQ to reference...');
+      logger.info('[AudioEngine] Matching EQ to reference...');
       const match = this.adaptiveEQ.matchReference(sourceBuffer, referenceBuffer);
 
-      console.log('[AudioEngine] EQ matching complete:', {
+      logger.info('[AudioEngine] EQ matching complete:', {
         matchQuality: match.matchQuality.toFixed(1) + '%',
         recommendations: match.recommendations.length,
         tiltDifference: match.tiltDifference.toFixed(2) + ' dB/oct',
@@ -1534,7 +1535,7 @@ export class AudioEngine {
 
       return match;
     } catch (error) {
-      console.error('[AudioEngine] EQ matching failed:', error);
+      logger.error('[AudioEngine] EQ matching failed:', { error });
       return null;
     }
   }
@@ -1544,16 +1545,16 @@ export class AudioEngine {
    */
   getGenreEQTemplate(genre: GenreEQStyle): GenreEQTemplate | null {
     if (!this.adaptiveEQ) {
-      console.warn('[AudioEngine] AdaptiveEQ not initialized');
+      logger.warn('[AudioEngine] AdaptiveEQ not initialized');
       return null;
     }
 
     try {
       const template = this.adaptiveEQ.getGenreTemplate(genre);
-      console.log(`[AudioEngine] Genre EQ template: ${template.name}`);
+      logger.debug(`[AudioEngine] Genre EQ template: ${template.name}`);
       return template;
     } catch (error) {
-      console.error('[AudioEngine] Failed to get genre template:', error);
+      logger.error('[AudioEngine] Failed to get genre template:', { error });
       return null;
     }
   }
@@ -1563,22 +1564,22 @@ export class AudioEngine {
    */
   getDynamicEQ(audioBuffer: AudioBuffer): ReturnType<AdaptiveEQ['getDynamicEQ']> | null {
     if (!this.adaptiveEQ) {
-      console.warn('[AudioEngine] AdaptiveEQ not initialized');
+      logger.warn('[AudioEngine] AdaptiveEQ not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Analyzing for dynamic EQ...');
+      logger.info('[AudioEngine] Analyzing for dynamic EQ...');
       const dynamicEQ = this.adaptiveEQ.getDynamicEQ(audioBuffer);
 
-      console.log('[AudioEngine] Dynamic EQ analysis complete:', {
+      logger.info('[AudioEngine] Dynamic EQ analysis complete:', {
         loudSections: dynamicEQ.loudSections.length + ' recommendations',
         quietSections: dynamicEQ.quietSections.length + ' recommendations',
       });
 
       return dynamicEQ;
     } catch (error) {
-      console.error('[AudioEngine] Dynamic EQ analysis failed:', error);
+      logger.error('[AudioEngine] Dynamic EQ analysis failed:', { error });
       return null;
     }
   }
@@ -1599,20 +1600,20 @@ export class AudioEngine {
    */
   async detectBPM(audioBuffer: AudioBuffer): Promise<{ bpm: number; confidence: number } | null> {
     if (!this.beatAnalyzer) {
-      console.warn('[AudioEngine] BeatAnalyzer not initialized');
+      logger.warn('[AudioEngine] BeatAnalyzer not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Detecting BPM...');
+      logger.info('[AudioEngine] Detecting BPM...');
       const analysis = await this.beatAnalyzer.analyzeBeat(audioBuffer);
-      console.log('[AudioEngine] BPM detected:', analysis.bpm, 'confidence:', analysis.confidence.toFixed(3));
+      logger.info('[AudioEngine] BPM detected:', { bpm: analysis.bpm, confidence: analysis.confidence.toFixed(3) });
       return {
         bpm: analysis.bpm,
         confidence: analysis.confidence
       };
     } catch (error) {
-      console.error('[AudioEngine] BPM detection failed:', error);
+      logger.error('[AudioEngine] BPM detection failed:', { error });
       return null;
     }
   }
@@ -1622,14 +1623,14 @@ export class AudioEngine {
    */
   async analyzeBeat(audioBuffer: AudioBuffer): Promise<BeatAnalysisResult | null> {
     if (!this.beatAnalyzer) {
-      console.warn('[AudioEngine] BeatAnalyzer not initialized');
+      logger.warn('[AudioEngine] BeatAnalyzer not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Analyzing beats...');
+      logger.info('[AudioEngine] Analyzing beats...');
       const analysis = await this.beatAnalyzer.analyzeBeat(audioBuffer);
-      console.log('[AudioEngine] Beat analysis complete:', {
+      logger.info('[AudioEngine] Beat analysis complete:', {
         bpm: analysis.bpm,
         timeSignature: `${analysis.timeSignature.numerator}/${analysis.timeSignature.denominator}`,
         beats: analysis.beats.length,
@@ -1637,7 +1638,7 @@ export class AudioEngine {
       });
       return analysis;
     } catch (error) {
-      console.error('[AudioEngine] Beat analysis failed:', error);
+      logger.error('[AudioEngine] Beat analysis failed:', { error });
       return null;
     }
   }
@@ -1650,12 +1651,12 @@ export class AudioEngine {
     options: QuantizeOptions
   ): Promise<AudioBuffer | null> {
     if (!this.beatAnalyzer) {
-      console.warn('[AudioEngine] BeatAnalyzer not initialized');
+      logger.warn('[AudioEngine] BeatAnalyzer not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Quantizing audio...', options);
+      logger.info('[AudioEngine] Quantizing audio...', { options });
 
       // First analyze beats
       const beatAnalysis = await this.beatAnalyzer.analyzeBeat(audioBuffer);
@@ -1663,10 +1664,10 @@ export class AudioEngine {
       // Then quantize
       const quantized = await this.beatAnalyzer.quantizeAudio(audioBuffer, beatAnalysis, options);
 
-      console.log('[AudioEngine] Quantization complete');
+      logger.info('[AudioEngine] Quantization complete');
       return quantized;
     } catch (error) {
-      console.error('[AudioEngine] Quantization failed:', error);
+      logger.error('[AudioEngine] Quantization failed:', { error });
       return null;
     }
   }
@@ -1676,21 +1677,21 @@ export class AudioEngine {
    */
   async extractMIDI(audioBuffer: AudioBuffer): Promise<MIDIExtractionResult | null> {
     if (!this.beatAnalyzer) {
-      console.warn('[AudioEngine] BeatAnalyzer not initialized');
+      logger.warn('[AudioEngine] BeatAnalyzer not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Extracting MIDI...');
+      logger.info('[AudioEngine] Extracting MIDI...');
       const result = await this.beatAnalyzer.extractMIDI(audioBuffer);
-      console.log('[AudioEngine] MIDI extraction complete:', {
+      logger.info('[AudioEngine] MIDI extraction complete:', {
         notes: result.notes.length,
         key: result.key,
         scale: result.scale
       });
       return result;
     } catch (error) {
-      console.error('[AudioEngine] MIDI extraction failed:', error);
+      logger.error('[AudioEngine] MIDI extraction failed:', { error });
       return null;
     }
   }
@@ -1700,20 +1701,20 @@ export class AudioEngine {
    */
   async detectKey(audioBuffer: AudioBuffer): Promise<{ key: string; scale: string } | null> {
     if (!this.beatAnalyzer) {
-      console.warn('[AudioEngine] BeatAnalyzer not initialized');
+      logger.warn('[AudioEngine] BeatAnalyzer not initialized');
       return null;
     }
 
     try {
-      console.log('[AudioEngine] Detecting key...');
+      logger.info('[AudioEngine] Detecting key...');
       const midiResult = await this.beatAnalyzer.extractMIDI(audioBuffer);
-      console.log('[AudioEngine] Key detected:', midiResult.key, midiResult.scale);
+      logger.info('[AudioEngine] Key detected:', { key: midiResult.key, scale: midiResult.scale });
       return {
         key: midiResult.key,
         scale: midiResult.scale
       };
     } catch (error) {
-      console.error('[AudioEngine] Key detection failed:', error);
+      logger.error('[AudioEngine] Key detection failed:', { error });
       return null;
     }
   }

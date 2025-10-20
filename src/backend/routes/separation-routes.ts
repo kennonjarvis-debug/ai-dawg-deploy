@@ -165,9 +165,8 @@ router.delete('/cancel/:jobId', async (req: Request, res: Response) => {
     const { jobId } = req.params;
     const userId = (req as any).user?.id;
 
-    // Verify user owns this job
-    const status = await getSeparationJobStatus(jobId);
     // TODO: Check if userId matches job owner
+    const status = await getSeparationJobStatus(jobId);
 
     await cancelSeparationJob(jobId);
 
@@ -201,7 +200,7 @@ router.get('/history', async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 20;
 
     // TODO: Query database for user's separation history
-    const jobs = []; // await separationHistoryService.getUserHistory(userId, page, limit);
+    const jobs = [];
 
     res.json({
       success: true,
@@ -336,9 +335,6 @@ router.post('/batch', upload.array('audio', 10), async (req: Request, res: Respo
 router.get('/stats', async (req: Request, res: Response) => {
   try {
     // TODO: Add admin authentication check
-    // if (!req.user?.isAdmin) {
-    //   return res.status(403).json({ error: 'Admin access required' });
-    // }
 
     const stats = await getSeparationQueueStats();
 
@@ -426,9 +422,7 @@ async function uploadAudioToStorage(file: Express.Multer.File): Promise<string> 
       mimetype: file.mimetype,
     });
 
-    // In production:
-    // const s3Result = await s3Service.uploadFile(file.buffer, fileName, file.mimetype);
-    // return s3Result.url;
+    // TODO: In production, use S3 service for file storage
 
     return mockUrl;
   } catch (error: any) {

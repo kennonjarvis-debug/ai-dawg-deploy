@@ -18,10 +18,8 @@ const analyzeTrackSchema = z.object({
   artistReference: z.string().optional(), // e.g., "Morgan Wallen"
 });
 
-// Middleware to extract userId (mock for now)
-// In production, this would come from JWT authentication
+// TODO: Extract userId from JWT token
 function getUserId(req: Request): string {
-  // TODO: Extract from JWT token
   return (req.headers['x-user-id'] as string) || 'user-123';
 }
 
@@ -41,13 +39,7 @@ router.post('/:trackId/analyze', async (req: Request, res: Response) => {
       trackType: params.trackType,
     });
 
-    // TODO: In production, this would:
-    // 1. Fetch track from database to verify ownership
-    // 2. Load audio buffer from storage (S3, local file, etc.)
-    // 3. Analyze audio using metadataAnalyzer
-    // 4. Update track record in database with metadata
-    //
-    // For now, returning a mock response showing the expected structure
+    // TODO: Implement full audio analysis pipeline (fetch from DB, load audio, analyze, update DB)
 
     // Simulated metadata (would be generated from actual audio analysis)
     const mockMetadata = {
@@ -91,11 +83,7 @@ router.post('/:trackId/analyze', async (req: Request, res: Response) => {
       analyzedAt: new Date().toISOString(),
     };
 
-    // TODO: Save to database
-    // await prisma.track.update({
-    //   where: { id: trackId },
-    //   data: { metadata: mockMetadata }
-    // });
+    // TODO: Save metadata to database
 
     logger.info('Track analysis complete', {
       trackId,
@@ -141,13 +129,8 @@ router.get('/:trackId/metadata', async (req: Request, res: Response) => {
 
     logger.info('Track metadata requested', { trackId, userId });
 
-    // TODO: Fetch from database
-    // const track = await prisma.track.findUnique({
-    //   where: { id: trackId },
-    //   select: { metadata: true }
-    // });
+    // TODO: Fetch track metadata from database
 
-    // Mock response for now
     res.json({
       success: true,
       metadata: null, // Would be track.metadata from database
@@ -178,11 +161,7 @@ router.put('/:trackId/metadata', async (req: Request, res: Response) => {
 
     logger.info('Track metadata update requested', { trackId, userId });
 
-    // TODO: Update in database
-    // await prisma.track.update({
-    //   where: { id: trackId },
-    //   data: { metadata }
-    // });
+    // TODO: Update track metadata in database
 
     logger.info('Track metadata updated', { trackId });
 
@@ -219,12 +198,7 @@ router.post('/:trackId/detect-style', async (req: Request, res: Response) => {
     });
 
     // TODO: Fetch track metadata from database
-    // const track = await prisma.track.findUnique({
-    //   where: { id: trackId },
-    //   select: { metadata: true }
-    // });
 
-    // Mock metadata for now
     const mockMetadata = {
       style: {
         genre: 'country' as const,

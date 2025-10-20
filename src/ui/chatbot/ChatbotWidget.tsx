@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChatAssistant, ChatMessage } from './chat_assistant';
 import { SAMPLE_PROMPTS } from './prompt_templates';
 import { useAuth } from '../../contexts/AuthContext';
+import { logger } from '../../backend/utils/logger';
 import { LyricsWidget, LyricsSegment } from '../recording/LyricsWidget';
 
 // Live coaching types
@@ -89,13 +90,9 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
 
       try {
         // TODO: Replace with actual API call to fetch subscription
-        // const response = await apiClient.get('/api/v1/billing/subscription');
-        // setSubscriptionTier(response.tier);
-
-        // For now, default to free for authenticated users
         setSubscriptionTier('free');
       } catch (error) {
-        console.error('Failed to fetch subscription:', error);
+        logger.error('Failed to fetch subscription:', { error });
         setSubscriptionTier('free');
       }
     };
@@ -229,7 +226,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
         localStorage.setItem('chatbot_usage', JSON.stringify({ date: today, count: newCount }));
       }
     } catch (error) {
-      console.error('Chatbot error:', error);
+      logger.error('Chatbot error:', { error });
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
@@ -318,7 +315,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
       };
 
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        logger.error('Speech recognition error:', { error: event.error });
         if (event.error === 'no-speech') {
           // Don't stop on no-speech, just continue
           return;

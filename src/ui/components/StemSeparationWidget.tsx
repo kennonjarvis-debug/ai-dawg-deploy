@@ -41,18 +41,11 @@ export const StemSeparationWidget: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const animationFrameRef = useRef<number>();
 
-  // WebSocket connection for progress updates
+  // Poll API for progress updates
+  // TODO: Connect to WebSocket for real-time updates
   useEffect(() => {
     if (!jobId) return;
 
-    // TODO: Connect to WebSocket for real-time updates
-    // const socket = io(WS_URL);
-    // socket.on('separation:progress', handleProgress);
-    // socket.on('separation:completed', handleCompleted);
-    // socket.on('separation:failed', handleFailed);
-    // return () => socket.disconnect();
-
-    // For now, poll the API
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(`/api/separation/status/${jobId}`);

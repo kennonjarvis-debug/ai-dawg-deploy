@@ -49,12 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const currentUser = await apiClient.getCurrentUser();
           setUser(currentUser);
 
-          // TEMPORARILY DISABLED: WebSocket for real-time features
-          // TODO: Fix WebSocket handshake issue (see src/api/websocket/server.ts)
-          // const token = apiClient.getToken();
-          // if (token) {
-          //   wsClient.connect(token);
-          // }
+          // TODO: Fix WebSocket handshake issue and enable real-time features (see src/api/websocket/server.ts)
         } catch (error) {
           console.warn('Backend not available - running in demo mode:', error);
           apiClient.clearTokens();
@@ -92,9 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(response.user);
       });
 
-      // TEMPORARILY DISABLED: WebSocket for real-time features
-      // TODO: Fix WebSocket handshake issue (see src/api/websocket/server.ts)
-      // wsClient.connect(response.token);
+      // TODO: Fix WebSocket handshake issue and enable real-time features (see src/api/websocket/server.ts)
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -109,9 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.register(data, rememberMe);
       setUser(response.user);
 
-      // TEMPORARILY DISABLED: WebSocket for real-time features
-      // TODO: Fix WebSocket handshake issue (see src/api/websocket/server.ts)
-      // wsClient.connect(response.token);
+      // TODO: Fix WebSocket handshake issue and enable real-time features (see src/api/websocket/server.ts)
     } finally {
       setIsLoading(false);
     }
