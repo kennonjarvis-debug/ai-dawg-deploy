@@ -1,0 +1,232 @@
+🔍 DAWG AI Code Analysis Report
+================================
+
+📊 Lines of Code by Directory
+------------------------------
+   56692 total
+     985 src/lib/audio/AudioEngine.ts
+     848 src/lib/components/ai/AIAudioPanel.svelte
+     765 src/lib/voice/VoiceInterface.ts
+     704 src/lib/audio/Track.ts
+     700 src/services/VoiceController.ts
+     673 src/lib/audio/plugins/wrappers/AUPluginWrapper.ts
+     665 src/lib/audio/plugins/wrappers/CLAPPluginWrapper.ts
+     631 src/utils/vocalEffects.ts
+     618 src/lib/audio/plugins/PluginInstanceManager.ts
+     598 src/routes/test/components/+page.svelte
+     591 src/lib/audio/plugins/ai/EngineerTraining.ts
+     584 src/lib/audio/plugins/bridges/MockAUBridge.ts
+     577 src/lib/components/cloud/ProjectManager.svelte
+     555 src/integrations/buffer.ts
+     549 src/lib/audio/plugins/scanner/utils.ts
+     530 src/lib/audio/plugins/bridges/MockCLAPBridge.ts
+     526 src/routes/daw/+page.svelte
+     522 src/lib/audio/midi/MIDIClip.ts
+     517 src/lib/midi/MIDIEditor.ts
+
+📏 Largest Files (Top 15)
+-------------------------
+56692  lines: total
+985    lines: src/lib/audio/AudioEngine.ts
+848    lines: src/lib/components/ai/AIAudioPanel.svelte
+765    lines: src/lib/voice/VoiceInterface.ts
+704    lines: src/lib/audio/Track.ts
+700    lines: src/services/VoiceController.ts
+673    lines: src/lib/audio/plugins/wrappers/AUPluginWrapper.ts
+665    lines: src/lib/audio/plugins/wrappers/CLAPPluginWrapper.ts
+631    lines: src/utils/vocalEffects.ts
+618    lines: src/lib/audio/plugins/PluginInstanceManager.ts
+598    lines: src/routes/test/components/+page.svelte
+591    lines: src/lib/audio/plugins/ai/EngineerTraining.ts
+584    lines: src/lib/audio/plugins/bridges/MockAUBridge.ts
+577    lines: src/lib/components/cloud/ProjectManager.svelte
+555    lines: src/integrations/buffer.ts
+
+📁 File Count by Directory
+--------------------------
+src/lib/ai                              :       13 files
+src/lib/api                             :        6 files
+src/lib/audio                           :       91 files
+src/lib/components                      :       11 files
+src/lib/design-system                   :       31 files
+src/lib/events                          :        5 files
+src/lib/middleware                      :        1 files
+src/lib/midi                            :        4 files
+src/lib/stores                          :        2 files
+src/lib/testing                         :        1 files
+src/lib/tracks                          :        7 files
+src/lib/types                           :        1 files
+src/lib/utils                           :        1 files
+src/lib/voice                           :        5 files
+src/routes/daw                          :        1 files
+src/routes/midi-demo                    :        1 files
+src/routes/pricing                      :        1 files
+src/routes/test                         :        1 files
+src/routes/tracks                       :        1 files
+src/routes/voice-demo                   :        1 files
+
+📝 TODO/FIXME Comments
+----------------------
+36 TODO/FIXME comments found
+
+🐛 Console.log Usage (should use logger)
+----------------------------------------
+46 console statements found
+
+⚠️  Type Safety Issues
+---------------------
+104 ": any" type annotations
+44 "as any" type assertions
+
+📦 Import Analysis
+------------------
+Top 10 most imported modules:
+  43 $lib/utils/logger
+  30 ../../types/core
+  29 tone
+  17 vitest
+  16 ./Effect
+  12 ./types
+  11 svelte
+   8 ../types/core
+   7 svelte/store
+   7 ../types
+
+🔧 Large Functions (>100 lines)
+--------------------------------
+src/core/eventBus.ts::352 lines - 
+src/core/metricsCollector.ts::413 lines - 
+src/core/agentCoordination.ts::452 lines - 
+src/core/transport.ts:55:152 lines - export const useTransport = create<TransportStore>((set, get) => ({
+src/core/transport.ts:55:164 lines - export const useTransport = create<TransportStore>((set, get) => ({
+src/core/store.ts:39:185 lines - export const useTrackStore = create<TrackStore>((set, get) => ({
+src/visualizers/EQCurveViz.ts::311 lines - 
+src/visualizers/WaveformViz.ts::360 lines - 
+src/visualizers/AudioVisualizer.ts::216 lines - 
+src/visualizers/PitchViz.ts::340 lines - 
+
+🌀 Complexity Indicators
+------------------------
+Files with high if/else/switch density:
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+scripts/code-analysis.sh: line 76: [: 0
+0: integer expression expected
+src/lib/audio/plugins/scanner/utils.ts                      : 88 conditionals in      549 lines (16.02% density)
+src/services/VoiceController.ts                             : 50 conditionals in      700 lines (7.14% density)
+src/lib/voice/VoiceInterface.ts                             : 49 conditionals in      765 lines (6.40% density)
+src/routes/daw/+page.svelte                                 : 46 conditionals in      526 lines (8.74% density)
+src/lib/testing/bridge.ts                                   : 46 conditionals in      381 lines (12.07% density)
+src/lib/audio/plugins/wrappers/AUPluginWrapper.ts           : 44 conditionals in      673 lines (6.53% density)
+src/lib/ai/nlu/CommandParser.ts                             : 41 conditionals in      429 lines (9.55% density)
+src/integrations/buffer.ts                                  : 41 conditionals in      555 lines (7.38% density)
+src/lib/audio/midi/MIDIManager.ts                           : 40 conditionals in      456 lines (8.77% density)
+src/lib/audio/plugins/PluginInstanceManager.ts              : 39 conditionals in      618 lines (6.31% density)
+src/lib/audio/plugins/scanner/PluginScanner.ts              : 37 conditionals in      344 lines (10.75% density)
+src/lib/audio/AudioEngine.ts                                : 37 conditionals in      985 lines (3.75% density)
+src/lib/components/ai/AIAudioPanel.svelte                   : 34 conditionals in      848 lines (4.00% density)
+src/core/eventBus.ts                                        : 34 conditionals in      367 lines (9.26% density)
+src/lib/components/ai/VoiceMemoUpload.svelte                : 33 conditionals in      480 lines (6.87% density)
+
+🔁 Potential Code Duplication
+-----------------------------
+Files with similar names (potential duplication):
++page.svelte
+eventBus.ts
+index.ts
+types.ts
+
+✅ Analysis complete!
+
+💡 Next Steps:
+  1. Review largest files for potential splitting
+  2. Replace remaining console.log with logger
+  3. Fix 'any' types for better type safety
+  4. Consolidate duplicate code patterns
+  5. Break down large functions (>100 lines)
