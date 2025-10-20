@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMilestones } from '@/src/hooks/useMilestones';
-import type { Milestone } from '@/lib/types';
+import type { Milestone } from '$lib/types';
 
 interface MilestoneTrackerProps {
   userId?: string;

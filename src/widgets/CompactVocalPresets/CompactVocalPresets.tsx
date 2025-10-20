@@ -7,8 +7,8 @@
 
 import { useState, useEffect } from 'react';
 import { Mic, Zap } from 'lucide-react';
-import { useTrackStore } from '@/src/core/store';
-import { usePlayback } from '@/src/core/usePlayback';
+import { useTrackStore } from '$lib/../core/store';
+import { usePlayback } from '$lib/../core/usePlayback';
 import { VOCAL_PRESETS } from '@/src/utils/vocalEffects';
 import styles from './CompactVocalPresets.module.css';
 

@@ -7,6 +7,7 @@
 import * as Tone from 'tone';
 import type { Decibels } from '../types/core';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Master bus configuration
  */
@@ -206,7 +207,7 @@ export class MasterBus {
 	setLimiterThreshold(threshold: Decibels): void {
 		// Limiter threshold is set at construction, recreate if needed
 		// For now, log warning that this requires recreation
-		console.warn('Limiter threshold cannot be changed dynamically. Create a new MasterBus instance.');
+		logger.warn('Limiter threshold cannot be changed dynamically. Create a new MasterBus instance.');
 	}
 
 	/**

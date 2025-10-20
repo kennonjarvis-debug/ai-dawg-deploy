@@ -1,3 +1,5 @@
+import { logger } from '$lib/utils/logger';
+
 /**
  * Event Bus - DAWG AI
  * Centralized event system for inter-module communication
@@ -112,7 +114,7 @@ export class EventBus {
 				try {
 					handler(eventData);
 				} catch (error) {
-					console.error(`Error in event handler for ${type}:`, error);
+					logger.error(`Error in event handler for ${type}:`, error);
 				}
 			});
 		}
@@ -221,10 +223,10 @@ export class EventBus {
 	 */
 	debug(): void {
 		console.group('EventBus Debug Info');
-		console.log('Total event types with listeners:', this.listeners.size);
+		logger.info('Total event types with listeners:', this.listeners.size);
 
 		this.listeners.forEach((handlers, type) => {
-			console.log(`  ${type}: ${handlers.size} listener(s)`);
+			logger.info(`  ${type}: ${handlers.size} listener(s)`);
 		});
 
 		console.groupEnd();

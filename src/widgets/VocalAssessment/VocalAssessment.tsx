@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Mic, ChevronRight, ChevronLeft, Check } from 'lucide-react';
-import { usePitchDetection } from '@/src/core/usePitchDetection';
+import { usePitchDetection } from '$lib/../core/usePitchDetection';
 import styles from './VocalAssessment.module.css';
 
 interface VocalAssessmentProps {

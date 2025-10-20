@@ -7,8 +7,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { UserMilestones, Milestone } from '@/lib/types';
+import type { UserMilestones, Milestone } from '$lib/types';
 
+import { logger } from '$lib/utils/logger';
 interface UseMilestonesResult {
   milestones: UserMilestones | null;
   loading: boolean;
@@ -72,7 +73,7 @@ export function useMilestones(userId?: string): UseMilestonesResult {
         throw new Error(result.error || 'Unknown error');
       }
     } catch (err: any) {
-      console.error('[useMilestones] Load error:', err);
+      logger.error('[useMilestones] Load error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -122,7 +123,7 @@ export function useMilestones(userId?: string): UseMilestonesResult {
           throw new Error(result.error || 'Unknown error');
         }
       } catch (err: any) {
-        console.error('[useMilestones] Unlock error:', err);
+        logger.error('[useMilestones] Unlock error:', err);
         setError(err.message);
         return false;
       }
@@ -172,7 +173,7 @@ export function useMilestones(userId?: string): UseMilestonesResult {
           throw new Error(result.error || 'Unknown error');
         }
       } catch (err: any) {
-        console.error('[useMilestones] Streak update error:', err);
+        logger.error('[useMilestones] Streak update error:', err);
         setError(err.message);
       }
     },

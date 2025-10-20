@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import styles from './ProjectSettingsModal.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface Project {
   id: string;
   name: string;
@@ -66,7 +67,7 @@ export function ProjectSettingsModal({
           setError(data.error || 'Failed to load project');
         }
       } catch (err) {
-        console.error('Failed to load project:', err);
+        logger.error('Failed to load project:', err);
         setError('Failed to load project');
       } finally {
         setLoading(false);
@@ -126,7 +127,7 @@ export function ProjectSettingsModal({
         setError(data.error || 'Failed to save project');
       }
     } catch (err) {
-      console.error('Failed to save project:', err);
+      logger.error('Failed to save project:', err);
       setError('Failed to save project');
     } finally {
       setSaving(false);

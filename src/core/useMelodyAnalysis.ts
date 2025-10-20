@@ -10,7 +10,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { usePitchDetection } from './usePitchDetection';
 import { MelodyAnalyzer } from '@/src/utils/melodyAnalyzer';
-import { MelodyAnalysis, VocalCharacteristics } from '@/lib/ai/melody-types';
+import { MelodyAnalysis, VocalCharacteristics } from '$lib/ai/melody-types';
 
 export interface UseMelodyAnalysisOptions {
   /** Audio context */

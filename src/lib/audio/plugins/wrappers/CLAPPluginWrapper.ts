@@ -25,6 +25,7 @@
 import { BasePluginWrapper } from './BasePluginWrapper';
 import type { PluginMetadata } from '../types';
 
+import { logger } from '$lib/utils/logger';
 /**
  * CLAP Native Bridge Interface
  * This is what a native implementation must provide
@@ -231,7 +232,7 @@ export class CLAPPluginWrapper extends BasePluginWrapper {
     }
 
     try {
-      console.log(`[CLAPPlugin] Loading: ${this.metadata.path}`);
+      logger.info(`[CLAPPlugin] Loading: ${this.metadata.path}`);
 
       // Load plugin via native bridge
       this.pluginHandle = await this.nativeBridge.loadPlugin(this.metadata.path);
@@ -281,9 +282,9 @@ export class CLAPPluginWrapper extends BasePluginWrapper {
         this.applyParameter(id, value);
       }
 
-      console.log(`[CLAPPlugin] Loaded: ${this.metadata.name}`);
+      logger.info(`[CLAPPlugin] Loaded: ${this.metadata.name}`);
     } catch (error) {
-      console.error(`[CLAPPlugin] Failed to load: ${this.metadata.name}`, error);
+      logger.error(`[CLAPPlugin] Failed to load: ${this.metadata.name}`, error);
       throw error;
     }
   }
@@ -365,13 +366,13 @@ export class CLAPPluginWrapper extends BasePluginWrapper {
    */
   protected applyParameter(parameterId: string, value: number): void {
     if (!this.nativeBridge || !this.pluginHandle) {
-      console.warn('[CLAPPlugin] Cannot apply parameter: plugin not loaded');
+      logger.warn('[CLAPPlugin] Cannot apply parameter: plugin not loaded');
       return;
     }
 
     const clapParamId = this.parameterMapping.get(parameterId);
     if (clapParamId === undefined) {
-      console.warn(`[CLAPPlugin] Parameter not mapped: ${parameterId}`);
+      logger.warn(`[CLAPPlugin] Parameter not mapped: ${parameterId}`);
       return;
     }
 
@@ -491,9 +492,9 @@ export class CLAPPluginWrapper extends BasePluginWrapper {
       this.workletNode = null;
       this.parameterMapping.clear();
 
-      console.log(`[CLAPPlugin] Unloaded: ${this.metadata.name}`);
+      logger.info(`[CLAPPlugin] Unloaded: ${this.metadata.name}`);
     } catch (error) {
-      console.error(`[CLAPPlugin] Error unloading: ${this.metadata.name}`, error);
+      logger.error(`[CLAPPlugin] Error unloading: ${this.metadata.name}`, error);
       throw error;
     }
   }

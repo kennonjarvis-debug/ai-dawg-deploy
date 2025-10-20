@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useEffects } from '@/src/core/useEffects';
+import { useEffects } from '$lib/../core/useEffects';
 import { EQ_PRESETS } from '@/src/utils/audioEffects';
 import { Knob } from '@/src/components/Knob';
 import { EQCurve, Spectrum } from '@/src/visualizers';

@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import styles from './ProjectList.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface Project {
   id: string;
   name: string;
@@ -64,7 +65,7 @@ export function ProjectList({
         setError(data.error || 'Failed to load projects');
       }
     } catch (err) {
-      console.error('Failed to fetch projects:', err);
+      logger.error('Failed to fetch projects:', err);
       setError('Failed to load projects');
     } finally {
       setLoading(false);
@@ -89,7 +90,7 @@ export function ProjectList({
         setError(data.error || 'Failed to delete project');
       }
     } catch (err) {
-      console.error('Failed to delete project:', err);
+      logger.error('Failed to delete project:', err);
       setError('Failed to delete project');
     }
   };

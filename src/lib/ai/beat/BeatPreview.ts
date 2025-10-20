@@ -6,6 +6,7 @@
 import * as Tone from 'tone';
 import type { GeneratedBeat } from './BeatGenerator';
 
+import { logger } from '$lib/utils/logger';
 export interface BeatMetadata {
 	id: string;
 	title: string;
@@ -48,7 +49,7 @@ export class BeatPreview {
 		});
 
 		await Promise.all(loadPromises);
-		console.log(`✅ Pre-loaded ${beats.length} beat candidates`);
+		logger.info(`✅ Pre-loaded ${beats.length} beat candidates`);
 	}
 
 	/**

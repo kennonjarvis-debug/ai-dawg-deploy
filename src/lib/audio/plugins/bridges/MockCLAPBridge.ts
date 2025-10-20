@@ -15,6 +15,7 @@
  */
 
 import type {
+import { logger } from '$lib/utils/logger';
   CLAPNativeBridge,
   CLAPPluginHandle,
   CLAPDescriptor,
@@ -219,7 +220,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
    * Load a CLAP plugin
    */
   async loadPlugin(path: string, pluginIndex?: number): Promise<CLAPPluginHandle> {
-    console.log(`[MockCLAPBridge] Loading plugin: ${path}`);
+    logger.info(`[MockCLAPBridge] Loading plugin: ${path}`);
 
     const descriptor = this.mockPluginLibrary.get(path);
     if (!descriptor) {
@@ -248,7 +249,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
 
     this.plugins.set(handle, mockPlugin);
 
-    console.log(`[MockCLAPBridge] Loaded plugin: ${descriptor.name} (handle: ${handle})`);
+    logger.info(`[MockCLAPBridge] Loaded plugin: ${descriptor.name} (handle: ${handle})`);
     return handle;
   }
 
@@ -261,7 +262,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
       throw new Error(`Invalid CLAP handle: ${handle}`);
     }
 
-    console.log(`[MockCLAPBridge] Unloading plugin: ${plugin.descriptor.name}`);
+    logger.info(`[MockCLAPBridge] Unloading plugin: ${plugin.descriptor.name}`);
     this.plugins.delete(handle);
   }
 
@@ -287,7 +288,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
     }
 
     plugin.state.initialized = true;
-    console.log(`[MockCLAPBridge] Initialized ${plugin.descriptor.name}`);
+    logger.info(`[MockCLAPBridge] Initialized ${plugin.descriptor.name}`);
     return true;
   }
 
@@ -308,7 +309,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
     plugin.state.activated = true;
     plugin.state.sampleRate = sampleRate;
 
-    console.log(
+    logger.info(
       `[MockCLAPBridge] Activated ${plugin.descriptor.name} at ${sampleRate}Hz, ` +
         `frames: ${minFrames}-${maxFrames}`
     );
@@ -326,7 +327,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
 
     plugin.state.activated = false;
     plugin.state.processing = false;
-    console.log(`[MockCLAPBridge] Deactivated ${plugin.descriptor.name}`);
+    logger.info(`[MockCLAPBridge] Deactivated ${plugin.descriptor.name}`);
   }
 
   /**
@@ -339,7 +340,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
     }
 
     plugin.state.processing = true;
-    console.log(`[MockCLAPBridge] Started processing: ${plugin.descriptor.name}`);
+    logger.info(`[MockCLAPBridge] Started processing: ${plugin.descriptor.name}`);
     return true;
   }
 
@@ -353,7 +354,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
     }
 
     plugin.state.processing = false;
-    console.log(`[MockCLAPBridge] Stopped processing: ${plugin.descriptor.name}`);
+    logger.info(`[MockCLAPBridge] Stopped processing: ${plugin.descriptor.name}`);
   }
 
   /**
@@ -482,7 +483,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
     }
 
     // In real implementation, this would process parameter change events
-    console.log(`[MockCLAPBridge] Flushed ${events.length} events for ${plugin.descriptor.name}`);
+    logger.info(`[MockCLAPBridge] Flushed ${events.length} events for ${plugin.descriptor.name}`);
   }
 
   /**
@@ -500,7 +501,7 @@ export class MockCLAPBridge implements CLAPNativeBridge {
     if (parameters) {
       this.parameterLibrary.set(descriptor.id, parameters);
     }
-    console.log(`[MockCLAPBridge] Added mock CLAP: ${descriptor.name}`);
+    logger.info(`[MockCLAPBridge] Added mock CLAP: ${descriptor.name}`);
   }
 }
 

@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import styles from './ProjectSelector.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface Project {
   id: string;
   name: string;
@@ -71,7 +72,7 @@ export function ProjectSelector({
           setError(data.error || 'Failed to load projects');
         }
       } catch (err) {
-        console.error('Failed to fetch projects:', err);
+        logger.error('Failed to fetch projects:', err);
         setError('Failed to load projects');
       } finally {
         setLoading(false);
@@ -92,7 +93,7 @@ export function ProjectSelector({
           setProjects(data.projects || []);
         }
       } catch (err) {
-        console.error('Failed to refresh projects:', err);
+        logger.error('Failed to refresh projects:', err);
       }
     }
     setShowDropdown(!showDropdown);

@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Plus, Trash2, Sparkles, Copy, Download } from 'lucide-react';
 import styles from './LyricWorkspace.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface LyricSection {
   id: string;
   type: 'verse' | 'chorus' | 'bridge' | 'pre-chorus' | 'outro';
@@ -127,7 +128,7 @@ export function LyricWorkspace({
         setAiSuggestion(random);
       }
     } catch (error) {
-      console.error('Failed to get AI suggestion:', error);
+      logger.error('Failed to get AI suggestion:', error);
     } finally {
       setLoadingSuggestion(false);
     }

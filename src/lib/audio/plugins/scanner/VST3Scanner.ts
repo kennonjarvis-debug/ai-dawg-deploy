@@ -10,6 +10,7 @@
 
 import type { PluginMetadata, PluginScanError } from '../types';
 import {
+import { logger } from '$lib/utils/logger';
   inferCategory,
   inferProcessingType,
   inferUseCases,
@@ -79,7 +80,7 @@ export class VST3Scanner {
     // 4. Extract metadata from the plugin
 
     // For now, this is a stub that would be replaced with actual implementation
-    console.log(`[VST3Scanner] Would scan directory: ${directory}`);
+    logger.info(`[VST3Scanner] Would scan directory: ${directory}`);
 
     // Example: Simulating finding some plugins (for demonstration)
     // In production, this would be replaced with actual file system scanning
@@ -92,7 +93,7 @@ export class VST3Scanner {
         // const entries = await this.readDirectory(dirHandle);
         // ... process entries
       } catch (error) {
-        console.warn('[VST3Scanner] File System Access API not available or denied');
+        logger.warn('[VST3Scanner] File System Access API not available or denied');
       }
     }
 

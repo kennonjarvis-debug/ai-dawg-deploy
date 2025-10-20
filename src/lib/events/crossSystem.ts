@@ -7,6 +7,7 @@
 import type { EventData, EventType } from './eventBus';
 import { eventBus } from './eventBus';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Service Mesh Bridge
  * Enables service-to-service RPC-style communication
@@ -276,7 +277,7 @@ export class WebSocketBridge {
 	 */
 	publishRemote(eventType: EventType, payload: any): void {
 		if (!this.connected || !this.ws) {
-			console.warn('WebSocket not connected');
+			logger.warn('WebSocket not connected');
 			return;
 		}
 
@@ -330,13 +331,13 @@ export class WebSocketBridge {
 				eventBus.emit(message.eventType, message.payload);
 			}
 		} catch (error) {
-			console.error('Failed to parse WebSocket message:', error);
+			logger.error('Failed to parse WebSocket message:', error);
 		}
 	}
 
 	private attemptReconnect(url: string): void {
 		if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-			console.error('Max reconnect attempts reached');
+			logger.error('Max reconnect attempts reached');
 			return;
 		}
 
@@ -344,9 +345,9 @@ export class WebSocketBridge {
 		const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
 
 		setTimeout(() => {
-			console.log(`Reconnecting... (attempt ${this.reconnectAttempts})`);
+			logger.info(`Reconnecting... (attempt ${this.reconnectAttempts})`);
 			this.connect(url).catch((error) => {
-				console.error('Reconnect failed:', error);
+				logger.error('Reconnect failed:', error);
 			});
 		}, delay);
 	}
@@ -406,7 +407,7 @@ export class HTTPBridge {
 					});
 				}
 			} catch (error) {
-				console.error('Polling failed:', error);
+				logger.error('Polling failed:', error);
 			}
 		};
 

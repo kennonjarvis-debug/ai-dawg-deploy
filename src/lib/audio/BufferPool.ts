@@ -7,6 +7,7 @@
 import * as Tone from 'tone';
 import { AudioEngineError, ErrorCode } from './errors';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Buffer pool configuration
  */
@@ -77,7 +78,7 @@ export class BufferPool {
 			this.stats.reuses++;
 
 			if (this.enableLogging) {
-				console.log(
+				logger.info(
 					`BufferPool: Reused buffer (${length} samples, ${channels} ch) - Use count: ${metadata.useCount}`
 				);
 			}
@@ -96,7 +97,7 @@ export class BufferPool {
 		this.stats.allocations++;
 
 		if (this.enableLogging) {
-			console.log(`BufferPool: Allocated new buffer (${length} samples, ${channels} ch)`);
+			logger.info(`BufferPool: Allocated new buffer (${length} samples, ${channels} ch)`);
 		}
 
 		return buffer;
@@ -132,7 +133,7 @@ export class BufferPool {
 		this.stats.releases++;
 
 		if (this.enableLogging) {
-			console.log(
+			logger.info(
 				`BufferPool: Released buffer (${buffer.length} samples, ${buffer.numberOfChannels} ch) - Pool size: ${this.pool.size}`
 			);
 		}
@@ -168,7 +169,7 @@ export class BufferPool {
 			this.stats.evictions++;
 
 			if (this.enableLogging) {
-				console.log(`BufferPool: Evicted oldest buffer - Pool size: ${this.pool.size}`);
+				logger.info(`BufferPool: Evicted oldest buffer - Pool size: ${this.pool.size}`);
 			}
 		}
 	}
@@ -202,7 +203,7 @@ export class BufferPool {
 		this.pool.clear();
 
 		if (this.enableLogging) {
-			console.log('BufferPool: Cleared all buffers');
+			logger.info('BufferPool: Cleared all buffers');
 		}
 	}
 
@@ -232,12 +233,12 @@ export class BufferPool {
 	 */
 	debug(): void {
 		console.group('BufferPool Debug Info');
-		console.log('Statistics:', this.getStats());
-		console.log('\nPooled Buffers:');
+		logger.info('Statistics:', this.getStats());
+		logger.info('\nPooled Buffers:');
 
 		for (const [key, metadata] of this.pool.entries()) {
 			const [length, channels] = key.split('_');
-			console.log(
+			logger.info(
 				`  ${length} samples, ${channels} ch - Use count: ${metadata.useCount}, Last used: ${new Date(metadata.lastUsed).toISOString()}`
 			);
 		}

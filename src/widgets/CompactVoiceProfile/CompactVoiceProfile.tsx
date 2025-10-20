@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Mic2, Plus } from 'lucide-react';
 import styles from './CompactVoiceProfile.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface VoiceProfile {
   id: string;
   name: string;
@@ -31,7 +32,7 @@ export function CompactVoiceProfile() {
         }
       }
     } catch (error) {
-      console.error('Failed to load profiles:', error);
+      logger.error('Failed to load profiles:', error);
     } finally {
       setIsLoading(false);
     }

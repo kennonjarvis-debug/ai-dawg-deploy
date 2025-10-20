@@ -14,6 +14,7 @@
  */
 
 import type {
+import { logger } from '$lib/utils/logger';
   VST3NativeBridge,
   VST3PluginHandle,
   VST3PluginInfo,
@@ -209,7 +210,7 @@ export class MockVST3Bridge implements VST3NativeBridge {
    * Load a VST3 plugin
    */
   async loadPlugin(path: string): Promise<VST3PluginHandle> {
-    console.log(`[MockVST3Bridge] Loading plugin: ${path}`);
+    logger.info(`[MockVST3Bridge] Loading plugin: ${path}`);
 
     // Check if plugin exists in mock library
     const info = this.mockPluginLibrary.get(path);
@@ -239,7 +240,7 @@ export class MockVST3Bridge implements VST3NativeBridge {
 
     this.plugins.set(handle, mockPlugin);
 
-    console.log(`[MockVST3Bridge] Loaded plugin: ${info.name} (handle: ${handle})`);
+    logger.info(`[MockVST3Bridge] Loaded plugin: ${info.name} (handle: ${handle})`);
     return handle;
   }
 
@@ -252,7 +253,7 @@ export class MockVST3Bridge implements VST3NativeBridge {
       throw new Error(`Invalid plugin handle: ${handle}`);
     }
 
-    console.log(`[MockVST3Bridge] Unloading plugin: ${plugin.info.name}`);
+    logger.info(`[MockVST3Bridge] Unloading plugin: ${plugin.info.name}`);
     this.plugins.delete(handle);
   }
 
@@ -284,7 +285,7 @@ export class MockVST3Bridge implements VST3NativeBridge {
     plugin.state.initialized = true;
     plugin.state.sampleRate = sampleRate;
 
-    console.log(
+    logger.info(
       `[MockVST3Bridge] Initialized ${plugin.info.name} at ${sampleRate}Hz, ` +
         `max block size: ${maxBlockSize}`
     );
@@ -304,7 +305,7 @@ export class MockVST3Bridge implements VST3NativeBridge {
     plugin.state.parameters.set(parameterId, clampedValue);
 
     // In real implementation, this would update the VST3 parameter
-    // console.log(
+    // logger.info(
     //   `[MockVST3Bridge] Set parameter ${parameterId} to ${clampedValue} ` +
     //     `on ${plugin.info.name}`
     // );
@@ -400,7 +401,7 @@ export class MockVST3Bridge implements VST3NativeBridge {
     }
 
     plugin.state.active = active;
-    console.log(`[MockVST3Bridge] ${plugin.info.name} active: ${active}`);
+    logger.info(`[MockVST3Bridge] ${plugin.info.name} active: ${active}`);
   }
 
   /**
@@ -415,7 +416,7 @@ export class MockVST3Bridge implements VST3NativeBridge {
    */
   addMockPlugin(path: string, info: VST3PluginInfo): void {
     this.mockPluginLibrary.set(path, info);
-    console.log(`[MockVST3Bridge] Added mock plugin: ${info.name}`);
+    logger.info(`[MockVST3Bridge] Added mock plugin: ${info.name}`);
   }
 }
 

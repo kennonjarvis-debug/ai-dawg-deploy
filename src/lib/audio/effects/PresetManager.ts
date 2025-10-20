@@ -7,6 +7,7 @@
 import type { Effect, EffectConfig } from './Effect';
 import type { UUID, EffectType } from '../../types/core';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Preset definition
  */
@@ -120,7 +121,7 @@ export class PresetManager {
 			try {
 				effect.setParameter(name, value);
 			} catch (error) {
-				console.warn(`Failed to set parameter ${name}:`, error);
+				logger.warn(`Failed to set parameter ${name}:`, error);
 			}
 		});
 	}

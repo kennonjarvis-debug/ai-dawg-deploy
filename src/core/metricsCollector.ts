@@ -13,6 +13,7 @@
 
 import { EventBus, getEventBus } from './eventBus';
 
+import { logger } from '$lib/utils/logger';
 export interface Metric {
   name: string;
   value: number;
@@ -69,7 +70,7 @@ export class MetricsCollector {
    */
   async start(): Promise<void> {
     if (this.started) {
-      console.warn('[MetricsCollector] Already started');
+      logger.warn('[MetricsCollector] Already started');
       return;
     }
 
@@ -85,7 +86,7 @@ export class MetricsCollector {
     }, this.tickIntervalMs);
 
     this.started = true;
-    console.log('[MetricsCollector] Started (tick interval: 30s)');
+    logger.info('[MetricsCollector] Started (tick interval: 30s)');
   }
 
   /**
@@ -103,7 +104,7 @@ export class MetricsCollector {
 
     await this.eventBus.disconnect();
     this.started = false;
-    console.log('[MetricsCollector] Stopped');
+    logger.info('[MetricsCollector] Stopped');
   }
 
   /**
@@ -370,7 +371,7 @@ export class MetricsCollector {
       collector: 'ai-conductor',
     });
 
-    console.log(`[MetricsCollector] Published ${metrics.length} metrics`);
+    logger.info(`[MetricsCollector] Published ${metrics.length} metrics`);
   }
 
   /**

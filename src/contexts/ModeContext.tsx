@@ -15,8 +15,8 @@
  * setMode('learn');
  *
  * // Get current mode config
- * console.log(modeConfig.label); // "Record"
- * console.log(modeConfig.widgets); // ['WaveformDisplay', ...]
+ * logger.info(modeConfig.label); // "Record"
+ * logger.info(modeConfig.widgets); // ['WaveformDisplay', ...]
  * ```
  */
 
@@ -26,6 +26,7 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 import type { WorkspaceMode, ModeContextValue, ModeConfig } from '@/src/types/workspace';
 import { MODE_CONFIGS, WORKSPACE_MODE_STORAGE_KEY, DEFAULT_WORKSPACE_MODE } from '@/src/types/workspace';
 
+import { logger } from '$lib/utils/logger';
 // Create the context
 const ModeContext = createContext<ModeContextValue | undefined>(undefined);
 
@@ -51,7 +52,7 @@ export function ModeProvider({ children, initialMode }: ModeProviderProps) {
         return stored as WorkspaceMode;
       }
     } catch (error) {
-      console.warn('[ModeContext] Failed to read from localStorage:', error);
+      logger.warn('[ModeContext] Failed to read from localStorage:', error);
     }
 
     return initialMode || DEFAULT_WORKSPACE_MODE;
@@ -65,12 +66,12 @@ export function ModeProvider({ children, initialMode }: ModeProviderProps) {
     try {
       localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, newMode);
     } catch (error) {
-      console.warn('[ModeContext] Failed to write to localStorage:', error);
+      logger.warn('[ModeContext] Failed to write to localStorage:', error);
     }
 
     // Optional: Publish event to event bus
     if (typeof window !== 'undefined') {
-      console.log(`[ModeContext] Mode switched to: ${newMode}`);
+      logger.info(`[ModeContext] Mode switched to: ${newMode}`);
     }
   };
 

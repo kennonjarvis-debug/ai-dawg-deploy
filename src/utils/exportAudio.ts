@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Export Audio Utilities
  * Functions for exporting audio recordings in various formats
@@ -50,7 +52,7 @@ export const exportAsWAV = async (blob: Blob, filename: string = 'recording.wav'
     // Close audio context
     await audioContext.close();
   } catch (error) {
-    console.error('Failed to export as WAV:', error);
+    logger.error('Failed to export as WAV:', error);
     throw error;
   }
 };

@@ -21,8 +21,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useEffects } from '@/src/core/useEffects';
-import { useTrackStore } from '@/src/core/store';
+import { useEffects } from '$lib/../core/useEffects';
+import { useTrackStore } from '$lib/../core/store';
 import styles from './EffectsPanel.example.module.css';
 
 interface EffectsPanelProps {

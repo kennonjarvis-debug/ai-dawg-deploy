@@ -7,6 +7,7 @@
 import type { EventData, EventType } from './eventBus';
 import { eventBus } from './eventBus';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Event Priority Levels
  */
@@ -256,7 +257,7 @@ export class EventStore {
 		try {
 			this.events = JSON.parse(data);
 		} catch (error) {
-			console.error('Failed to import event history:', error);
+			logger.error('Failed to import event history:', error);
 		}
 	}
 

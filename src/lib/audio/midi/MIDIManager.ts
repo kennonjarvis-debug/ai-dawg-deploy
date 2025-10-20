@@ -18,6 +18,7 @@ import type {
 import { MIDIClip } from './MIDIClip';
 import { AudioEngineError, ErrorCode } from '../errors';
 
+import { logger } from '$lib/utils/logger';
 /**
  * MIDI Manager - Handles recording and playback
  */
@@ -44,16 +45,16 @@ export class MIDIManager {
 	 */
 	async initialize(): Promise<boolean> {
 		if (!navigator.requestMIDIAccess) {
-			console.error('WebMIDI not supported in this browser');
+			logger.error('WebMIDI not supported in this browser');
 			return false;
 		}
 
 		try {
 			this.midiAccess = await navigator.requestMIDIAccess();
-			console.log('MIDI access granted');
+			logger.info('MIDI access granted');
 			return true;
 		} catch (error) {
-			console.error('MIDI access denied:', error);
+			logger.error('MIDI access denied:', error);
 			return false;
 		}
 	}
@@ -123,7 +124,7 @@ export class MIDIManager {
 			this.handleMIDIMessage(event);
 		};
 
-		console.log('MIDI recording started');
+		logger.info('MIDI recording started');
 	}
 
 	/**
@@ -145,7 +146,7 @@ export class MIDIManager {
 		const notes = this.processRecordedEvents();
 
 		if (notes.length === 0) {
-			console.warn('No notes recorded');
+			logger.warn('No notes recorded');
 			this.recordingState = null;
 			return null;
 		}
@@ -159,7 +160,7 @@ export class MIDIManager {
 		});
 
 		this.recordingState = null;
-		console.log(`MIDI recording stopped: ${notes.length} notes`);
+		logger.info(`MIDI recording stopped: ${notes.length} notes`);
 
 		return clip;
 	}

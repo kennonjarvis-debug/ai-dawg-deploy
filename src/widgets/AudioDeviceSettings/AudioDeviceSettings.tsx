@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import styles from './AudioDeviceSettings.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface AudioDevice {
   deviceId: string;
   label: string;
@@ -83,7 +84,7 @@ export function AudioDeviceSettings({
         setOutputDevices(outputs);
         setError(null);
       } catch (err) {
-        console.error('Failed to enumerate devices:', err);
+        logger.error('Failed to enumerate devices:', err);
         setError('Failed to access audio devices. Please grant microphone permission.');
         setPermissionGranted(false);
       }
@@ -144,7 +145,7 @@ export function AudioDeviceSettings({
 
       onClose();
     } catch (err: any) {
-      console.error('Failed to save audio device settings:', err);
+      logger.error('Failed to save audio device settings:', err);
       setError(err.message || 'Failed to save settings');
     } finally {
       setSaving(false);

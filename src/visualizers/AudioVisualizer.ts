@@ -1,3 +1,5 @@
+import { logger } from '$lib/utils/logger';
+
 /**
  * AudioVisualizer Base Class
  *
@@ -153,7 +155,7 @@ export abstract class AudioVisualizer {
 
       // Debug output
       if (this.debug && renderTime > 16.67) {
-        console.warn(`[AudioVisualizer] Slow render: ${renderTime.toFixed(2)}ms`);
+        logger.warn(`[AudioVisualizer] Slow render: ${renderTime.toFixed(2)}ms`);
       }
 
       this.lastFrameTime = currentTime - (elapsed % this.frameInterval);

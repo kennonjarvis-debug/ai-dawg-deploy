@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect } from 'react';
 import { useTrackStore } from './store';
 import { useTransport } from './transport';
 
+import { logger } from '$lib/utils/logger';
 export const useRecording = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -41,7 +42,7 @@ export const useRecording = () => {
       currentDeviceIdRef.current = deviceId;
       return stream;
     } catch (error) {
-      console.error('Failed to initialize audio stream:', error);
+      logger.error('Failed to initialize audio stream:', error);
       throw error;
     }
   }, []);
@@ -49,12 +50,12 @@ export const useRecording = () => {
   // Start recording
   const startRecording = useCallback(async () => {
     if (!activeTrackId) {
-      console.warn('No active track selected');
+      logger.warn('No active track selected');
       return;
     }
 
     if (!isRecordArmed) {
-      console.warn('Track is not record armed');
+      logger.warn('Track is not record armed');
       return;
     }
 
@@ -94,9 +95,9 @@ export const useRecording = () => {
       mediaRecorder.start(100); // Collect data every 100ms
       mediaRecorderRef.current = mediaRecorder;
 
-      console.log('Recording started on track:', activeTrackId);
+      logger.info('Recording started on track:', activeTrackId);
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      logger.error('Failed to start recording:', error);
       throw error;
     }
   }, [activeTrackId, isRecordArmed, inputDeviceId, initializeStream, addRecording]);
@@ -105,7 +106,7 @@ export const useRecording = () => {
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-      console.log('Recording stopped');
+      logger.info('Recording stopped');
     }
   }, []);
 
@@ -113,7 +114,7 @@ export const useRecording = () => {
   useEffect(() => {
     if (isRecordArmed) {
       initializeStream(inputDeviceId).catch((error) => {
-        console.error('Failed to initialize recording stream:', error);
+        logger.error('Failed to initialize recording stream:', error);
       });
     } else {
       // Stop and release stream when record arm is disabled
@@ -121,7 +122,7 @@ export const useRecording = () => {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         currentDeviceIdRef.current = undefined;
-        console.log('Recording stream stopped and released');
+        logger.info('Recording stream stopped and released');
       }
     }
   }, [isRecordArmed, inputDeviceId, initializeStream]);

@@ -16,6 +16,7 @@
 import { useEffect, useRef } from 'react';
 import { MeterViz, MeterVizConfig } from '../MeterViz';
 
+import { logger } from '$lib/utils/logger';
 export interface MeterProps {
   /** Audio context */
   audioContext: AudioContext | null;
@@ -97,7 +98,7 @@ export function Meter({
       sourceNodeRef.current = audioContext.createMediaStreamSource(mediaStream);
       meterRef.current.connectSource(sourceNodeRef.current);
     } catch (error) {
-      console.error('[Meter] Failed to connect media stream:', error);
+      logger.error('[Meter] Failed to connect media stream:', error);
     }
 
     return () => {

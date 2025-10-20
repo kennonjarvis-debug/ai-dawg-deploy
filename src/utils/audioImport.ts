@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Audio Import Utilities
  * Functions for importing and decoding audio files
@@ -25,7 +27,7 @@ export const decodeAudioFile = async (file: File): Promise<AudioBuffer> => {
     return audioBuffer;
   } catch (error) {
     await audioContext.close();
-    console.error('Failed to decode audio file:', error);
+    logger.error('Failed to decode audio file:', error);
     throw new Error(`Failed to decode audio file: ${file.name}`);
   }
 };
@@ -87,7 +89,7 @@ export const importAudioFile = async (file: File): Promise<ImportedAudio> => {
       waveformData,
     };
   } catch (error) {
-    console.error('Failed to import audio file:', error);
+    logger.error('Failed to import audio file:', error);
     throw error;
   }
 };
@@ -113,7 +115,7 @@ export const importAudioFiles = async (
         onProgress(i + 1, files.length);
       }
     } catch (error) {
-      console.error(`Failed to import ${file.name}:`, error);
+      logger.error(`Failed to import ${file.name}:`, error);
       // Continue with other files
     }
   }

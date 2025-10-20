@@ -15,7 +15,7 @@ import {
   Circle,
   Square
 } from 'lucide-react';
-import { useTransport } from '@/src/core/transport';
+import { useTransport } from '$lib/../core/transport';
 import { Waveform } from '@/src/visualizers';
 import styles from './TransportControls.module.css';
 

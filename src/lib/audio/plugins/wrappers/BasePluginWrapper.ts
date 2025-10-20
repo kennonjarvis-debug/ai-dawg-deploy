@@ -7,6 +7,7 @@
  */
 
 import type {
+import { logger } from '$lib/utils/logger';
   PluginMetadata,
   PluginParameter,
   PluginPreset,
@@ -143,7 +144,7 @@ export abstract class BasePluginWrapper {
   setParameter(parameterId: string, value: number): void {
     const param = this.metadata.parameters.find((p) => p.id === parameterId);
     if (!param) {
-      console.warn(`Parameter not found: ${parameterId}`);
+      logger.warn(`Parameter not found: ${parameterId}`);
       return;
     }
 
@@ -397,7 +398,7 @@ export abstract class BasePluginWrapper {
         }
       }
     } catch (error) {
-      console.error('Failed to deserialize plugin state:', error);
+      logger.error('Failed to deserialize plugin state:', error);
     }
   }
 }

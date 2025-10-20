@@ -18,6 +18,7 @@
 import { BasePluginWrapper } from './BasePluginWrapper';
 import type { PluginMetadata } from '../types';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Audio Units Native Bridge Interface
  * This is what a native macOS implementation must provide
@@ -227,7 +228,7 @@ export class AUPluginWrapper extends BasePluginWrapper {
     }
 
     try {
-      console.log(`[AUPlugin] Loading: ${this.metadata.path}`);
+      logger.info(`[AUPlugin] Loading: ${this.metadata.path}`);
 
       // Parse AU component from metadata
       // Format: /Library/Audio/Plug-Ins/Components/FabFilter Pro-Q 3.component
@@ -269,9 +270,9 @@ export class AUPluginWrapper extends BasePluginWrapper {
         this.applyParameter(id, value);
       }
 
-      console.log(`[AUPlugin] Loaded: ${this.metadata.name}`);
+      logger.info(`[AUPlugin] Loaded: ${this.metadata.name}`);
     } catch (error) {
-      console.error(`[AUPlugin] Failed to load: ${this.metadata.name}`, error);
+      logger.error(`[AUPlugin] Failed to load: ${this.metadata.name}`, error);
       throw error;
     }
   }
@@ -333,7 +334,7 @@ export class AUPluginWrapper extends BasePluginWrapper {
           element: 0,
         });
       } else {
-        console.warn(`[AUPlugin] Could not map parameter: ${param.name}`);
+        logger.warn(`[AUPlugin] Could not map parameter: ${param.name}`);
       }
     }
   }
@@ -388,13 +389,13 @@ export class AUPluginWrapper extends BasePluginWrapper {
    */
   protected applyParameter(parameterId: string, value: number): void {
     if (!this.nativeBridge || !this.pluginHandle) {
-      console.warn('[AUPlugin] Cannot apply parameter: plugin not loaded');
+      logger.warn('[AUPlugin] Cannot apply parameter: plugin not loaded');
       return;
     }
 
     const mapping = this.parameterMapping.get(parameterId);
     if (!mapping) {
-      console.warn(`[AUPlugin] Parameter not mapped: ${parameterId}`);
+      logger.warn(`[AUPlugin] Parameter not mapped: ${parameterId}`);
       return;
     }
 
@@ -515,9 +516,9 @@ export class AUPluginWrapper extends BasePluginWrapper {
       this.workletNode = null;
       this.parameterMapping.clear();
 
-      console.log(`[AUPlugin] Unloaded: ${this.metadata.name}`);
+      logger.info(`[AUPlugin] Unloaded: ${this.metadata.name}`);
     } catch (error) {
-      console.error(`[AUPlugin] Error unloading: ${this.metadata.name}`, error);
+      logger.error(`[AUPlugin] Error unloading: ${this.metadata.name}`, error);
       throw error;
     }
   }

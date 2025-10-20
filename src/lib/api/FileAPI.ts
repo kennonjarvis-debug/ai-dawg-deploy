@@ -8,6 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+import { logger } from '$lib/utils/logger';
 /**
  * File record interface
  */
@@ -194,7 +195,7 @@ export class FileAPI {
       .remove([file.storage_path]);
 
     if (storageError) {
-      console.error('Failed to delete file from storage:', storageError);
+      logger.error('Failed to delete file from storage:', storageError);
       // Continue anyway
     }
 

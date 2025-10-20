@@ -3,10 +3,11 @@
 import { FC, useEffect, useRef, useState } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
-import { useTransport } from '@/src/core/transport';
-import { useTrackStore } from '@/src/core/store';
+import { useTransport } from '$lib/../core/transport';
+import { useTrackStore } from '$lib/../core/store';
 import styles from './WaveformDisplay.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface WaveformDisplayProps {
   className?: string;
 }
@@ -63,7 +64,7 @@ export const WaveformDisplay: FC<WaveformDisplayProps> = ({ className }) => {
     });
 
     wavesurfer.on('error', (error) => {
-      console.error('WaveSurfer error:', error);
+      logger.error('WaveSurfer error:', error);
     });
 
     return () => {
@@ -76,9 +77,9 @@ export const WaveformDisplay: FC<WaveformDisplayProps> = ({ className }) => {
     if (activeRecording && activeRecording.blob && wavesurferRef.current) {
       const url = URL.createObjectURL(activeRecording.blob);
 
-      console.log('Loading waveform for recording:', activeRecording.id);
-      console.log('Blob size:', activeRecording.blob.size);
-      console.log('Duration:', activeRecording.duration);
+      logger.info('Loading waveform for recording:', activeRecording.id);
+      logger.info('Blob size:', activeRecording.blob.size);
+      logger.info('Duration:', activeRecording.duration);
 
       wavesurferRef.current.load(url);
 
@@ -174,7 +175,7 @@ export const WaveformDisplay: FC<WaveformDisplayProps> = ({ className }) => {
 
         draw();
       } catch (error) {
-        console.error('Failed to setup audio analyser:', error);
+        logger.error('Failed to setup audio analyser:', error);
       }
     };
 

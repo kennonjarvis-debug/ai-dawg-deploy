@@ -17,6 +17,7 @@
 import { useEffect, useRef } from 'react';
 import { SpectrumViz, SpectrumStyle, FrequencyScale } from '../SpectrumViz';
 
+import { logger } from '$lib/utils/logger';
 export interface SpectrumProps {
   /** Audio context */
   audioContext: AudioContext | null;
@@ -117,7 +118,7 @@ export function Spectrum({
       sourceNodeRef.current = audioContext.createMediaStreamSource(mediaStream);
       spectrumRef.current.connectSource(sourceNodeRef.current);
     } catch (error) {
-      console.error('[Spectrum] Failed to connect media stream:', error);
+      logger.error('[Spectrum] Failed to connect media stream:', error);
     }
 
     return () => {

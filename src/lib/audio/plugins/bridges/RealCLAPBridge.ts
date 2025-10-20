@@ -22,6 +22,7 @@ import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
+import { logger } from '$lib/utils/logger';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
@@ -32,10 +33,10 @@ try {
   // Try to load the compiled native module
   const bridgePath = join(__dirname, '../../../../../native-bridges/clap/index.node');
   nativeBridge = require(bridgePath);
-  console.log('[RealCLAPBridge] Native CLAP bridge loaded successfully');
+  logger.info('[RealCLAPBridge] Native CLAP bridge loaded successfully');
 } catch (error) {
-  console.warn('[RealCLAPBridge] Native bridge not found. Did you compile it?');
-  console.warn('Run: cd native-bridges/clap && npm run build');
+  logger.warn('[RealCLAPBridge] Native bridge not found. Did you compile it?');
+  logger.warn('Run: cd native-bridges/clap && npm run build');
   nativeBridge = null;
 }
 
@@ -129,7 +130,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       return await nativeBridge.initialize(handle);
     } catch (error: any) {
-      console.error('Failed to initialize plugin:', error.message);
+      logger.error('Failed to initialize plugin:', error.message);
       return false;
     }
   }
@@ -148,7 +149,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       return await nativeBridge.activate(handle, sampleRate, minFrames, maxFrames);
     } catch (error: any) {
-      console.error('Failed to activate plugin:', error.message);
+      logger.error('Failed to activate plugin:', error.message);
       return false;
     }
   }
@@ -162,7 +163,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       await nativeBridge.deactivate(handle);
     } catch (error: any) {
-      console.error('Failed to deactivate plugin:', error.message);
+      logger.error('Failed to deactivate plugin:', error.message);
     }
   }
 
@@ -175,7 +176,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       return await nativeBridge.startProcessing(handle);
     } catch (error: any) {
-      console.error('Failed to start processing:', error.message);
+      logger.error('Failed to start processing:', error.message);
       return false;
     }
   }
@@ -189,7 +190,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       await nativeBridge.stopProcessing(handle);
     } catch (error: any) {
-      console.error('Failed to stop processing:', error.message);
+      logger.error('Failed to stop processing:', error.message);
     }
   }
 
@@ -202,7 +203,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       return nativeBridge.getParameterCount(handle);
     } catch (error: any) {
-      console.error('Failed to get parameter count:', error.message);
+      logger.error('Failed to get parameter count:', error.message);
       return 0;
     }
   }
@@ -241,7 +242,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       return nativeBridge.getParameterValue(handle, paramId);
     } catch (error: any) {
-      console.error('Failed to get parameter value:', error.message);
+      logger.error('Failed to get parameter value:', error.message);
       return 0;
     }
   }
@@ -255,7 +256,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       nativeBridge.setParameterValue(handle, paramId, value);
     } catch (error: any) {
-      console.error('Failed to set parameter value:', error.message);
+      logger.error('Failed to set parameter value:', error.message);
     }
   }
 
@@ -284,7 +285,7 @@ export class RealCLAPBridge implements CLAPNativeBridge {
     try {
       return nativeBridge.getLatency(handle);
     } catch (error: any) {
-      console.error('Failed to get latency:', error.message);
+      logger.error('Failed to get latency:', error.message);
       return 0;
     }
   }
@@ -320,10 +321,10 @@ export function isRealCLAPBridgeAvailable(): boolean {
  */
 export function getCLAPBridge(): CLAPNativeBridge {
   if (RealCLAPBridge.isAvailable()) {
-    console.log('[CLAP] Using real native bridge');
+    logger.info('[CLAP] Using real native bridge');
     return createRealCLAPBridge();
   } else {
-    console.log('[CLAP] Using mock bridge (native bridge not compiled)');
+    logger.info('[CLAP] Using mock bridge (native bridge not compiled)');
     const { createMockCLAPBridge } = require('./MockCLAPBridge');
     return createMockCLAPBridge();
   }

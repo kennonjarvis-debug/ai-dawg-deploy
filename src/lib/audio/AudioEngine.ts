@@ -14,6 +14,7 @@ import { Automation } from './automation';
 import { AudioAnalyzer } from './analysis';
 import { RecordingManager } from './recording';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Audio engine configuration
  */
@@ -89,7 +90,7 @@ export class AudioEngine {
 		// Create recording manager
 		this.recordingManager = new RecordingManager();
 
-		console.log('AudioEngine: Created instance', {
+		logger.info('AudioEngine: Created instance', {
 			sampleRate: this.context.sampleRate,
 			latencyHint: finalConfig.latencyHint,
 			state: this.context.state
@@ -113,7 +114,7 @@ export class AudioEngine {
 	 */
 	async initialize(): Promise<void> {
 		if (this.isInitialized) {
-			console.warn('AudioEngine: Already initialized');
+			logger.warn('AudioEngine: Already initialized');
 			return;
 		}
 
@@ -126,7 +127,7 @@ export class AudioEngine {
 
 			this.isInitialized = true;
 
-			console.log('AudioEngine: Initialized', {
+			logger.info('AudioEngine: Initialized', {
 				sampleRate: this.context.sampleRate,
 				baseLatency: this.context.baseLatency,
 				outputLatency: this.context.outputLatency,
@@ -166,7 +167,7 @@ export class AudioEngine {
 		// Add to collection
 		this.tracks.set(track.id, track);
 
-		console.log(`AudioEngine: Added track "${track.name}" (${track.id})`);
+		logger.info(`AudioEngine: Added track "${track.name}" (${track.id})`);
 
 		// Emit event
 		eventBus.emit('track:created', { trackId: track.id, name: track.name });
@@ -192,7 +193,7 @@ export class AudioEngine {
 		// Remove from collection
 		this.tracks.delete(id);
 
-		console.log(`AudioEngine: Removed track ${id}`);
+		logger.info(`AudioEngine: Removed track ${id}`);
 
 		// Emit event
 		eventBus.emit('track:deleted', { trackId: id });
@@ -231,14 +232,14 @@ export class AudioEngine {
 		this.ensureInitialized();
 
 		if (this._isPlaying) {
-			console.warn('AudioEngine: Already playing');
+			logger.warn('AudioEngine: Already playing');
 			return;
 		}
 
 		this.transport.start();
 		this._isPlaying = true;
 
-		console.log('AudioEngine: Playback started');
+		logger.info('AudioEngine: Playback started');
 
 		// Emit event
 		eventBus.emit('playback:play', { time: this.transport.seconds });
@@ -257,7 +258,7 @@ export class AudioEngine {
 		this.transport.stop();
 		this._isPlaying = false;
 
-		console.log('AudioEngine: Playback stopped');
+		logger.info('AudioEngine: Playback stopped');
 
 		// Emit event
 		eventBus.emit('playback:stop', { time: this.transport.seconds });
@@ -276,7 +277,7 @@ export class AudioEngine {
 		this.transport.pause();
 		this._isPlaying = false;
 
-		console.log('AudioEngine: Playback paused');
+		logger.info('AudioEngine: Playback paused');
 
 		// Emit event
 		eventBus.emit('playback:pause', { time: this.transport.seconds });
@@ -306,7 +307,7 @@ export class AudioEngine {
 		await track.startRecording();
 		this._isRecording = true;
 
-		console.log(`AudioEngine: Recording started on track ${trackId}`);
+		logger.info(`AudioEngine: Recording started on track ${trackId}`);
 
 		// Emit event
 		eventBus.emit('playback:record-start', { trackId });
@@ -328,7 +329,7 @@ export class AudioEngine {
 		const buffer = await track.stopRecording();
 		this._isRecording = false;
 
-		console.log(`AudioEngine: Recording stopped on track ${trackId}`);
+		logger.info(`AudioEngine: Recording stopped on track ${trackId}`);
 
 		// Emit event
 		eventBus.emit('playback:record-stop', { trackId, duration: buffer.duration });
@@ -356,7 +357,7 @@ export class AudioEngine {
 		const result = await this.recordingManager.startLoopRecording(options);
 		this._isRecording = true;
 
-		console.log(`AudioEngine: Loop recording started on track ${result.trackId}`);
+		logger.info(`AudioEngine: Loop recording started on track ${result.trackId}`);
 
 		return result;
 	}
@@ -371,7 +372,7 @@ export class AudioEngine {
 		const takes = await this.recordingManager.stopRecording();
 		this._isRecording = false;
 
-		console.log(`AudioEngine: Loop recording stopped, ${takes.length} takes captured`);
+		logger.info(`AudioEngine: Loop recording stopped, ${takes.length} takes captured`);
 
 		return takes;
 	}
@@ -405,7 +406,7 @@ export class AudioEngine {
 		}
 
 		this.recordingManager.setMetronomeVolume(volume);
-		console.log(`AudioEngine: Metronome volume set to ${volume}`);
+		logger.info(`AudioEngine: Metronome volume set to ${volume}`);
 	}
 
 	/**
@@ -431,7 +432,7 @@ export class AudioEngine {
 		}
 
 		this.transport.bpm.value = bpm;
-		console.log(`AudioEngine: Tempo set to ${bpm} BPM`);
+		logger.info(`AudioEngine: Tempo set to ${bpm} BPM`);
 	}
 
 	/**
@@ -448,7 +449,7 @@ export class AudioEngine {
 	 */
 	setTimeSignature(numerator: number, denominator: number = 4): void {
 		this.transport.timeSignature = [numerator, denominator];
-		console.log(`AudioEngine: Time signature set to ${numerator}/${denominator}`);
+		logger.info(`AudioEngine: Time signature set to ${numerator}/${denominator}`);
 	}
 
 	/**
@@ -469,7 +470,7 @@ export class AudioEngine {
 		this.transport.loopStart = start;
 		this.transport.loopEnd = end;
 
-		console.log(`AudioEngine: Loop ${enabled ? 'enabled' : 'disabled'} [${start}s - ${end}s]`);
+		logger.info(`AudioEngine: Loop ${enabled ? 'enabled' : 'disabled'} [${start}s - ${end}s]`);
 	}
 
 	/**
@@ -501,7 +502,7 @@ export class AudioEngine {
 		}
 
 		track.addEffect(effect);
-		console.log(`AudioEngine: Added effect to track ${trackId}`);
+		logger.info(`AudioEngine: Added effect to track ${trackId}`);
 
 		// Emit event
 		eventBus.emit('effect:added', { trackId, effectId: effect.id });
@@ -526,7 +527,7 @@ export class AudioEngine {
 		}
 
 		sourceTrack.sendTo(targetTrack, amount);
-		console.log(`AudioEngine: Routed track ${trackId} to ${sendId} (amount: ${amount})`);
+		logger.info(`AudioEngine: Routed track ${trackId} to ${sendId} (amount: ${amount})`);
 	}
 
 	// ===== Automation =====
@@ -570,7 +571,7 @@ export class AudioEngine {
 	 */
 	startAutomationRecording(laneId: UUID): void {
 		this.automation.startRecording(laneId);
-		console.log(`AudioEngine: Started automation recording for lane ${laneId}`);
+		logger.info(`AudioEngine: Started automation recording for lane ${laneId}`);
 		eventBus.emit('automation:recordingStarted', { laneId });
 	}
 
@@ -579,7 +580,7 @@ export class AudioEngine {
 	 */
 	stopAutomationRecording(): void {
 		this.automation.stopRecording();
-		console.log('AudioEngine: Stopped automation recording');
+		logger.info('AudioEngine: Stopped automation recording');
 		eventBus.emit('automation:recordingStopped', {});
 	}
 
@@ -648,7 +649,7 @@ export class AudioEngine {
 		const sampleRate = this.context.sampleRate;
 		const totalSamples = Math.floor(totalSec * sampleRate);
 
-		console.log(`AudioEngine: Starting offline render (${totalSec}s @ ${sampleRate}Hz)`);
+		logger.info(`AudioEngine: Starting offline render (${totalSec}s @ ${sampleRate}Hz)`);
 
 		// Create offline context
 		const offlineContext = new OfflineAudioContext(
@@ -680,7 +681,7 @@ export class AudioEngine {
 		offlineMaster.gain.value = masterVolume;
 		offlineMaster.connect(offlineContext.destination);
 
-		console.log(`AudioEngine: Rendering ${activeTracks.length} tracks (master: ${masterVolume.toFixed(3)})`);
+		logger.info(`AudioEngine: Rendering ${activeTracks.length} tracks (master: ${masterVolume.toFixed(3)})`);
 
 		// Helper function to apply track effects chain
 		const applyTrackEffects = (
@@ -775,7 +776,7 @@ export class AudioEngine {
 				oscillator.start(0);
 				oscillator.stop(durationSec);
 
-				console.log(`  Track "${track.name}": Generated test tone at ${freq.toFixed(0)}Hz (${effectsCount} effects)`);
+				logger.info(`  Track "${track.name}": Generated test tone at ${freq.toFixed(0)}Hz (${effectsCount} effects)`);
 			} else {
 				// Render actual clips
 				for (const clip of clips) {
@@ -807,7 +808,7 @@ export class AudioEngine {
 
 						source.start(startTime, offset, duration);
 
-						console.log(
+						logger.info(
 							`  Track "${track.name}": Clip at ${startTime.toFixed(2)}s, duration ${duration.toFixed(2)}s (${effectsCount} effects)`
 						);
 					}
@@ -817,7 +818,7 @@ export class AudioEngine {
 
 		// If no tracks, generate silence with a test tone
 		if (activeTracks.length === 0) {
-			console.log('  No active tracks, generating test tone');
+			logger.info('  No active tracks, generating test tone');
 			const oscillator = offlineContext.createOscillator();
 			const gain = offlineContext.createGain();
 
@@ -833,9 +834,9 @@ export class AudioEngine {
 		}
 
 		// Render
-		console.log('AudioEngine: Rendering...');
+		logger.info('AudioEngine: Rendering...');
 		const renderedBuffer = await offlineContext.startRendering();
-		console.log('AudioEngine: Offline render complete');
+		logger.info('AudioEngine: Offline render complete');
 
 		return renderedBuffer;
 	}
@@ -876,7 +877,7 @@ export class AudioEngine {
 			// Cleanup
 			recorder.dispose();
 
-			console.log(`AudioEngine: Mix exported as ${format}`);
+			logger.info(`AudioEngine: Mix exported as ${format}`);
 
 			return recording;
 		} catch (error) {
@@ -939,17 +940,17 @@ export class AudioEngine {
 	 */
 	debug(): void {
 		console.group('AudioEngine Debug Info');
-		console.log('Initialized:', this.isInitialized);
-		console.log('Context State:', this.context.state);
-		console.log('Sample Rate:', this.context.sampleRate);
-		console.log('Latency:', this.getLatency(), 'seconds');
-		console.log('CPU Load:', (this.getCPULoad() * 100).toFixed(1), '%');
-		console.log('Tracks:', this.tracks.size);
-		console.log('Is Playing:', this._isPlaying);
-		console.log('Is Recording:', this._isRecording);
-		console.log('Tempo:', this.getTempo(), 'BPM');
-		console.log('Time Signature:', this.getTimeSignature().join('/'));
-		console.log('Current Time:', this.getCurrentTime().toFixed(2), 's');
+		logger.info('Initialized:', this.isInitialized);
+		logger.info('Context State:', this.context.state);
+		logger.info('Sample Rate:', this.context.sampleRate);
+		logger.info('Latency:', this.getLatency(), 'seconds');
+		logger.info('CPU Load:', (this.getCPULoad() * 100).toFixed(1), '%');
+		logger.info('Tracks:', this.tracks.size);
+		logger.info('Is Playing:', this._isPlaying);
+		logger.info('Is Recording:', this._isRecording);
+		logger.info('Tempo:', this.getTempo(), 'BPM');
+		logger.info('Time Signature:', this.getTimeSignature().join('/'));
+		logger.info('Current Time:', this.getCurrentTime().toFixed(2), 's');
 		console.groupEnd();
 	}
 
@@ -974,7 +975,7 @@ export class AudioEngine {
 
 		this.isInitialized = false;
 
-		console.log('AudioEngine: Disposed');
+		logger.info('AudioEngine: Disposed');
 	}
 }
 

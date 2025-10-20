@@ -3,6 +3,7 @@
 // Auto-save hook for automatic project persistence
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+import { logger } from '$lib/utils/logger';
 export interface AutoSaveOptions {
   enabled?: boolean;
   interval?: number; // Milliseconds (default: 30000 = 30 seconds)
@@ -32,7 +33,7 @@ export interface AutoSaveState {
  *     await saveProject();
  *   },
  *   onError: (error) => {
- *     console.error('Auto-save failed:', error);
+ *     logger.error('Auto-save failed:', error);
  *   }
  * });
  * ```

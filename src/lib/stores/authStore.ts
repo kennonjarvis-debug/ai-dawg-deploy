@@ -7,6 +7,7 @@ import { writable, derived, type Readable } from 'svelte/store';
 import { authAPI } from '$lib/api/AuthAPI';
 import type { User, Session } from '@supabase/supabase-js';
 
+import { logger } from '$lib/utils/logger';
 interface AuthState {
   user: User | null;
   session: Session | null;
@@ -38,7 +39,7 @@ function createAuthStore() {
 
     if (isTestMode) {
       // Bypass auth for E2E tests - set mock authenticated state
-      console.log('[authStore] Test mode detected - bypassing authentication');
+      logger.info('[authStore] Test mode detected - bypassing authentication');
       update(state => ({
         ...state,
         user: {
@@ -89,7 +90,7 @@ function createAuthStore() {
         }));
       });
     } catch (error) {
-      console.error('Auth initialization error:', error);
+      logger.error('Auth initialization error:', error);
       update(state => ({
         ...state,
         isLoading: false,

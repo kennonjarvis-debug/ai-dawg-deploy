@@ -8,6 +8,7 @@
 import { BasePluginWrapper } from './BasePluginWrapper';
 import type { PluginMetadata } from '../types';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Web Audio Plugin Configuration
  * Defines how to construct a Web Audio plugin
@@ -77,9 +78,9 @@ export class WebAudioPluginWrapper extends BasePluginWrapper {
         this.applyParameter(id, value);
       }
 
-      console.log(`[WebAudioPlugin] Loaded: ${this.metadata.name}`);
+      logger.info(`[WebAudioPlugin] Loaded: ${this.metadata.name}`);
     } catch (error) {
-      console.error(`[WebAudioPlugin] Failed to load: ${this.metadata.name}`, error);
+      logger.error(`[WebAudioPlugin] Failed to load: ${this.metadata.name}`, error);
       throw error;
     }
   }
@@ -90,7 +91,7 @@ export class WebAudioPluginWrapper extends BasePluginWrapper {
   protected applyParameter(parameterId: string, value: number): void {
     const node = this.parameterNodes.get(parameterId);
     if (!node) {
-      console.warn(`[WebAudioPlugin] Parameter node not found: ${parameterId}`);
+      logger.warn(`[WebAudioPlugin] Parameter node not found: ${parameterId}`);
       return;
     }
 
@@ -147,7 +148,7 @@ export class WebAudioPluginWrapper extends BasePluginWrapper {
     this.pluginOutputNode = null;
     this.parameterNodes.clear();
 
-    console.log(`[WebAudioPlugin] Unloaded: ${this.metadata.name}`);
+    logger.info(`[WebAudioPlugin] Unloaded: ${this.metadata.name}`);
   }
 
   /**

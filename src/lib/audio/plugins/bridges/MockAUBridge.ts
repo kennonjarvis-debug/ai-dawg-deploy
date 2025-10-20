@@ -15,6 +15,7 @@
  */
 
 import type {
+import { logger } from '$lib/utils/logger';
   AUNativeBridge,
   AUPluginHandle,
   AUPluginInfo,
@@ -258,7 +259,7 @@ export class MockAUBridge implements AUNativeBridge {
    * Load an Audio Unit
    */
   async loadAudioUnit(path: string, type: string, subType: string): Promise<AUPluginHandle> {
-    console.log(`[MockAUBridge] Loading AU: ${path} (${type}:${subType})`);
+    logger.info(`[MockAUBridge] Loading AU: ${path} (${type}:${subType})`);
 
     const info = this.mockPluginLibrary.get(path);
     if (!info) {
@@ -285,7 +286,7 @@ export class MockAUBridge implements AUNativeBridge {
 
     this.plugins.set(handle, mockPlugin);
 
-    console.log(`[MockAUBridge] Loaded AU: ${info.name} (handle: ${handle})`);
+    logger.info(`[MockAUBridge] Loaded AU: ${info.name} (handle: ${handle})`);
     return handle;
   }
 
@@ -298,7 +299,7 @@ export class MockAUBridge implements AUNativeBridge {
       throw new Error(`Invalid AU handle: ${handle}`);
     }
 
-    console.log(`[MockAUBridge] Unloading AU: ${plugin.info.name}`);
+    logger.info(`[MockAUBridge] Unloading AU: ${plugin.info.name}`);
     this.plugins.delete(handle);
   }
 
@@ -330,7 +331,7 @@ export class MockAUBridge implements AUNativeBridge {
     plugin.state.initialized = true;
     plugin.state.sampleRate = sampleRate;
 
-    console.log(
+    logger.info(
       `[MockAUBridge] Initialized ${plugin.info.name} at ${sampleRate}Hz, ` +
         `max frames: ${maxFramesPerSlice}`
     );
@@ -420,7 +421,7 @@ export class MockAUBridge implements AUNativeBridge {
     }
 
     plugin.state.activePreset = presetNumber;
-    console.log(`[MockAUBridge] Loaded preset "${preset.name}" on ${plugin.info.name}`);
+    logger.info(`[MockAUBridge] Loaded preset "${preset.name}" on ${plugin.info.name}`);
 
     // In real implementation, this would load preset parameters
   }
@@ -539,7 +540,7 @@ export class MockAUBridge implements AUNativeBridge {
 
     plugin.state.activePreset = null;
 
-    console.log(`[MockAUBridge] Reset ${plugin.info.name}`);
+    logger.info(`[MockAUBridge] Reset ${plugin.info.name}`);
   }
 
   /**
@@ -554,7 +555,7 @@ export class MockAUBridge implements AUNativeBridge {
    */
   addMockAU(path: string, info: AUPluginInfo): void {
     this.mockPluginLibrary.set(path, info);
-    console.log(`[MockAUBridge] Added mock AU: ${info.name}`);
+    logger.info(`[MockAUBridge] Added mock AU: ${info.name}`);
   }
 }
 

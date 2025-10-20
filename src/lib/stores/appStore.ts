@@ -9,6 +9,7 @@ import { projectAPI, type Project, type ProjectData } from '$lib/api/ProjectAPI'
 import { EventBus } from '$lib/events/eventBus';
 import type { UUID } from '$lib/types/core';
 
+import { logger } from '$lib/utils/logger';
 interface AppState {
   // Audio Engine
   audioEngine: AudioEngine | null;
@@ -77,9 +78,9 @@ function createAppStore() {
       if (import.meta.env?.DEV || import.meta.env?.MODE === 'test') {
         try {
           await engine.context.resume();
-          console.log('✅ Audio engine auto-initialized for testing');
+          logger.info('✅ Audio engine auto-initialized for testing');
         } catch (err) {
-          console.warn('Auto-resume failed (may still need user interaction):', err);
+          logger.warn('Auto-resume failed (may still need user interaction):', err);
         }
       }
 
@@ -98,7 +99,7 @@ function createAppStore() {
 
       return engine;
     } catch (error) {
-      console.error('Failed to initialize audio engine:', error);
+      logger.error('Failed to initialize audio engine:', error);
       update(state => ({
         ...state,
         error: error instanceof Error ? error.message : 'Failed to initialize audio'
@@ -342,7 +343,7 @@ function createAppStore() {
     autoSaveInterval = window.setInterval(async () => {
       const state = get({ subscribe });
       if (state.hasUnsavedChanges && state.projectId) {
-        console.log('Auto-saving project...');
+        logger.info('Auto-saving project...');
         await saveProject();
       }
     }, 30000); // Every 30 seconds

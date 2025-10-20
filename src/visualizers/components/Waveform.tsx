@@ -17,6 +17,7 @@
 import { useEffect, useRef } from 'react';
 import { WaveformViz, WaveformStyle } from '../WaveformViz';
 
+import { logger } from '$lib/utils/logger';
 export interface WaveformProps {
   /** Audio context */
   audioContext: AudioContext | null;
@@ -101,7 +102,7 @@ export function Waveform({
       sourceNodeRef.current = audioContext.createMediaStreamSource(mediaStream);
       waveformRef.current.connectSource(sourceNodeRef.current);
     } catch (error) {
-      console.error('[Waveform] Failed to connect media stream:', error);
+      logger.error('[Waveform] Failed to connect media stream:', error);
     }
 
     return () => {

@@ -14,6 +14,7 @@ import {
   createCLAPPlugin,
 } from './wrappers';
 import type {
+import { logger } from '$lib/utils/logger';
   WebAudioPluginConfig,
   VST3NativeBridge,
   AUNativeBridge,
@@ -110,7 +111,7 @@ export class PluginInstanceManager {
     }
 
     try {
-      console.log(`[InstanceManager] Loading plugin: ${metadata.name} (${id})`);
+      logger.info(`[InstanceManager] Loading plugin: ${metadata.name} (${id})`);
 
       // Create wrapper based on format
       let wrapper: BasePluginWrapper;
@@ -182,10 +183,10 @@ export class PluginInstanceManager {
 
       this.instances.set(id, instance);
 
-      console.log(`[InstanceManager] Plugin loaded: ${metadata.name} (${id})`);
+      logger.info(`[InstanceManager] Plugin loaded: ${metadata.name} (${id})`);
       return id;
     } catch (error) {
-      console.error(`[InstanceManager] Failed to load plugin: ${metadata.name}`, error);
+      logger.error(`[InstanceManager] Failed to load plugin: ${metadata.name}`, error);
       throw error;
     }
   }
@@ -200,7 +201,7 @@ export class PluginInstanceManager {
     }
 
     try {
-      console.log(`[InstanceManager] Unloading plugin: ${instance.metadata.name} (${instanceId})`);
+      logger.info(`[InstanceManager] Unloading plugin: ${instance.metadata.name} (${instanceId})`);
 
       // Remove from any chains
       for (const chain of this.chains.values()) {
@@ -216,9 +217,9 @@ export class PluginInstanceManager {
       // Remove instance
       this.instances.delete(instanceId);
 
-      console.log(`[InstanceManager] Plugin unloaded: ${instance.metadata.name} (${instanceId})`);
+      logger.info(`[InstanceManager] Plugin unloaded: ${instance.metadata.name} (${instanceId})`);
     } catch (error) {
-      console.error(`[InstanceManager] Failed to unload plugin: ${instanceId}`, error);
+      logger.error(`[InstanceManager] Failed to unload plugin: ${instanceId}`, error);
       throw error;
     }
   }
@@ -271,7 +272,7 @@ export class PluginInstanceManager {
 
     this.chains.set(chainId, chain);
 
-    console.log(`[InstanceManager] Created chain: ${name} (${chainId})`);
+    logger.info(`[InstanceManager] Created chain: ${name} (${chainId})`);
     return chainId;
   }
 
@@ -299,7 +300,7 @@ export class PluginInstanceManager {
     // Reconnect chain
     this.connectChain(chain);
 
-    console.log(
+    logger.info(
       `[InstanceManager] Added ${instance.metadata.name} to chain ${chain.name} at position ${pos}`
     );
   }
@@ -327,7 +328,7 @@ export class PluginInstanceManager {
     // Reconnect chain
     this.connectChain(chain);
 
-    console.log(`[InstanceManager] Removed instance from chain: ${instanceId}`);
+    logger.info(`[InstanceManager] Removed instance from chain: ${instanceId}`);
   }
 
   /**
@@ -358,7 +359,7 @@ export class PluginInstanceManager {
     // Reconnect chain
     this.connectChain(chain);
 
-    console.log(
+    logger.info(
       `[InstanceManager] Reordered instance in chain: ${instanceId} to position ${newPosition}`
     );
   }
@@ -447,7 +448,7 @@ export class PluginInstanceManager {
     // Remove chain
     this.chains.delete(chainId);
 
-    console.log(`[InstanceManager] Deleted chain: ${chain.name} (${chainId})`);
+    logger.info(`[InstanceManager] Deleted chain: ${chain.name} (${chainId})`);
   }
 
   /**
@@ -569,7 +570,7 @@ export class PluginInstanceManager {
    * Unload all plugins and clean up
    */
   async cleanup(): Promise<void> {
-    console.log('[InstanceManager] Cleaning up all plugins...');
+    logger.info('[InstanceManager] Cleaning up all plugins...');
 
     // Delete all chains
     for (const chainId of Array.from(this.chains.keys())) {
@@ -581,7 +582,7 @@ export class PluginInstanceManager {
       await this.unloadPlugin(instanceId);
     }
 
-    console.log('[InstanceManager] Cleanup complete');
+    logger.info('[InstanceManager] Cleanup complete');
   }
 }
 

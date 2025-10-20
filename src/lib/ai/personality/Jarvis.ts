@@ -10,6 +10,7 @@ import { JARVIS_SYSTEM_PROMPT } from '../prompts/jarvis-system';
 import type { SessionContext, UserProfile } from '../context/SessionContext';
 import { CommandParser } from '../nlu/CommandParser';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Jarvis response interface
  */
@@ -75,7 +76,7 @@ export class Jarvis {
       return await this.processWithLLM(input);
 
     } catch (error) {
-      console.error('Jarvis processing error:', error);
+      logger.error('Jarvis processing error:', error);
       return {
         commands: [],
         response: "Sorry, I didn't catch that. Can you try again?",
@@ -156,7 +157,7 @@ export class Jarvis {
       return suggestion ? suggestion.trim() : null;
 
     } catch (error) {
-      console.error('Proactive suggestion error:', error);
+      logger.error('Proactive suggestion error:', error);
       return null;
     }
   }
@@ -264,7 +265,7 @@ export class Jarvis {
       };
 
     } catch (error) {
-      console.error('Failed to parse Claude response:', error);
+      logger.error('Failed to parse Claude response:', error);
       return {
         commands: [],
         response: "I'm processing that...",

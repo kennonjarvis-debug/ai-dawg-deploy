@@ -10,6 +10,7 @@ import { createClient, type LiveTranscriptionEvents } from '@deepgram/sdk';
 import Anthropic from '@anthropic-ai/sdk';
 import type { UUID } from '../types/core';
 
+import { logger } from '$lib/utils/logger';
 export interface VoiceCommand {
 	transcript: string;
 	intent: string;
@@ -60,7 +61,7 @@ export class VoiceInterface {
 			dangerouslyAllowBrowser: true // Required for browser use
 		});
 
-		console.log('VoiceInterface: Initialized');
+		logger.info('VoiceInterface: Initialized');
 	}
 
 	/**
@@ -68,7 +69,7 @@ export class VoiceInterface {
 	 */
 	async startListening(): Promise<void> {
 		if (this.isListening) {
-			console.warn('VoiceInterface: Already listening');
+			logger.warn('VoiceInterface: Already listening');
 			return;
 		}
 
@@ -84,15 +85,15 @@ export class VoiceInterface {
 				}
 			});
 
-			console.log('VoiceInterface: Microphone access granted');
+			logger.info('VoiceInterface: Microphone access granted');
 
 			// Keep screen awake during voice control
 			if ('wakeLock' in navigator) {
 				try {
 					this.wakeLock = await (navigator as any).wakeLock.request('screen');
-					console.log('VoiceInterface: Screen wake lock acquired');
+					logger.info('VoiceInterface: Screen wake lock acquired');
 				} catch (err) {
-					console.warn('VoiceInterface: Could not acquire wake lock:', err);
+					logger.warn('VoiceInterface: Could not acquire wake lock:', err);
 				}
 			}
 
@@ -107,7 +108,7 @@ export class VoiceInterface {
 			});
 
 			this.deepgramConnection.on('open', () => {
-				console.log('VoiceInterface: Deepgram connection opened');
+				logger.info('VoiceInterface: Deepgram connection opened');
 				this.emitEvent('connection-opened', {});
 
 				// Stream microphone audio to Deepgram
@@ -127,19 +128,19 @@ export class VoiceInterface {
 			this.deepgramConnection.on('Results', this.handleTranscript.bind(this));
 
 			this.deepgramConnection.on('error', (error: any) => {
-				console.error('VoiceInterface: Deepgram error:', error);
+				logger.error('VoiceInterface: Deepgram error:', error);
 				this.emitEvent('error', { error });
 			});
 
 			this.deepgramConnection.on('close', () => {
-				console.log('VoiceInterface: Deepgram connection closed');
+				logger.info('VoiceInterface: Deepgram connection closed');
 				this.emitEvent('connection-closed', {});
 			});
 
 			this.isListening = true;
 			this.emitEvent('listening-started', {});
 		} catch (error) {
-			console.error('VoiceInterface: Failed to start listening:', error);
+			logger.error('VoiceInterface: Failed to start listening:', error);
 			this.emitEvent('error', { error });
 			throw error;
 		}
@@ -151,7 +152,7 @@ export class VoiceInterface {
 	stopListening(): void {
 		if (!this.isListening) return;
 
-		console.log('VoiceInterface: Stopping listening');
+		logger.info('VoiceInterface: Stopping listening');
 
 		// Stop media recorder
 		if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -193,7 +194,7 @@ export class VoiceInterface {
 		const isFinal = data.is_final;
 
 		if (isFinal) {
-			console.log('VoiceInterface: Final transcript:', transcript);
+			logger.info('VoiceInterface: Final transcript:', transcript);
 			this.emitEvent('transcript', { transcript, isFinal: true });
 
 			// Check for wake word if not yet detected
@@ -268,7 +269,7 @@ export class VoiceInterface {
 				await this.speak(assistantMessage);
 			}
 		} catch (error) {
-			console.error('VoiceInterface: Error processing command:', error);
+			logger.error('VoiceInterface: Error processing command:', error);
 			this.emitEvent('error', { error });
 			await this.speak("Sorry, I didn't understand that. Could you try again?");
 		}
@@ -474,7 +475,7 @@ When you need to perform an action, use the available tools. Always provide brie
 	 * Execute a DAW action
 	 */
 	private async executeAction(actionName: string, parameters: any): Promise<any> {
-		console.log(`VoiceInterface: Executing action: ${actionName}`, parameters);
+		logger.info(`VoiceInterface: Executing action: ${actionName}`, parameters);
 
 		try {
 			switch (actionName) {
@@ -498,7 +499,7 @@ When you need to perform an action, use the available tools. Always provide brie
 					throw new Error(`Unknown action: ${actionName}`);
 			}
 		} catch (error) {
-			console.error(`VoiceInterface: Error executing action ${actionName}:`, error);
+			logger.error(`VoiceInterface: Error executing action ${actionName}:`, error);
 			throw error;
 		}
 	}
@@ -522,7 +523,7 @@ When you need to perform an action, use the available tools. Always provide brie
 				break;
 			case 'record':
 				// TODO: Implement recording start
-				console.log('Recording not yet implemented');
+				logger.info('Recording not yet implemented');
 				break;
 		}
 	}
@@ -543,7 +544,7 @@ When you need to perform an action, use the available tools. Always provide brie
 		// Handle "selected" track
 		if (trackId === 'selected') {
 			// TODO: Get selected track from track manager
-			console.warn('Selected track not yet implemented');
+			logger.warn('Selected track not yet implemented');
 			return;
 		}
 
@@ -618,7 +619,7 @@ When you need to perform an action, use the available tools. Always provide brie
 		bpm?: number;
 		bars?: number;
 	}): Promise<void> {
-		console.log('Beat generation requested (Module 7 not yet implemented):', params);
+		logger.info('Beat generation requested (Module 7 not yet implemented):', params);
 		this.emitEvent('generate-beat-requested', params);
 		throw new Error('Beat generation not yet implemented. Module 7 required.');
 	}
@@ -630,7 +631,7 @@ When you need to perform an action, use the available tools. Always provide brie
 		track_id: string;
 		effect_type: string;
 	}): Promise<void> {
-		console.log('Add effect requested:', params);
+		logger.info('Add effect requested:', params);
 		this.emitEvent('add-effect-requested', params);
 		// TODO: Integrate with Module 5 effects
 	}
@@ -657,7 +658,7 @@ When you need to perform an action, use the available tools. Always provide brie
 
 		// If no API key, use browser TTS as fallback
 		if (!this.elevenLabsApiKey) {
-			console.warn('VoiceInterface: No ElevenLabs API key, using browser TTS');
+			logger.warn('VoiceInterface: No ElevenLabs API key, using browser TTS');
 			this.speakWithBrowserTTS(text);
 			return;
 		}
@@ -700,7 +701,7 @@ When you need to perform an action, use the available tools. Always provide brie
 				this.emitEvent('speaking-done', {});
 			};
 		} catch (error) {
-			console.error('VoiceInterface: TTS error:', error);
+			logger.error('VoiceInterface: TTS error:', error);
 			this.emitEvent('tts-error', { error });
 
 			// Fallback to browser TTS
@@ -724,7 +725,7 @@ When you need to perform an action, use the available tools. Always provide brie
 
 			window.speechSynthesis.speak(utterance);
 		} else {
-			console.warn('VoiceInterface: Browser TTS not supported');
+			logger.warn('VoiceInterface: Browser TTS not supported');
 			this.emitEvent('speaking-done', {});
 		}
 	}
@@ -743,7 +744,7 @@ When you need to perform an action, use the available tools. Always provide brie
 	resetConversation(): void {
 		this.conversationHistory = [];
 		this.wakeWordDetected = false;
-		console.log('VoiceInterface: Conversation reset');
+		logger.info('VoiceInterface: Conversation reset');
 	}
 
 	/**
@@ -759,6 +760,6 @@ When you need to perform an action, use the available tools. Always provide brie
 	dispose(): void {
 		this.stopListening();
 		this.conversationHistory = [];
-		console.log('VoiceInterface: Disposed');
+		logger.info('VoiceInterface: Disposed');
 	}
 }

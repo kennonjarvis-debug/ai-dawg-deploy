@@ -75,17 +75,18 @@ export class PitchCorrection {
   private dryGain: GainNode;
   private wetGain: GainNode;
 
-  // Pitch shifting (using playback rate modulation)
-  private scriptProcessor: ScriptProcessorNode;
+  // Pitch shifting (using AudioWorklet)
+  private workletNode: AudioWorkletNode | null = null;
+  private workletInitialized: boolean = false;
 
   // Pitch detection
   private pitchDetector: PitchDetector;
   private detectionBuffer: Float32Array;
+  private analyserNode: AnalyserNode;
 
   // Pitch correction state
   private targetPitch: number = 0;
   private currentPitch: number = 0;
-  private correctionSmoothingBuffer: number[] = [];
 
   constructor(context: AudioContext, initialParams?: Partial<PitchCorrectionParams>) {
     this.context = context;
@@ -105,8 +106,9 @@ export class PitchCorrection {
     this.dryGain = context.createGain();
     this.wetGain = context.createGain();
 
-    // Create script processor for real-time pitch shifting
-    this.scriptProcessor = context.createScriptProcessor(4096, 1, 1);
+    // Create analyser for pitch detection
+    this.analyserNode = context.createAnalyser();
+    this.analyserNode.fftSize = 4096;
     this.detectionBuffer = new Float32Array(4096);
 
     // Initialize pitch detector
@@ -117,58 +119,103 @@ export class PitchCorrection {
       confidenceThreshold: 0.85,
     });
 
-    // Setup audio routing
-    this.input.connect(this.dryGain);
-    this.input.connect(this.scriptProcessor);
-    this.scriptProcessor.connect(this.wetGain);
-    this.dryGain.connect(this.output);
-    this.wetGain.connect(this.output);
+    // Initialize AudioWorklet
+    this.initializeWorklet();
 
-    // Setup pitch correction processing
-    this.scriptProcessor.onaudioprocess = (e) => {
-      this.processPitchCorrection(e.inputBuffer, e.outputBuffer);
-    };
+    // Setup audio routing (will be updated when worklet loads)
+    this.input.connect(this.dryGain);
+    this.input.connect(this.analyserNode);
+    this.dryGain.connect(this.output);
+
+    // Start pitch detection loop
+    this.startPitchDetection();
 
     this.updateMix();
   }
 
   /**
-   * Process pitch correction in real-time
+   * Initialize AudioWorklet processor
    */
-  private processPitchCorrection(inputBuffer: AudioBuffer, outputBuffer: AudioBuffer): void {
-    if (!this.params.enabled) {
-      // Bypass - copy input to output
-      for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
-        outputBuffer.copyToChannel(inputBuffer.getChannelData(channel), channel);
-      }
-      return;
-    }
+  private async initializeWorklet(): Promise<void> {
+    try {
+      // Load the worklet module
+      await this.context.audioWorklet.addModule('/worklets/pitch-correction.worklet.js');
 
-    const inputData = inputBuffer.getChannelData(0);
-    const outputData = outputBuffer.getChannelData(0);
+      // Create the worklet node
+      this.workletNode = new AudioWorkletNode(this.context, 'pitch-correction-processor');
 
-    // Detect pitch
-    const pitchResult = this.pitchDetector.detect(inputData);
+      // Connect worklet to audio graph
+      this.input.connect(this.workletNode);
+      this.workletNode.connect(this.wetGain);
+      this.wetGain.connect(this.output);
 
-    if (pitchResult.frequency > 0 && pitchResult.midiNote !== null) {
-      // Find nearest note in scale
-      const targetMidiNote = this.findNearestScaleNote(pitchResult.midiNote);
-      this.targetPitch = midiNoteToFrequency(targetMidiNote);
-      this.currentPitch = pitchResult.frequency;
+      this.workletInitialized = true;
 
-      // Calculate pitch shift ratio
-      const pitchRatio = this.targetPitch / this.currentPitch;
-
-      // Apply correction with strength and speed
-      const correctedRatio = this.applyCorrectionSmoothing(pitchRatio);
-
-      // Simple pitch shifting (for real-time - production would use phase vocoder)
-      this.applyPitchShift(inputData, outputData, correctedRatio);
-    } else {
-      // No pitch detected - pass through
-      outputData.set(inputData);
+      // Send initial parameters
+      this.sendParamsToWorklet();
+    } catch (error) {
+      console.error('Failed to initialize pitch correction worklet:', error);
+      // Fallback: direct connection (bypass)
+      this.input.connect(this.output);
     }
   }
+
+  /**
+   * Send parameters to worklet processor
+   */
+  private sendParamsToWorklet(): void {
+    if (!this.workletNode) return;
+
+    this.workletNode.port.postMessage({
+      type: 'updateParams',
+      data: {
+        enabled: this.params.enabled,
+        strength: this.params.strength,
+        speed: this.params.speed,
+      },
+    });
+  }
+
+  /**
+   * Start pitch detection loop using analyser
+   */
+  private startPitchDetection(): void {
+    const detectPitch = () => {
+      if (!this.params.enabled) {
+        requestAnimationFrame(detectPitch);
+        return;
+      }
+
+      // Get time domain data from analyser
+      this.analyserNode.getFloatTimeDomainData(this.detectionBuffer);
+
+      // Detect pitch
+      const pitchResult = this.pitchDetector.detect(this.detectionBuffer);
+
+      if (pitchResult.frequency > 0 && pitchResult.midiNote !== null) {
+        // Find nearest note in scale
+        const targetMidiNote = this.findNearestScaleNote(pitchResult.midiNote);
+        this.targetPitch = midiNoteToFrequency(targetMidiNote);
+        this.currentPitch = pitchResult.frequency;
+
+        // Send pitch data to worklet
+        if (this.workletNode) {
+          this.workletNode.port.postMessage({
+            type: 'setPitch',
+            data: {
+              targetPitch: this.targetPitch,
+              currentPitch: this.currentPitch,
+            },
+          });
+        }
+      }
+
+      requestAnimationFrame(detectPitch);
+    };
+
+    detectPitch();
+  }
+
 
   /**
    * Find nearest note in selected scale
@@ -198,51 +245,6 @@ export class PitchCorrection {
     return octave * 12 + targetNote;
   }
 
-  /**
-   * Apply smoothing to pitch correction (prevents robotic sound)
-   */
-  private applyCorrectionSmoothing(pitchRatio: number): number {
-    const strength = this.params.strength;
-    const speed = this.params.speed / 1000; // Convert to seconds
-
-    // Interpolate between original and corrected pitch
-    const correctedRatio = 1 + (pitchRatio - 1) * strength;
-
-    // Smooth over time (simple exponential smoothing)
-    this.correctionSmoothingBuffer.push(correctedRatio);
-    if (this.correctionSmoothingBuffer.length > speed * this.context.sampleRate / 4096) {
-      this.correctionSmoothingBuffer.shift();
-    }
-
-    const smoothedRatio = this.correctionSmoothingBuffer.reduce((a, b) => a + b, 0) /
-      this.correctionSmoothingBuffer.length;
-
-    return smoothedRatio;
-  }
-
-  /**
-   * Apply pitch shift (simplified - production would use phase vocoder/PSOLA)
-   */
-  private applyPitchShift(input: Float32Array, output: Float32Array, ratio: number): void {
-    // Simple time-domain pitch shifting
-    // NOTE: This is a simplified implementation. For production quality,
-    // use a phase vocoder or PSOLA algorithm
-
-    const bufferLength = input.length;
-    const stretchFactor = 1 / ratio;
-
-    for (let i = 0; i < bufferLength; i++) {
-      const sourceIndex = i * stretchFactor;
-      const index0 = Math.floor(sourceIndex);
-      const index1 = Math.min(index0 + 1, bufferLength - 1);
-      const frac = sourceIndex - index0;
-
-      // Linear interpolation
-      const val0 = input[index0] ?? 0;
-      const val1 = input[index1] ?? 0;
-      output[i] = val0 * (1 - frac) + val1 * frac;
-    }
-  }
 
   /**
    * Update wet/dry mix based on enabled state
@@ -261,16 +263,26 @@ export class PitchCorrection {
     this.params = { ...this.params, ...params };
     this.updateMix();
 
+    // Send updated parameters to worklet
+    if (params.strength !== undefined || params.speed !== undefined || params.enabled !== undefined) {
+      this.sendParamsToWorklet();
+    }
+
     if (params.scale !== undefined || params.rootNote !== undefined) {
-      // Reset smoothing buffer when scale changes
-      this.correctionSmoothingBuffer = [];
+      // Reset smoothing buffer in worklet when scale changes
+      if (this.workletNode) {
+        this.workletNode.port.postMessage({ type: 'reset' });
+      }
     }
   }
+
 
   setEnabled(enabled: boolean): void {
     this.params.enabled = enabled;
     this.updateMix();
+    this.sendParamsToWorklet();
   }
+
 
   getParams(): PitchCorrectionParams {
     return { ...this.params };
@@ -285,7 +297,11 @@ export class PitchCorrection {
   }
 
   destroy(): void {
-    this.scriptProcessor.disconnect();
+    if (this.workletNode) {
+      this.workletNode.disconnect();
+      this.workletNode.port.close();
+    }
+    this.analyserNode.disconnect();
     this.input.disconnect();
     this.output.disconnect();
     this.dryGain.disconnect();

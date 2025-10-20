@@ -17,6 +17,7 @@
 import { BasePluginWrapper } from './BasePluginWrapper';
 import type { PluginMetadata, PluginParameter } from '../types';
 
+import { logger } from '$lib/utils/logger';
 /**
  * VST3 Native Bridge Interface
  * This is what a native implementation must provide
@@ -164,7 +165,7 @@ export class VST3PluginWrapper extends BasePluginWrapper {
     }
 
     try {
-      console.log(`[VST3Plugin] Loading: ${this.metadata.path}`);
+      logger.info(`[VST3Plugin] Loading: ${this.metadata.path}`);
 
       // Load plugin via native bridge
       this.pluginHandle = await this.nativeBridge.loadPlugin(this.metadata.path);
@@ -200,9 +201,9 @@ export class VST3PluginWrapper extends BasePluginWrapper {
       // Activate plugin
       this.nativeBridge.setActive(this.pluginHandle, true);
 
-      console.log(`[VST3Plugin] Loaded: ${this.metadata.name}`);
+      logger.info(`[VST3Plugin] Loaded: ${this.metadata.name}`);
     } catch (error) {
-      console.error(`[VST3Plugin] Failed to load: ${this.metadata.name}`, error);
+      logger.error(`[VST3Plugin] Failed to load: ${this.metadata.name}`, error);
       throw error;
     }
   }
@@ -222,7 +223,7 @@ export class VST3PluginWrapper extends BasePluginWrapper {
       if (vst3Param) {
         this.parameterMapping.set(param.id, vst3Param.id);
       } else {
-        console.warn(`[VST3Plugin] Could not map parameter: ${param.name}`);
+        logger.warn(`[VST3Plugin] Could not map parameter: ${param.name}`);
       }
     }
   }
@@ -286,13 +287,13 @@ export class VST3PluginWrapper extends BasePluginWrapper {
    */
   protected applyParameter(parameterId: string, value: number): void {
     if (!this.nativeBridge || !this.pluginHandle) {
-      console.warn('[VST3Plugin] Cannot apply parameter: plugin not loaded');
+      logger.warn('[VST3Plugin] Cannot apply parameter: plugin not loaded');
       return;
     }
 
     const vst3ParamId = this.parameterMapping.get(parameterId);
     if (vst3ParamId === undefined) {
-      console.warn(`[VST3Plugin] Parameter not mapped: ${parameterId}`);
+      logger.warn(`[VST3Plugin] Parameter not mapped: ${parameterId}`);
       return;
     }
 
@@ -387,9 +388,9 @@ export class VST3PluginWrapper extends BasePluginWrapper {
       this.workletNode = null;
       this.parameterMapping.clear();
 
-      console.log(`[VST3Plugin] Unloaded: ${this.metadata.name}`);
+      logger.info(`[VST3Plugin] Unloaded: ${this.metadata.name}`);
     } catch (error) {
-      console.error(`[VST3Plugin] Error unloading: ${this.metadata.name}`, error);
+      logger.error(`[VST3Plugin] Error unloading: ${this.metadata.name}`, error);
       throw error;
     }
   }

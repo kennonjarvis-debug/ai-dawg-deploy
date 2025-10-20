@@ -7,9 +7,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import type { UserLayout } from '@/lib/types';
-import { LayoutManager } from '@/lib/layout/LayoutManager';
+import type { UserLayout } from '$lib/types';
+import { LayoutManager } from '$lib/layout/LayoutManager';
 
+import { logger } from '$lib/utils/logger';
 export function useLayout() {
   const { data: session } = useSession();
   const [layout, setLayout] = useState<UserLayout | null>(null);
@@ -39,7 +40,7 @@ export function useLayout() {
           LayoutManager.setActiveLayout(userId, defaultLayout.layoutId);
         }
       } catch (error) {
-        console.error('Failed to load layouts:', error);
+        logger.error('Failed to load layouts:', error);
       } finally {
         setLoading(false);
       }
@@ -70,7 +71,7 @@ export function useLayout() {
         try {
           await LayoutManager.saveLayout(userId, updatedLayout);
         } catch (error) {
-          console.error('Failed to save layout:', error);
+          logger.error('Failed to save layout:', error);
         } finally {
           setSaving(false);
         }
@@ -162,7 +163,7 @@ export function useLayout() {
         LayoutManager.setActiveLayout(userId, newLayout.layoutId);
         return newLayout;
       } catch (error) {
-        console.error('Failed to create layout:', error);
+        logger.error('Failed to create layout:', error);
         return null;
       }
     },
@@ -205,7 +206,7 @@ export function useLayout() {
           switchLayout(firstLayout.layoutId);
         }
       } catch (error) {
-        console.error('Failed to delete layout:', error);
+        logger.error('Failed to delete layout:', error);
       }
     },
     [session, layouts, layout, switchLayout]
@@ -243,7 +244,7 @@ export function useLayout() {
         LayoutManager.setActiveLayout(userId, imported.layoutId);
         return imported;
       } catch (error) {
-        console.error('Failed to import layout:', error);
+        logger.error('Failed to import layout:', error);
         return null;
       }
     },

@@ -10,6 +10,7 @@
 
 import type { PluginMetadata, PluginScanError } from '../types';
 import {
+import { logger } from '$lib/utils/logger';
   inferCategory,
   inferProcessingType,
   inferUseCases,
@@ -42,7 +43,7 @@ export class AUScanner {
   ): Promise<PluginMetadata[]> {
     // AU is macOS only
     if (getPlatform() !== 'macos') {
-      console.warn('[AUScanner] Audio Units only available on macOS');
+      logger.warn('[AUScanner] Audio Units only available on macOS');
       return [];
     }
 
@@ -86,7 +87,7 @@ export class AUScanner {
     // 4. Extract metadata using Audio Unit APIs
 
     // For now, this is a stub
-    console.log(`[AUScanner] Would scan directory: ${directory}`);
+    logger.info(`[AUScanner] Would scan directory: ${directory}`);
 
     // On macOS with Electron/Tauri, you would:
     // const { ipcRenderer } = require('electron');

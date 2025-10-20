@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import styles from './ProjectSelector.example.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface Project {
   id: string;
   name: string;
@@ -46,7 +47,7 @@ export function ProjectSelector({
           setProjects(data.projects);
         }
       } catch (error) {
-        console.error('Failed to fetch projects:', error);
+        logger.error('Failed to fetch projects:', error);
       } finally {
         setLoading(false);
       }

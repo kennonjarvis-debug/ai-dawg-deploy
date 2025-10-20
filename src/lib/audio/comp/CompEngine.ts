@@ -19,6 +19,7 @@ import type {
 import { DEFAULT_COMP_CONFIG } from './types';
 import { AudioEngineError } from '../errors';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Comp Engine - Creates professional vocal comps from multiple takes
  *
@@ -230,7 +231,7 @@ export class CompEngine {
 			const take = takes.find((t) => t.id === segment.takeId);
 
 			if (!take) {
-				console.warn(`Take ${segment.takeId} not found, skipping segment`);
+				logger.warn(`Take ${segment.takeId} not found, skipping segment`);
 				continue;
 			}
 

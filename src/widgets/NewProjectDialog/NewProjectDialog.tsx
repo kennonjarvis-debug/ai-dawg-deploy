@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import styles from './NewProjectDialog.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface NewProjectDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -108,7 +109,7 @@ export function NewProjectDialog({ isOpen, onClose, onCreate }: NewProjectDialog
         handleClose();
       }
     } catch (err: any) {
-      console.error('Failed to create project:', err);
+      logger.error('Failed to create project:', err);
       setError(err.message || 'Failed to create project');
     } finally {
       setCreating(false);

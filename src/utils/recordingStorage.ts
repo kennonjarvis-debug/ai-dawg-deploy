@@ -3,7 +3,7 @@
  * Helper functions for uploading/downloading recordings to/from S3
  */
 
-import type { Recording } from '@/src/core/types';
+import type { Recording } from '$lib/../core/types';
 
 export interface UploadRecordingOptions {
   blob: Blob;

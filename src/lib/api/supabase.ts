@@ -6,6 +6,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+import { logger } from '$lib/utils/logger';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -19,9 +20,9 @@ if (supabaseUrl && supabaseAnonKey) {
   supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
 } else {
   // Allow running without Supabase - auth features will be disabled
-  console.warn('⚠️ Running without Supabase credentials - auth features disabled');
+  logger.warn('⚠️ Running without Supabase credentials - auth features disabled');
   if (!isTest && !isDevelopment) {
-    console.error('PRODUCTION WARNING: Supabase environment variables not configured');
+    logger.error('PRODUCTION WARNING: Supabase environment variables not configured');
   }
 }
 

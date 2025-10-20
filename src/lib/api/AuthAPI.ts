@@ -9,6 +9,7 @@
 import type { SupabaseClient, User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Authentication API client
  */
@@ -92,7 +93,7 @@ export class AuthAPI {
     const { data: { session }, error } = await this.ensureSupabase().auth.getSession();
 
     if (error) {
-      console.error('Failed to get session:', error);
+      logger.error('Failed to get session:', error);
       return null;
     }
 
@@ -123,7 +124,7 @@ export class AuthAPI {
     const { data: { user }, error } = await this.ensureSupabase().auth.getUser();
 
     if (error) {
-      console.error('Failed to get user:', error);
+      logger.error('Failed to get user:', error);
       return null;
     }
 

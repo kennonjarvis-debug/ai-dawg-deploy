@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Users, AlertCircle, CheckCircle, Clock, Cpu, HelpCircle } from 'lucide-react';
-import type { AgentCoordinationState } from '@/src/core/agentCoordination';
+import type { AgentCoordinationState } from '$lib/../core/agentCoordination';
 import styles from './AgentStatusBoard.module.css';
 
+import { logger } from '$lib/utils/logger';
 export function AgentStatusBoard() {
   const [state, setState] = useState<AgentCoordinationState | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export function AgentStatusBoard() {
       setState(data);
       setIsLoading(false);
     } catch (error) {
-      console.error('[AgentStatusBoard] Failed to load state:', error);
+      logger.error('[AgentStatusBoard] Failed to load state:', error);
       setIsLoading(false);
     }
   };

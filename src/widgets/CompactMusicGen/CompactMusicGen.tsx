@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Wand2 } from 'lucide-react';
 import styles from './CompactMusicGen.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface CompactMusicGenProps {
   onGenerate?: (params: { genre: string; mood: string; duration: number }) => void;
 }
@@ -37,10 +38,10 @@ export function CompactMusicGen({ onGenerate }: CompactMusicGenProps) {
 
       if (data.audioUrl) {
         // Auto-import to track (would need useTrackStore integration)
-        console.log('Generated:', data.audioUrl);
+        logger.info('Generated:', data.audioUrl);
       }
     } catch (error) {
-      console.error('Generation failed:', error);
+      logger.error('Generation failed:', error);
     } finally {
       setIsGenerating(false);
     }

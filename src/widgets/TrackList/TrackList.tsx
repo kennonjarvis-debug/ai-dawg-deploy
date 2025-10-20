@@ -3,7 +3,7 @@
 import { FC } from 'react';
 import { Plus } from 'lucide-react';
 import { TrackItem } from '../TrackItem/TrackItem';
-import { useTrackStore } from '@/src/core/store';
+import { useTrackStore } from '$lib/../core/store';
 import styles from './TrackList.module.css';
 
 interface TrackListProps {

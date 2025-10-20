@@ -9,6 +9,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Project data structure (matches API_CONTRACTS.md)
  */
@@ -237,7 +238,7 @@ export class ProjectAPI {
       });
 
     if (metadataError) {
-      console.error('Failed to save file metadata:', metadataError);
+      logger.error('Failed to save file metadata:', metadataError);
       // Continue anyway, file is uploaded
     }
 

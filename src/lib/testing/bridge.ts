@@ -17,6 +17,7 @@ import { EQ } from '$lib/audio/effects/EQ';
 import { Limiter } from '$lib/audio/effects/Limiter';
 import { Distortion } from '$lib/audio/effects/Distortion';
 
+import { logger } from '$lib/utils/logger';
 // Only export in test/dev mode (for E2E testing) AND in browser (not SSR)
 const isBrowser = typeof window !== 'undefined';
 const isTestMode =
@@ -46,7 +47,7 @@ if (isBrowser && isTestMode) {
     const state = get(appStore);
 
     if (!state.audioEngine || !state.isInitialized) {
-      console.log('🔧 Test API: Auto-initializing audio engine...');
+      logger.info('🔧 Test API: Auto-initializing audio engine...');
       await appStore.initializeAudioEngine();
     }
 
@@ -165,7 +166,7 @@ if (isBrowser && isTestMode) {
       const durationSec = opts.durationSec || 10;
       const tailSec = opts.tailSec || 2;
 
-      console.log(`🎵 Test API: Rendering ${durationSec}s + ${tailSec}s tail to WAV`);
+      logger.info(`🎵 Test API: Rendering ${durationSec}s + ${tailSec}s tail to WAV`);
 
       // Use AudioEngine's offline rendering
       const renderedBuffer = await engine.renderOffline(durationSec, tailSec);
@@ -173,7 +174,7 @@ if (isBrowser && isTestMode) {
       // Convert AudioBuffer to WAV
       const wavData = audioBufferToWav(renderedBuffer);
 
-      console.log(`✅ Test API: Rendered ${renderedBuffer.duration.toFixed(2)}s of audio`);
+      logger.info(`✅ Test API: Rendered ${renderedBuffer.duration.toFixed(2)}s of audio`);
 
       return wavData;
     },
@@ -182,20 +183,20 @@ if (isBrowser && isTestMode) {
       const engine = await ensureEngineInitialized();
       if (!engine) throw new Error('Failed to initialize audio engine');
 
-      console.log('🎤 Test API: speakToAssistant called with:', text);
+      logger.info('🎤 Test API: speakToAssistant called with:', text);
 
       // Parse voice commands for beat generation
       const lowerText = text.toLowerCase();
 
       if (lowerText.includes('generate') && (lowerText.includes('beat') || lowerText.includes('trap'))) {
-        console.log('🥁 Generating AI beat...');
+        logger.info('🥁 Generating AI beat...');
 
         // Extract BPM if mentioned
         const bpmMatch = text.match(/(\d+)\s*bpm/i);
         if (bpmMatch) {
           const bpm = parseInt(bpmMatch[1]);
           engine.setTempo(bpm);
-          console.log(`  Set tempo to ${bpm} BPM`);
+          logger.info(`  Set tempo to ${bpm} BPM`);
         }
 
         // Create beat tracks (kick, snare, hi-hat)
@@ -217,7 +218,7 @@ if (isBrowser && isTestMode) {
           color: '#0000ff'
         });
 
-        console.log(`✅ Created 3 beat tracks (${kickTrack.id}, ${snareTrack.id}, ${hihatTrack.id})`);
+        logger.info(`✅ Created 3 beat tracks (${kickTrack.id}, ${snareTrack.id}, ${hihatTrack.id})`);
 
         return {
           messages: [`Generated trap beat with 808s`],
@@ -226,7 +227,7 @@ if (isBrowser && isTestMode) {
       }
 
       // Default response for unsupported commands
-      console.log('⚠️  Voice command not recognized, returning placeholder');
+      logger.info('⚠️  Voice command not recognized, returning placeholder');
       return {
         messages: [`Received: ${text}`],
         actions: []
@@ -264,7 +265,7 @@ if (isBrowser && isTestMode) {
     }
   };
 
-  console.log('✅ DAWG Test API mounted (version:', window.__DAWG_TEST_API.version, ')');
+  logger.info('✅ DAWG Test API mounted (version:', window.__DAWG_TEST_API.version, ')');
 }
 
 /**
@@ -274,7 +275,7 @@ if (isBrowser && isTestMode) {
 function createEffect(effectId: string, params: any): Effect {
   const normalizedId = effectId.toLowerCase().replace(/[_-]/g, '');
 
-  console.log(`Creating effect: ${effectId}`, params);
+  logger.info(`Creating effect: ${effectId}`, params);
 
   let effect: Effect;
 

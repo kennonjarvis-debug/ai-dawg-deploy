@@ -6,13 +6,13 @@
  * Integrates with Instance 3's music generation system
  */
 
-import { PitchHistoryPoint } from '@/core/usePitchDetection';
+import { PitchHistoryPoint } from '$lib/../core/usePitchDetection';
 import {
   MIDINote,
   MelodyAnalysis,
   VocalCharacteristics,
   analyzeMelody,
-} from '@/lib/ai/melody-types';
+} from '$lib/ai/melody-types';
 
 export interface MelodyAnalyzerOptions {
   /** Minimum note duration to consider (ms) - filters out glitches */

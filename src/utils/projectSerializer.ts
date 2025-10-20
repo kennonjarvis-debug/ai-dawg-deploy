@@ -3,7 +3,7 @@
  * Convert between Zustand store state and API format
  */
 
-import type { Track, Recording, Project } from '@/src/core/types';
+import type { Track, Recording, Project } from '$lib/../core/types';
 
 export interface SerializedRecording {
   id: string;

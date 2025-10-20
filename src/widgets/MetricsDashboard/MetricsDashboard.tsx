@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Activity, TrendingUp, Clock, AlertCircle, CheckCircle } from 'lucide-react';
-import { getEventBus } from '@/src/core/eventBus';
-import type { Metric } from '@/src/core/metricsCollector';
+import { getEventBus } from '$lib/../core/eventBus';
+import type { Metric } from '$lib/../core/metricsCollector';
 import styles from './MetricsDashboard.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface MetricsDashboardProps {
   refreshInterval?: number;
 }
@@ -39,7 +40,7 @@ export function MetricsDashboard({ refreshInterval = 30000 }: MetricsDashboardPr
           setLastUpdate(envelope.ts);
         });
       } catch (error) {
-        console.error('[MetricsDashboard] Failed to connect to event bus:', error);
+        logger.error('[MetricsDashboard] Failed to connect to event bus:', error);
       }
     };
 

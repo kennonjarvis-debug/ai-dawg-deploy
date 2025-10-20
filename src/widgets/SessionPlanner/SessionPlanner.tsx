@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import styles from './SessionPlanner.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface PracticeSession {
   id: string;
   title: string;
@@ -122,7 +123,7 @@ export function SessionPlanner({ onScheduleSession, onCompleteSession }: Session
         body: JSON.stringify({ durationMinutes: sessionToComplete.duration }),
       });
     } catch (err) {
-      console.error('Failed to log session:', err);
+      logger.error('Failed to log session:', err);
     }
 
     if (onCompleteSession && notes) {

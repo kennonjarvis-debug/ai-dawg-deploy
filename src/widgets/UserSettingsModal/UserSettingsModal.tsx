@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import styles from './UserSettingsModal.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface AudioDevice {
   deviceId: string;
   label: string;
@@ -93,7 +94,7 @@ export function UserSettingsModal({ isOpen, onClose }: UserSettingsModalProps) {
         setInputDevices(inputs);
         setOutputDevices(outputs);
       } catch (err) {
-        console.error('Failed to enumerate devices:', err);
+        logger.error('Failed to enumerate devices:', err);
         setError('Failed to access audio devices. Please grant microphone permission.');
       }
     };
@@ -137,7 +138,7 @@ export function UserSettingsModal({ isOpen, onClose }: UserSettingsModalProps) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      console.error('Failed to save settings:', err);
+      logger.error('Failed to save settings:', err);
       setError('Failed to save settings');
     } finally {
       setSaving(false);

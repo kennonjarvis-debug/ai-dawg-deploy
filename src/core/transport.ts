@@ -6,6 +6,7 @@
 import * as Tone from 'tone';
 import { create } from 'zustand';
 
+import { logger } from '$lib/utils/logger';
 export type TransportState = 'stopped' | 'playing' | 'paused' | 'recording';
 
 interface TransportStore {
@@ -50,7 +51,7 @@ export const useTransport = create<TransportStore>((set, get) => ({
         isPaused: false,
       });
     } catch (error) {
-      console.error('Failed to start playback:', error);
+      logger.error('Failed to start playback:', error);
     }
   },
 
@@ -93,7 +94,7 @@ export const useTransport = create<TransportStore>((set, get) => ({
         isRecording: true,
       });
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      logger.error('Failed to start recording:', error);
     }
   },
 

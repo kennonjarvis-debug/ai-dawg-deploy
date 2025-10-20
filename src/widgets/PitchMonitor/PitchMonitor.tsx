@@ -1,6 +1,6 @@
 'use client';
 
-import { usePitchDetection } from '@/src/core/usePitchDetection';
+import { usePitchDetection } from '$lib/../core/usePitchDetection';
 import { useEffect, useState, useMemo } from 'react';
 import { Pitch, Waveform, Meter } from '@/src/visualizers';
 import type { PitchData } from '@/src/visualizers';

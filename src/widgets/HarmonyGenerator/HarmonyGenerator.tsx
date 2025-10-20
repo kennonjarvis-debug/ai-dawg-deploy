@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTrackStore } from '@/src/core/store';
+import { useTrackStore } from '$lib/../core/store';
 import styles from './HarmonyGenerator.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface VoiceProfile {
   id: string;
   name: string;
@@ -84,7 +85,7 @@ export function HarmonyGenerator({ leadVocalUrl, leadVocalDuration = 10 }: Harmo
         setCostEstimate(data.estimatedCost);
       }
     } catch (err) {
-      console.error('Failed to fetch cost estimate:', err);
+      logger.error('Failed to fetch cost estimate:', err);
     }
   };
 

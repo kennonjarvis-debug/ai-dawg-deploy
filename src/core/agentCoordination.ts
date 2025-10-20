@@ -15,6 +15,7 @@ import fs from 'fs';
 import path from 'path';
 import { EventBus, getEventBus } from './eventBus';
 
+import { logger } from '$lib/utils/logger';
 export interface AgentStatus {
   id: string;
   name: string;
@@ -116,7 +117,7 @@ export class AgentCoordination {
       this.publishStatusUpdate();
     }, 30000);
 
-    console.log(`[AgentCoordination] ${this.agentName} initialized`);
+    logger.info(`[AgentCoordination] ${this.agentName} initialized`);
   }
 
   /**
@@ -233,7 +234,7 @@ export class AgentCoordination {
     // Update own status to needs_help
     await this.updateStatus({ needs_help: true });
 
-    console.log(`[AgentCoordination] Help requested: ${issue}`);
+    logger.info(`[AgentCoordination] Help requested: ${issue}`);
     return helpRequest.id;
   }
 
@@ -262,7 +263,7 @@ export class AgentCoordination {
     // Update own status to unavailable for help
     await this.updateStatus({ available_to_help: false });
 
-    console.log(`[AgentCoordination] Claimed help request: ${requestId}`);
+    logger.info(`[AgentCoordination] Claimed help request: ${requestId}`);
     return true;
   }
 
@@ -297,7 +298,7 @@ export class AgentCoordination {
     // Update own status to available for help again
     await this.updateStatus({ available_to_help: true });
 
-    console.log(`[AgentCoordination] Resolved help request: ${requestId}`);
+    logger.info(`[AgentCoordination] Resolved help request: ${requestId}`);
   }
 
   /**
@@ -323,7 +324,7 @@ export class AgentCoordination {
       focus,
     });
 
-    console.log(`[AgentCoordination] Buddy pair created with ${buddyId}: ${focus}`);
+    logger.info(`[AgentCoordination] Buddy pair created with ${buddyId}: ${focus}`);
   }
 
   /**
@@ -368,21 +369,21 @@ export class AgentCoordination {
 
   private handleStatusUpdate(payload: any): void {
     // Update local state cache if needed
-    console.log(`[AgentCoordination] Status update from ${payload.agent_name}`);
+    logger.info(`[AgentCoordination] Status update from ${payload.agent_name}`);
   }
 
   private handleHelpRequest(payload: any): void {
-    console.log(
+    logger.info(
       `[AgentCoordination] Help requested by ${payload.requester_name}: ${payload.issue}`
     );
   }
 
   private handleHelpClaimed(payload: any): void {
-    console.log(`[AgentCoordination] Help request claimed by ${payload.claimed_by_name}`);
+    logger.info(`[AgentCoordination] Help request claimed by ${payload.claimed_by_name}`);
   }
 
   private handleHelpResolved(payload: any): void {
-    console.log(`[AgentCoordination] Help request resolved by ${payload.resolved_by_name}`);
+    logger.info(`[AgentCoordination] Help request resolved by ${payload.resolved_by_name}`);
   }
 
   private publishStatusUpdate(): void {
@@ -424,7 +425,7 @@ export class AgentCoordination {
       const data = fs.readFileSync(this.stateFilePath, 'utf-8');
       return JSON.parse(data);
     } catch (error) {
-      console.error('[AgentCoordination] Failed to load state:', error);
+      logger.error('[AgentCoordination] Failed to load state:', error);
       return {
         agents: [],
         help_requests: [],
@@ -445,7 +446,7 @@ export class AgentCoordination {
       state.last_sync = new Date().toISOString();
       fs.writeFileSync(this.stateFilePath, JSON.stringify(state, null, 2));
     } catch (error) {
-      console.error('[AgentCoordination] Failed to save state:', error);
+      logger.error('[AgentCoordination] Failed to save state:', error);
     }
   }
 }

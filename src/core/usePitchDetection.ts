@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
+import { logger } from '$lib/utils/logger';
   PitchDetector,
   PitchDetectionResult,
   PitchDetectorConfig,
@@ -231,7 +232,7 @@ export function usePitchDetection({
    */
   const start = useCallback(() => {
     if (!detectorRef.current || !analyserRef.current) {
-      console.warn('[usePitchDetection] Cannot start - detector not initialized');
+      logger.warn('[usePitchDetection] Cannot start - detector not initialized');
       return;
     }
 

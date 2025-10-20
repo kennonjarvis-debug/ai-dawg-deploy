@@ -22,8 +22,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useMelodyAnalysis } from '@/src/core/useMelodyAnalysis';
-import { useTrackStore } from '@/src/core/store';
+import { useMelodyAnalysis } from '$lib/../core/useMelodyAnalysis';
+import { useTrackStore } from '$lib/../core/store';
 import styles from './MusicGenerator.example.module.css';
 
 interface MusicGeneratorProps {

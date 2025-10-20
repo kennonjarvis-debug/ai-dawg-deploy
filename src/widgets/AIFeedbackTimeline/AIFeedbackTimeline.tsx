@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { MessageSquare, AlertCircle, CheckCircle, Info, TrendingUp } from 'lucide-react';
-import { getEventBus } from '@/src/core/eventBus';
+import { getEventBus } from '$lib/../core/eventBus';
 import styles from './AIFeedbackTimeline.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface AIFeedbackTimelineProps {
   recordingId?: string;
   journeyId?: string;
@@ -89,7 +90,7 @@ export function AIFeedbackTimeline({
         eventBus.subscribe('mix.suggestion', handleMixSuggestion);
         eventBus.subscribe('master.completed', handleMasterCompleted);
       } catch (error) {
-        console.error('[AIFeedbackTimeline] Failed to connect to event bus:', error);
+        logger.error('[AIFeedbackTimeline] Failed to connect to event bus:', error);
       }
     };
 

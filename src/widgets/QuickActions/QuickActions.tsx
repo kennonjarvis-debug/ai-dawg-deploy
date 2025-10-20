@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import styles from './QuickActions.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface QuickActionsProps {
   onSave?: () => void;
   onExport?: () => void;
@@ -34,7 +35,7 @@ export function QuickActions({
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
-      console.error('Save failed:', err);
+      logger.error('Save failed:', err);
     }
   };
 

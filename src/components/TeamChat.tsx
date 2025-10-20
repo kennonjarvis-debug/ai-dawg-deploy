@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
+import { logger } from '$lib/utils/logger';
 interface ChatMessage {
   id: string;
   timestamp: string;
@@ -51,7 +52,7 @@ export function TeamChat() {
         });
       }
     } catch (error) {
-      console.error('Failed to fetch messages:', error);
+      logger.error('Failed to fetch messages:', error);
     }
   };
 
@@ -87,7 +88,7 @@ export function TeamChat() {
         setInputMessage('');
       }
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
     } finally {
       setIsLoading(false);
     }

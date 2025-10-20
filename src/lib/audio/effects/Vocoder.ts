@@ -258,7 +258,7 @@ export class Vocoder extends Effect {
 
 			// Note: In a full implementation, we would extract the envelope from
 			// modulatorFilter and apply it to bandGain. For offline rendering,
-			// this would require custom processing or ScriptProcessorNode (deprecated).
+			// this would require custom processing or AudioWorklet.
 			// This simplified version uses the carrier bands without envelope following.
 		}
 

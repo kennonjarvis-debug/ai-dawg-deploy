@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { logger } from './logger';
 /**
  * Hook to manage project state for widgets
  * Centralizes project data that multiple widgets need
@@ -243,7 +244,7 @@ export async function exportProjectToWAV(tracks: any[], audioContext: AudioConte
 
     return true;
   } catch (err: any) {
-    console.error('Export failed:', err);
+    logger.error('Export failed:', err);
     throw err;
   }
 }
@@ -254,7 +255,7 @@ export async function exportProjectToWAV(tracks: any[], audioContext: AudioConte
 export async function shareProject(projectId: string) {
   // TODO: Implement sharing functionality
   // Could use Web Share API or generate shareable link
-  console.log('Share functionality coming soon for project:', projectId);
+  logger.info('Share functionality coming soon for project:', projectId);
   alert('Share functionality coming soon!');
 }
 

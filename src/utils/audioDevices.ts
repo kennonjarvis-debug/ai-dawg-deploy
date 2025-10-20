@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 /**
  * Audio Device Utilities
  * Functions for managing audio input/output devices
@@ -30,7 +32,7 @@ export const getAudioInputDevices = async (): Promise<AudioDevice[]> => {
 
     return audioInputs;
   } catch (error) {
-    console.error('Failed to get audio input devices:', error);
+    logger.error('Failed to get audio input devices:', error);
     return [];
   }
 };
@@ -52,7 +54,7 @@ export const getAudioOutputDevices = async (): Promise<AudioDevice[]> => {
 
     return audioOutputs;
   } catch (error) {
-    console.error('Failed to get audio output devices:', error);
+    logger.error('Failed to get audio output devices:', error);
     return [];
   }
 };

@@ -2,11 +2,12 @@
 
 import { FC, useState, useRef, useEffect } from 'react';
 import { Send, MessageSquare, X, Loader2, Zap, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
-import { useTrackStore } from '@/src/core/store';
-import { useTransport } from '@/src/core/transport';
-import { executeAction } from '@/lib/ai/actions';
+import { useTrackStore } from '$lib/../core/store';
+import { useTransport } from '$lib/../core/transport';
+import { executeAction } from '$lib/ai/actions';
 import styles from './ChatPanel.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -57,7 +58,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
       // Speech Recognition (STT)
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
-        console.log('[ChatPanel] 🎤 Speech recognition supported');
+        logger.info('[ChatPanel] 🎤 Speech recognition supported');
         setIsSpeechSupported(true);
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
@@ -66,32 +67,32 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
 
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
-          console.log('[ChatPanel] 🎤 Speech recognized:', transcript);
+          logger.info('[ChatPanel] 🎤 Speech recognized:', transcript);
           setInput((prev) => prev + ' ' + transcript);
           setIsRecording(false);
         };
 
         recognition.onerror = (event: any) => {
-          console.error('[ChatPanel] ❌ Speech recognition error:', event.error);
+          logger.error('[ChatPanel] ❌ Speech recognition error:', event.error);
           setIsRecording(false);
         };
 
         recognition.onend = () => {
-          console.log('[ChatPanel] 🎤 Speech recognition ended');
+          logger.info('[ChatPanel] 🎤 Speech recognition ended');
           setIsRecording(false);
         };
 
         setSpeechRecognition(recognition);
       } else {
-        console.log('[ChatPanel] ⚠️ Speech recognition not supported');
+        logger.info('[ChatPanel] ⚠️ Speech recognition not supported');
       }
 
       // Speech Synthesis (TTS)
       if (window.speechSynthesis) {
-        console.log('[ChatPanel] 🔊 Speech synthesis supported');
+        logger.info('[ChatPanel] 🔊 Speech synthesis supported');
         speechSynthesisRef.current = window.speechSynthesis;
       } else {
-        console.log('[ChatPanel] ⚠️ Speech synthesis not supported');
+        logger.info('[ChatPanel] ⚠️ Speech synthesis not supported');
       }
     }
   }, []);
@@ -100,16 +101,16 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
     if (!speechRecognition) return;
 
     if (isRecording) {
-      console.log('[ChatPanel] 🛑 Stopping voice input');
+      logger.info('[ChatPanel] 🛑 Stopping voice input');
       speechRecognition.stop();
       setIsRecording(false);
     } else {
-      console.log('[ChatPanel] 🎤 Starting voice input');
+      logger.info('[ChatPanel] 🎤 Starting voice input');
       try {
         speechRecognition.start();
         setIsRecording(true);
       } catch (error) {
-        console.error('[ChatPanel] ❌ Failed to start voice input:', error);
+        logger.error('[ChatPanel] ❌ Failed to start voice input:', error);
       }
     }
   };
@@ -117,7 +118,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
   const speakText = (text: string) => {
     if (!speechSynthesisRef.current || !ttsEnabled) return;
 
-    console.log('[ChatPanel] 🔊 Speaking text:', text.substring(0, 50) + '...');
+    logger.info('[ChatPanel] 🔊 Speaking text:', text.substring(0, 50) + '...');
 
     // Cancel any ongoing speech
     speechSynthesisRef.current.cancel();
@@ -129,17 +130,17 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
     utterance.volume = 1.0;
 
     utterance.onstart = () => {
-      console.log('[ChatPanel] 🔊 Speech started');
+      logger.info('[ChatPanel] 🔊 Speech started');
       setIsSpeaking(true);
     };
 
     utterance.onend = () => {
-      console.log('[ChatPanel] 🔊 Speech ended');
+      logger.info('[ChatPanel] 🔊 Speech ended');
       setIsSpeaking(false);
     };
 
     utterance.onerror = (event) => {
-      console.error('[ChatPanel] ❌ Speech synthesis error:', event);
+      logger.error('[ChatPanel] ❌ Speech synthesis error:', event);
       setIsSpeaking(false);
     };
 
@@ -148,7 +149,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
 
   const stopSpeaking = () => {
     if (speechSynthesisRef.current) {
-      console.log('[ChatPanel] 🛑 Stopping speech');
+      logger.info('[ChatPanel] 🛑 Stopping speech');
       speechSynthesisRef.current.cancel();
       setIsSpeaking(false);
     }
@@ -157,7 +158,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    console.log('[ChatPanel] 🚀 Sending message:', input.trim());
+    logger.info('[ChatPanel] 🚀 Sending message:', input.trim());
 
     const userMessage: Message = {
       role: 'user',
@@ -189,8 +190,8 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
         })),
       };
 
-      console.log('[ChatPanel] 📊 Project context:', projectContext);
-      console.log('[ChatPanel] 🔧 Tools enabled: true');
+      logger.info('[ChatPanel] 📊 Project context:', projectContext);
+      logger.info('[ChatPanel] 🔧 Tools enabled: true');
 
       // Determine which API to use
       const useMockAPI = process.env.NEXT_PUBLIC_USE_MOCK_AI === 'true';
@@ -203,7 +204,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
         apiEndpoint = '/api/chat-openai';
       }
 
-      console.log('[ChatPanel] 🎯 Using API:', apiEndpoint, '(provider:', aiProvider, ', mock:', useMockAPI, ')');
+      logger.info('[ChatPanel] 🎯 Using API:', apiEndpoint, '(provider:', aiProvider, ', mock:', useMockAPI, ')');
 
       // Call chat API with streaming and tools enabled
       const response = await fetch(apiEndpoint, {
@@ -224,11 +225,11 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[ChatPanel] ❌ API error:', response.status, errorText);
+        logger.error('[ChatPanel] ❌ API error:', response.status, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      console.log('[ChatPanel] ✅ API response received, starting stream...');
+      logger.info('[ChatPanel] ✅ API response received, starting stream...');
 
       // Handle streaming response
       const reader = response.body?.getReader();
@@ -259,7 +260,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
               if (data === '[DONE]') {
-                console.log('[ChatPanel] 🏁 Stream complete');
+                logger.info('[ChatPanel] 🏁 Stream complete');
 
                 // Speak the assistant's response if TTS is enabled
                 if (assistantMessage.trim() && ttsEnabled) {
@@ -268,14 +269,14 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
 
                 // If we have a pending tool use, execute it now
                 if (currentToolUse) {
-                  console.log('[ChatPanel] 🔧 Executing pending tool:', currentToolUse.name);
-                  console.log('[ChatPanel] 📝 Tool input JSON:', currentToolUse.inputJson);
+                  logger.info('[ChatPanel] 🔧 Executing pending tool:', currentToolUse.name);
+                  logger.info('[ChatPanel] 📝 Tool input JSON:', currentToolUse.inputJson);
                   try {
                     const input = JSON.parse(currentToolUse.inputJson);
-                    console.log('[ChatPanel] 📋 Parsed tool input:', input);
+                    logger.info('[ChatPanel] 📋 Parsed tool input:', input);
 
                     const result = await executeAction(currentToolUse.name, input);
-                    console.log('[ChatPanel] ✅ Tool execution result:', result);
+                    logger.info('[ChatPanel] ✅ Tool execution result:', result);
 
                     // Update the executing message with the result
                     setMessages((prev) => {
@@ -293,7 +294,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
 
                     currentToolUse = null;
                   } catch (e) {
-                    console.error('[ChatPanel] ❌ Failed to execute tool:', e);
+                    logger.error('[ChatPanel] ❌ Failed to execute tool:', e);
                   }
                 }
                 break;
@@ -301,12 +302,12 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
 
               try {
                 const parsed = JSON.parse(data);
-                console.log('[ChatPanel] 📦 Parsed event:', parsed);
+                logger.info('[ChatPanel] 📦 Parsed event:', parsed);
 
                 // Handle text content
                 if (parsed.text) {
                   assistantMessage += parsed.text;
-                  console.log('[ChatPanel] 💬 Text chunk received:', parsed.text);
+                  logger.info('[ChatPanel] 💬 Text chunk received:', parsed.text);
 
                   // Update the assistant message in state
                   setMessages((prev) => {
@@ -323,7 +324,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
                 // Handle tool use start
                 if (parsed.type === 'tool_use') {
                   const { name, id } = parsed;
-                  console.log('[ChatPanel] 🔧 Tool use started:', name, 'ID:', id);
+                  logger.info('[ChatPanel] 🔧 Tool use started:', name, 'ID:', id);
 
                   // Start tracking this tool use
                   currentToolUse = {
@@ -346,12 +347,12 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
 
                 // Handle tool input chunks
                 if (parsed.type === 'tool_input' && currentToolUse) {
-                  console.log('[ChatPanel] 📝 Tool input chunk:', parsed.partial_json);
+                  logger.info('[ChatPanel] 📝 Tool input chunk:', parsed.partial_json);
                   // Accumulate the partial JSON
                   currentToolUse.inputJson += parsed.partial_json;
                 }
               } catch (e) {
-                console.warn('[ChatPanel] ⚠️ Failed to parse JSON:', data, e);
+                logger.warn('[ChatPanel] ⚠️ Failed to parse JSON:', data, e);
                 // Skip invalid JSON
               }
             }
@@ -359,7 +360,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
         }
       }
     } catch (error) {
-      console.error('[ChatPanel] ❌ Chat error:', error);
+      logger.error('[ChatPanel] ❌ Chat error:', error);
 
       // Add error message
       setMessages((prev) => [
@@ -371,7 +372,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ className }) => {
         },
       ]);
     } finally {
-      console.log('[ChatPanel] 🔄 Request complete, loading set to false');
+      logger.info('[ChatPanel] 🔄 Request complete, loading set to false');
       setIsLoading(false);
     }
   };

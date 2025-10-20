@@ -13,6 +13,7 @@ import type { MIDIInstrumentConfig } from './midi/types';
 import { EffectsRack } from './effects/EffectsRack';
 import { TrackError, RecordingError, ErrorCode } from './errors';
 
+import { logger } from '$lib/utils/logger';
 /**
  * Track configuration
  */
@@ -106,7 +107,7 @@ export class Track {
 			// Connect to input
 			player.connect(this.input);
 
-			console.log(`Track ${this.name}: Loaded audio from ${url}`);
+			logger.info(`Track ${this.name}: Loaded audio from ${url}`);
 		} catch (error) {
 			throw new TrackError(
 				`Failed to load audio: ${error}`,
@@ -282,7 +283,7 @@ export class Track {
 			this.recorder.start();
 			this.isRecording = true;
 
-			console.log(`Track ${this.name}: Recording started`);
+			logger.info(`Track ${this.name}: Recording started`);
 		} catch (error) {
 			throw new RecordingError(
 				`Failed to start recording: ${error}`,
@@ -331,7 +332,7 @@ export class Track {
 
 			this.addClip(clip);
 
-			console.log(`Track ${this.name}: Recording stopped, clip created`);
+			logger.info(`Track ${this.name}: Recording stopped, clip created`);
 
 			return audioBuffer;
 		} catch (error) {
@@ -373,7 +374,7 @@ export class Track {
 			midiManager.startRecording(this.id);
 			this.isRecording = true;
 
-			console.log(`Track ${this.name}: MIDI recording started`);
+			logger.info(`Track ${this.name}: MIDI recording started`);
 		} catch (error) {
 			throw new RecordingError(
 				`Failed to start MIDI recording: ${error}`,
@@ -401,9 +402,9 @@ export class Track {
 
 			if (clip) {
 				this.addMIDIClip(clip);
-				console.log(`Track ${this.name}: MIDI recording stopped, clip created`);
+				logger.info(`Track ${this.name}: MIDI recording stopped, clip created`);
 			} else {
-				console.warn(`Track ${this.name}: MIDI recording stopped, no notes recorded`);
+				logger.warn(`Track ${this.name}: MIDI recording stopped, no notes recorded`);
 			}
 
 			return clip;
@@ -439,7 +440,7 @@ export class Track {
 			this.instrument.connect(this.input);
 		}
 
-		console.log(`Track ${this.name}: MIDI instrument set to ${config.type}`);
+		logger.info(`Track ${this.name}: MIDI instrument set to ${config.type}`);
 	}
 
 	/**
@@ -638,12 +639,12 @@ export class Track {
 		// Stop recording if active
 		if (this.isRecording) {
 			if (this.type === 'audio') {
-				this.stopRecording().catch(console.error);
+				this.stopRecording().catch(logger.error);
 			} else if (this.type === 'midi') {
 				try {
 					this.stopMIDIRecording();
 				} catch (e) {
-					console.error(e);
+					logger.error(e);
 				}
 			}
 		}

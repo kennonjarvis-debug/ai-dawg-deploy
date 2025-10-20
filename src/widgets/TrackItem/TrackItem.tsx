@@ -2,9 +2,9 @@
 
 import { FC, useState } from 'react';
 import { Volume2, Circle, Trash2, Copy, Download, Sliders, Activity, Mic } from 'lucide-react';
-import { Track } from '@/src/core/types';
-import { useTrackStore } from '@/src/core/store';
-import { usePlayback } from '@/src/core/usePlayback';
+import { Track } from '$lib/../core/types';
+import { useTrackStore } from '$lib/../core/store';
+import { usePlayback } from '$lib/../core/usePlayback';
 import { exportRecording } from '@/src/utils/exportAudio';
 import { DeviceSelector } from './DeviceSelector';
 import { EffectsPanel } from '@/src/widgets/EffectsPanel/EffectsPanel';
@@ -12,6 +12,7 @@ import { PitchMonitor } from '@/src/widgets/PitchMonitor/PitchMonitor';
 import { VocalEffectsPanel } from '@/src/widgets/VocalEffectsPanel/VocalEffectsPanel';
 import styles from './TrackItem.module.css';
 
+import { logger } from '$lib/utils/logger';
 interface TrackItemProps {
   track: Track;
   isActive: boolean;
@@ -94,7 +95,7 @@ export const TrackItem: FC<TrackItemProps> = ({ track, isActive, onSelect }) => 
         filename: `${track.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.wav`,
       });
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       alert('Failed to export recording');
     }
   };

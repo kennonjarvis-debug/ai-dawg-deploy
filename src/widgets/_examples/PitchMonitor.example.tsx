@@ -22,7 +22,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePitchDetection } from '@/src/core/usePitchDetection';
+import { usePitchDetection } from '$lib/../core/usePitchDetection';
 import styles from './PitchMonitor.example.module.css';
 
 interface PitchMonitorProps {

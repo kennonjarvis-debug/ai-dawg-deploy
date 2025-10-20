@@ -13,6 +13,7 @@ import fs from 'fs';
 import path from 'path';
 import { createHmac } from 'crypto';
 
+import { logger } from '$lib/utils/logger';
 export interface EventEnvelope {
   event: string; // Topic name (e.g., "journey.started")
   version: string; // Schema version (e.g., "v1")
@@ -60,7 +61,7 @@ export class EventBus {
    */
   async connect(): Promise<void> {
     if (this.connected) {
-      console.warn('[EventBus] Already connected');
+      logger.warn('[EventBus] Already connected');
       return;
     }
 
@@ -83,7 +84,7 @@ export class EventBus {
     }
 
     this.connected = true;
-    console.log(`[EventBus] Connected via ${this.config.mode}`);
+    logger.info(`[EventBus] Connected via ${this.config.mode}`);
   }
 
   /**
@@ -99,7 +100,7 @@ export class EventBus {
     }
 
     this.connected = false;
-    console.log('[EventBus] Disconnected');
+    logger.info('[EventBus] Disconnected');
   }
 
   /**
@@ -138,7 +139,7 @@ export class EventBus {
         break;
     }
 
-    console.log(`[EventBus] Published ${topic} (${envelope.id})`);
+    logger.info(`[EventBus] Published ${topic} (${envelope.id})`);
   }
 
   /**
@@ -150,7 +151,7 @@ export class EventBus {
     }
 
     this.handlers.get(topic)!.add(handler);
-    console.log(`[EventBus] Subscribed to ${topic}`);
+    logger.info(`[EventBus] Subscribed to ${topic}`);
   }
 
   /**
@@ -289,7 +290,7 @@ export class EventBus {
         // Trigger handlers
         this.triggerHandlers(envelope.event, envelope);
       } catch (error) {
-        console.error('[EventBus] Failed to parse event:', error);
+        logger.error('[EventBus] Failed to parse event:', error);
       }
     }
   }
@@ -306,7 +307,7 @@ export class EventBus {
       try {
         await handler(envelope);
       } catch (error) {
-        console.error(`[EventBus] Handler error for ${topic}:`, error);
+        logger.error(`[EventBus] Handler error for ${topic}:`, error);
       }
     }
   }

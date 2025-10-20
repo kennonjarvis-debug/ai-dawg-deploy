@@ -1,3 +1,5 @@
+import { logger } from '$lib/utils/logger';
+
 /**
  * TTS Manager - Text-to-Speech with ElevenLabs
  * Handles mood-based voice modulation for Jarvis personality
@@ -81,7 +83,7 @@ export class TTSManager {
 			const audioBlob = await response.blob();
 			await this.playAudio(audioBlob);
 		} catch (error) {
-			console.error('ElevenLabs TTS error:', error);
+			logger.error('ElevenLabs TTS error:', error);
 			// Fallback to browser TTS
 			await this.speakWithBrowser(text, mood);
 		}
@@ -155,7 +157,7 @@ export class TTSManager {
 	 */
 	private async speakWithBrowser(text: string, mood: JarvisMood): Promise<void> {
 		if (!('speechSynthesis' in window)) {
-			console.warn('Browser TTS not supported');
+			logger.warn('Browser TTS not supported');
 			return;
 		}
 

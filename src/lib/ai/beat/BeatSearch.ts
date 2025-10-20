@@ -6,6 +6,7 @@
 import { supabase } from '$lib/api/supabase';
 import { mapInputToStyle, BEAT_STYLES, type BeatStyle } from './styles';
 
+import { logger } from '$lib/utils/logger';
 export interface BeatSearchParams {
 	query?: string; // Free-text search
 	style?: string; // Specific style key
@@ -55,7 +56,7 @@ export class BeatSearch {
 			});
 
 			if (error) {
-				console.error('Beat search error:', error);
+				logger.error('Beat search error:', error);
 				return this.getFallbackBeats(style, limit);
 			}
 
@@ -73,7 +74,7 @@ export class BeatSearch {
 				playCount: beat.play_count || 0
 			}));
 		} catch (err) {
-			console.error('Beat search exception:', err);
+			logger.error('Beat search exception:', err);
 			return this.getFallbackBeats(style, limit);
 		}
 	}
@@ -106,7 +107,7 @@ export class BeatSearch {
 		try {
 			await supabase.rpc('increment_beat_play_count', { p_beat_id: beatId });
 		} catch (err) {
-			console.error('Failed to increment play count:', err);
+			logger.error('Failed to increment play count:', err);
 		}
 	}
 
@@ -117,7 +118,7 @@ export class BeatSearch {
 		try {
 			await supabase.rpc('increment_beat_use_count', { p_beat_id: beatId });
 		} catch (err) {
-			console.error('Failed to increment use count:', err);
+			logger.error('Failed to increment use count:', err);
 		}
 	}
 
