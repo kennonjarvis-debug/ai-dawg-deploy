@@ -18,6 +18,7 @@ export const TransportBar: React.FC = () => {
   const {
     isPlaying,
     isRecording,
+    isRecordArmed,
     isLooping,
     currentTime,
     bpm,
@@ -208,20 +209,22 @@ export const TransportBar: React.FC = () => {
             <Square size={20} fill="currentColor" />
           </button>
 
-          {/* Record */}
+          {/* Record - Pro Tools style: click to arm (flashing), play to record (solid) */}
           <button
             data-testid="record-button"
             onClick={toggleRecord}
             className={cn(
               'p-2 rounded-full transition-all',
               isRecording
-                ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/50 animate-pulse recording active'
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/50 recording active'
+                : isRecordArmed
+                ? 'bg-red-600/70 hover:bg-red-600/80 text-white shadow-md shadow-red-500/30 animate-pulse armed'
                 : 'bg-bg-surface-2 hover:bg-bg-surface-hover text-red-400 hover:text-red-300'
             )}
-            aria-label={isRecording ? 'Stop Recording' : 'Record'}
-            title={isRecording ? 'Stop Recording' : 'Record'}
+            aria-label={isRecording ? 'Recording' : isRecordArmed ? 'Record Armed (click Play to record)' : 'Arm Record'}
+            title={isRecording ? 'Recording' : isRecordArmed ? 'Record Armed (click Play to record)' : 'Arm Record'}
           >
-            <Circle size={20} fill={isRecording ? "red" : "none"} stroke="currentColor" strokeWidth={2} />
+            <Circle size={20} fill={isRecording || isRecordArmed ? "red" : "none"} stroke="currentColor" strokeWidth={2} />
           </button>
 
           {/* Skip Forward */}

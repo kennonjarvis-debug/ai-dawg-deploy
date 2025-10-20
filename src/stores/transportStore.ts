@@ -4,6 +4,7 @@ export interface TransportState {
   // Playback state
   isPlaying: boolean;
   isRecording: boolean;
+  isRecordArmed: boolean; // Pro Tools style: Record button arms, Play starts recording
   isLooping: boolean;
   loopStart: number; // seconds
   loopEnd: number; // seconds
@@ -105,6 +106,7 @@ export const useTransportStore = create<TransportState>((set, get) => ({
   // Initial state
   isPlaying: false,
   isRecording: false,
+  isRecordArmed: false,
   isLooping: false,
   loopStart: 0,
   loopEnd: 8,
@@ -135,8 +137,15 @@ export const useTransportStore = create<TransportState>((set, get) => ({
 
   // Actions
   play: () => {
-    set({ isPlaying: true });
-    console.log('[Transport] Playing');
+    const { isRecordArmed } = get();
+    // Pro Tools behavior: if record is armed, start recording
+    if (isRecordArmed) {
+      set({ isPlaying: true, isRecording: true });
+      console.log('[Transport] Playing + Recording (armed)');
+    } else {
+      set({ isPlaying: true });
+      console.log('[Transport] Playing');
+    }
   },
 
   pause: () => {
@@ -145,8 +154,8 @@ export const useTransportStore = create<TransportState>((set, get) => ({
   },
 
   stop: () => {
-    set({ isPlaying: false, isRecording: false, currentTime: 0 });
-    console.log('[Transport] Stopped - playback and recording stopped');
+    set({ isPlaying: false, isRecording: false, isRecordArmed: false, currentTime: 0 });
+    console.log('[Transport] Stopped - playback, recording, and record arm all stopped');
   },
 
   togglePlay: () => {
@@ -164,8 +173,9 @@ export const useTransportStore = create<TransportState>((set, get) => ({
   },
 
   toggleRecord: () => {
-    set((state) => ({ isRecording: !state.isRecording }));
-    console.log('[Transport] Record:', !get().isRecording);
+    // Pro Tools behavior: Toggle record ARMING, not actual recording
+    set((state) => ({ isRecordArmed: !state.isRecordArmed }));
+    console.log('[Transport] Record Armed:', get().isRecordArmed);
   },
 
   startRecording: () => {
