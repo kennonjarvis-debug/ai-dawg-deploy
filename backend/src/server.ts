@@ -10,6 +10,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { apiLimiter } from './middleware/rateLimiter.js';
+import { logger } from '../../src/lib/utils/logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -40,8 +41,12 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Request logging (simple)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.path}`);
+  logger.info('HTTP request', {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  });
   next();
 });
 
@@ -100,7 +105,13 @@ app.use((req: Request, res: Response) => {
 
 // Global error handler
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Global error handler:', error);
+  logger.error('Global error handler triggered', {
+    error: error.message,
+    stack: error.stack,
+    statusCode: error.statusCode,
+    path: req.path,
+    method: req.method
+  });
 
   // Handle multer errors
   if (error.code === 'LIMIT_FILE_SIZE') {
@@ -138,40 +149,34 @@ const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
-  console.error('❌ Missing required environment variables:');
-  missingEnvVars.forEach(varName => {
-    console.error(`   - ${varName}`);
+  logger.error('Missing required environment variables', {
+    missingVars: missingEnvVars
   });
-  console.error('\nPlease set these variables in your .env file');
+  logger.error('Please set these variables in your .env file');
   process.exit(1);
 }
 
 // Start server
 app.listen(PORT, () => {
-  console.log('');
-  console.log('╔══════════════════════════════════════════╗');
-  console.log('║     DAWG AI Backend Server Running       ║');
-  console.log('╚══════════════════════════════════════════╝');
-  console.log('');
-  console.log(`🚀 Server:      http://localhost:${PORT}`);
-  console.log(`📚 API:         http://localhost:${PORT}/api`);
-  console.log(`💚 Health:      http://localhost:${PORT}/health`);
-  console.log('');
-  console.log(`🔐 Supabase:    ${process.env.SUPABASE_URL}`);
-  console.log(`🌐 Frontend:    ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log('');
-  console.log('Press Ctrl+C to stop');
-  console.log('');
+  logger.info('DAWG AI Backend Server Running', {
+    port: PORT,
+    serverUrl: `http://localhost:${PORT}`,
+    apiUrl: `http://localhost:${PORT}/api`,
+    healthUrl: `http://localhost:${PORT}/health`,
+    supabaseUrl: process.env.SUPABASE_URL,
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    nodeEnv: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('\n🛑 SIGTERM received, shutting down gracefully...');
+  logger.info('SIGTERM received, shutting down gracefully');
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('\n🛑 SIGINT received, shutting down gracefully...');
+  logger.info('SIGINT received, shutting down gracefully');
   process.exit(0);
 });
 

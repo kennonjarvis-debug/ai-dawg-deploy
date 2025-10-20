@@ -9,6 +9,15 @@ import { create } from 'zustand';
 import { logger } from '$lib/utils/logger';
 export type TransportState = 'stopped' | 'playing' | 'paused' | 'recording';
 
+// Pro Tools style record modes
+export type RecordMode =
+  | 'normal'           // Standard recording
+  | 'quick-punch'      // Manual punch in/out on the fly
+  | 'track-punch'      // Pre-defined punch in/out times
+  | 'loop-record'      // Create new takes on each loop pass
+  | 'destructive'      // Overwrite existing audio permanently
+  | 'non-destructive'; // Layer recordings (default)
+
 interface TransportStore {
   state: TransportState;
   isPlaying: boolean;
@@ -16,6 +25,13 @@ interface TransportStore {
   isRecording: boolean;
   position: string; // Time position (bars:beats:sixteenths)
   bpm: number;
+
+  // Record modes (Pro Tools style)
+  recordMode: RecordMode;
+  punchInTime: number | null;  // Time in seconds for track punch
+  punchOutTime: number | null; // Time in seconds for track punch
+  loopStart: number | null;    // Loop start time for loop recording
+  loopEnd: number | null;      // Loop end time for loop recording
 
   // Actions
   play: () => Promise<void>;
@@ -25,6 +41,15 @@ interface TransportStore {
   stopRecording: () => void;
   setBPM: (bpm: number) => void;
   setPosition: (position: string) => void;
+  goToEnd: () => void;         // Added: missing goToEnd function
+  returnToStart: () => void;    // Added: explicit return to start
+
+  // Record mode actions
+  setRecordMode: (mode: RecordMode) => void;
+  setPunchTimes: (inTime: number, outTime: number) => void;
+  setLoopRange: (start: number, end: number) => void;
+  quickPunchIn: () => void;    // Manual punch in during playback
+  quickPunchOut: () => void;   // Manual punch out during playback
 }
 
 export const useTransport = create<TransportStore>((set, get) => ({
@@ -34,6 +59,13 @@ export const useTransport = create<TransportStore>((set, get) => ({
   isRecording: false,
   position: '0:0:0',
   bpm: 120,
+
+  // Record mode state
+  recordMode: 'non-destructive',
+  punchInTime: null,
+  punchOutTime: null,
+  loopStart: null,
+  loopEnd: null,
 
   play: async () => {
     try {
@@ -112,6 +144,65 @@ export const useTransport = create<TransportStore>((set, get) => ({
   setPosition: (position: string) => {
     Tone.Transport.position = position;
     set({ position });
+  },
+
+  // Navigation functions
+  goToEnd: () => {
+    // Get the total duration from the transport or use a default max
+    const totalDuration = Tone.Transport.loopEnd || Tone.Transport.seconds + 60;
+    Tone.Transport.seconds = typeof totalDuration === 'number' ? totalDuration : 0;
+    set({ position: Tone.Transport.position.toString().split('.')[0] });
+    logger.info('[Transport] Moved to end');
+  },
+
+  returnToStart: () => {
+    Tone.Transport.position = 0;
+    Tone.Transport.seconds = 0;
+    set({ position: '0:0:0' });
+    logger.info('[Transport] Returned to start');
+  },
+
+  // Record mode management
+  setRecordMode: (mode: RecordMode) => {
+    set({ recordMode: mode });
+    logger.info(`[Transport] Record mode set to: ${mode}`);
+  },
+
+  setPunchTimes: (inTime: number, outTime: number) => {
+    if (inTime >= outTime) {
+      logger.warn('[Transport] Punch in time must be before punch out time');
+      return;
+    }
+    set({ punchInTime: inTime, punchOutTime: outTime });
+    logger.info(`[Transport] Punch times set: ${inTime}s - ${outTime}s`);
+  },
+
+  setLoopRange: (start: number, end: number) => {
+    if (start >= end) {
+      logger.warn('[Transport] Loop start must be before loop end');
+      return;
+    }
+    set({ loopStart: start, loopEnd: end });
+    Tone.Transport.loopStart = start;
+    Tone.Transport.loopEnd = end;
+    Tone.Transport.loop = true;
+    logger.info(`[Transport] Loop range set: ${start}s - ${end}s`);
+  },
+
+  quickPunchIn: () => {
+    const { state, recordMode } = get();
+    if (state === 'playing' && recordMode === 'quick-punch') {
+      set({ isRecording: true, state: 'recording' });
+      logger.info('[Transport] Quick punch in');
+    }
+  },
+
+  quickPunchOut: () => {
+    const { state, recordMode } = get();
+    if (state === 'recording' && recordMode === 'quick-punch') {
+      set({ isRecording: false, state: 'playing' });
+      logger.info('[Transport] Quick punch out');
+    }
   },
 }));
 

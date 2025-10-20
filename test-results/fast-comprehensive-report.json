@@ -1,0 +1,104 @@
+{
+  "testId": "hybrid-test-atoms-1760922778402",
+  "timestamp": "2025-10-20T01:12:58.402Z",
+  "url": "https://www.dawg-ai.com",
+  "totalComponents": 3,
+  "findings": [
+    {
+      "component": "New Project Button",
+      "level": "atoms",
+      "status": "fail",
+      "severity": "high",
+      "category": "functionality",
+      "issue": "Component not found in DOM",
+      "evidence": [
+        "Selector: button:has-text(\"New Project\"), [data-testid=\"new-project-button\"]",
+        "Element does not exist"
+      ],
+      "recommendation": "Verify selector or component rendering logic",
+      "aiAnalysis": "Programmatic check failed - element not found",
+      "testMethod": "programmatic"
+    },
+    {
+      "component": "New Project Button",
+      "level": "atoms",
+      "status": "warning",
+      "severity": "low",
+      "category": "functionality",
+      "issue": "Could not perform AI vision analysis",
+      "evidence": [
+        "Could not resolve authentication method. Expected either apiKey or authToken to be set. Or for one of the \"X-Api-Key\" or \"Authorization\" headers to be explicitly omitted"
+      ],
+      "recommendation": "Rely on programmatic checks",
+      "aiAnalysis": "AI analysis unavailable",
+      "testMethod": "ai-vision"
+    },
+    {
+      "component": "Logout Button",
+      "level": "atoms",
+      "status": "fail",
+      "severity": "high",
+      "category": "functionality",
+      "issue": "Component not found in DOM",
+      "evidence": [
+        "Selector: button:has-text(\"Logout\"), button:has-text(\"Sign Out\")",
+        "Element does not exist"
+      ],
+      "recommendation": "Verify selector or component rendering logic",
+      "aiAnalysis": "Programmatic check failed - element not found",
+      "testMethod": "programmatic"
+    },
+    {
+      "component": "Logout Button",
+      "level": "atoms",
+      "status": "warning",
+      "severity": "low",
+      "category": "functionality",
+      "issue": "Could not perform AI vision analysis",
+      "evidence": [
+        "page.screenshot: Target page, context or browser has been closed"
+      ],
+      "recommendation": "Rely on programmatic checks",
+      "aiAnalysis": "AI analysis unavailable",
+      "testMethod": "ai-vision"
+    },
+    {
+      "component": "Filter Button",
+      "level": "atoms",
+      "status": "fail",
+      "severity": "high",
+      "category": "functionality",
+      "issue": "Component not found in DOM",
+      "evidence": [
+        "Selector: button:has-text(\"Filter\"), [aria-label*=\"filter\" i]",
+        "Element does not exist"
+      ],
+      "recommendation": "Verify selector or component rendering logic",
+      "aiAnalysis": "Programmatic check failed - element not found",
+      "testMethod": "programmatic"
+    },
+    {
+      "component": "Filter Button",
+      "level": "atoms",
+      "status": "warning",
+      "severity": "low",
+      "category": "functionality",
+      "issue": "Could not perform AI vision analysis",
+      "evidence": [
+        "page.screenshot: Target page, context or browser has been closed"
+      ],
+      "recommendation": "Rely on programmatic checks",
+      "aiAnalysis": "AI analysis unavailable",
+      "testMethod": "ai-vision"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 3,
+    "warnings": 3,
+    "enhancements": 0,
+    "criticalIssues": 0
+  },
+  "testDuration": 60382,
+  "aiConfidence": 0.9
+}

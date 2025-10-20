@@ -1,0 +1,203 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - img "DAWG AI logo" [ref=e8]
+          - generic [ref=e9]: DAWG AI
+        - generic [ref=e10]:
+          - link "Features" [ref=e11] [cursor=pointer]:
+            - /url: "#features"
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: "#pricing"
+          - button "Login" [ref=e13] [cursor=pointer]
+          - button "Get Started" [ref=e14] [cursor=pointer]
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - img [ref=e19]
+          - generic [ref=e22]: AI-Powered Music Production
+        - heading "Create Music Like a Professional Producer" [level=1] [ref=e23]:
+          - text: Create Music Like a
+          - generic [ref=e24]: Professional Producer
+        - paragraph [ref=e25]: DAWG AI brings studio-quality production to everyone. Comp, pitch correct, mix, and master your tracks with AI in seconds.
+        - generic [ref=e26]:
+          - button "Try Free Demo" [ref=e27] [cursor=pointer]:
+            - text: Try Free Demo
+            - img [ref=e28]
+          - button "View Pricing" [ref=e30] [cursor=pointer]
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - img [ref=e33]
+            - generic [ref=e35]: No credit card required
+          - generic [ref=e36]:
+            - img [ref=e37]
+            - generic [ref=e39]: Free forever plan
+          - generic [ref=e40]:
+            - img [ref=e41]
+            - generic [ref=e43]: Cancel anytime
+      - generic [ref=e48]:
+        - generic [ref=e49]: Your browser does not support the video tag.
+        - generic [ref=e52]: LIVE DEMO
+    - generic [ref=e54]:
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - img [ref=e57]
+          - generic [ref=e59]: Powered by AI
+        - heading "Studio-Quality Tools" [level=2] [ref=e60]
+        - paragraph [ref=e61]: Everything you need to produce professional music, powered by cutting-edge AI
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - img [ref=e65]
+          - heading "Auto-Comp" [level=3] [ref=e71]
+          - paragraph [ref=e72]: AI analyzes multiple vocal takes and creates the perfect comp automatically
+        - generic [ref=e74]:
+          - img [ref=e76]
+          - heading "Auto-Pitch" [level=3] [ref=e80]
+          - paragraph [ref=e81]: AI delivers natural-sounding pitch correction that preserves emotion and feel
+        - generic [ref=e83]:
+          - img [ref=e85]
+          - heading "Auto-Align" [level=3] [ref=e86]
+          - paragraph [ref=e87]: AI performs perfect timing alignment while preserving natural groove and feel
+        - generic [ref=e89]:
+          - img [ref=e91]
+          - heading "Auto-Mix" [level=3] [ref=e92]
+          - paragraph [ref=e93]: AI provides professional mixing with genre-aware balancing and effects
+        - generic [ref=e95]:
+          - img [ref=e97]
+          - heading "Auto-Master" [level=3] [ref=e101]
+          - paragraph [ref=e102]: AI delivers radio-ready mastering with loudness and clarity
+        - generic [ref=e104]:
+          - img [ref=e106]
+          - heading "AI Music Gen" [level=3] [ref=e109]
+          - paragraph [ref=e110]: AI generates chords, melodies, and full arrangements
+    - generic [ref=e113]:
+      - generic [ref=e114]:
+        - heading "Simple, Transparent Pricing" [level=2] [ref=e115]
+        - paragraph [ref=e116]: Choose the perfect plan for your music production needs
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - heading "FREE" [level=3] [ref=e119]
+          - paragraph [ref=e120]: Perfect for getting started
+          - generic [ref=e122]:
+            - generic [ref=e123]: $0
+            - generic [ref=e124]: forever
+          - list [ref=e125]:
+            - listitem [ref=e126]:
+              - img [ref=e127]
+              - generic [ref=e129]: Auto-Align AI feature
+            - listitem [ref=e130]:
+              - img [ref=e131]
+              - generic [ref=e133]: 25 operations per day
+            - listitem [ref=e134]:
+              - img [ref=e135]
+              - generic [ref=e137]: 3 projects
+            - listitem [ref=e138]:
+              - img [ref=e139]
+              - generic [ref=e141]: Basic vocal coach
+            - listitem [ref=e142]:
+              - img [ref=e143]
+              - generic [ref=e145]: Community support
+          - button "Try Free Demo" [ref=e146] [cursor=pointer]
+        - generic [ref=e147]:
+          - generic [ref=e149]: Most Popular
+          - heading "PRO" [level=3] [ref=e150]
+          - paragraph [ref=e151]: For serious music producers
+          - generic [ref=e153]:
+            - generic [ref=e154]: $19.99
+            - generic [ref=e155]: per month
+          - list [ref=e156]:
+            - listitem [ref=e157]:
+              - img [ref=e158]
+              - generic [ref=e160]: All AI features
+            - listitem [ref=e161]:
+              - img [ref=e162]
+              - generic [ref=e164]: 500 operations per day
+            - listitem [ref=e165]:
+              - img [ref=e166]
+              - generic [ref=e168]: Unlimited projects
+            - listitem [ref=e169]:
+              - img [ref=e170]
+              - generic [ref=e172]: Advanced vocal coach
+            - listitem [ref=e173]:
+              - img [ref=e174]
+              - generic [ref=e176]: AI Producer assistant
+            - listitem [ref=e177]:
+              - img [ref=e178]
+              - generic [ref=e180]: Priority support
+          - button "Start Free Trial" [ref=e181] [cursor=pointer]
+        - generic [ref=e182]:
+          - heading "STUDIO" [level=3] [ref=e183]
+          - paragraph [ref=e184]: Professional studios & teams
+          - generic [ref=e186]:
+            - generic [ref=e187]: $49.99
+            - generic [ref=e188]: per month
+          - list [ref=e189]:
+            - listitem [ref=e190]:
+              - img [ref=e191]
+              - generic [ref=e193]: Everything in Pro
+            - listitem [ref=e194]:
+              - img [ref=e195]
+              - generic [ref=e197]: 2000 operations per day
+            - listitem [ref=e198]:
+              - img [ref=e199]
+              - generic [ref=e201]: Team collaboration
+            - listitem [ref=e202]:
+              - img [ref=e203]
+              - generic [ref=e205]: Custom AI models
+            - listitem [ref=e206]:
+              - img [ref=e207]
+              - generic [ref=e209]: Dedicated support
+            - listitem [ref=e210]:
+              - img [ref=e211]
+              - generic [ref=e213]: Early access to features
+          - button "Contact Sales" [ref=e214] [cursor=pointer]
+    - generic [ref=e216]:
+      - heading "Ready to Create Amazing Music?" [level=2] [ref=e217]
+      - paragraph [ref=e218]: Join other users using DAWG AI to make professional tracks
+      - button "Get Started Free" [ref=e219] [cursor=pointer]:
+        - text: Get Started Free
+        - img [ref=e220]
+    - contentinfo [ref=e222]:
+      - generic [ref=e223]:
+        - generic [ref=e224]:
+          - generic [ref=e225]:
+            - generic [ref=e226]:
+              - img "DAWG AI logo" [ref=e227]
+              - generic [ref=e228]: DAWG AI
+            - paragraph [ref=e229]: Professional music production powered by AI. Create, mix, and master studio-quality tracks in minutes.
+          - generic [ref=e230]:
+            - heading "Product" [level=4] [ref=e231]
+            - list [ref=e232]:
+              - listitem [ref=e233]:
+                - link "Features" [ref=e234] [cursor=pointer]:
+                  - /url: "#features"
+              - listitem [ref=e235]:
+                - link "Pricing" [ref=e236] [cursor=pointer]:
+                  - /url: "#pricing"
+              - listitem [ref=e237]:
+                - button "Sign Up" [ref=e238] [cursor=pointer]
+          - generic [ref=e239]:
+            - heading "Company" [level=4] [ref=e240]
+            - list [ref=e241]:
+              - listitem [ref=e242]:
+                - link "About" [ref=e243] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e244]:
+                - link "Blog" [ref=e245] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e246]:
+                - link "Contact" [ref=e247] [cursor=pointer]:
+                  - /url: "#"
+        - generic [ref=e248]:
+          - paragraph [ref=e249]: © 2025 DAWG AI. All rights reserved.
+          - generic [ref=e250]:
+            - link "Privacy Policy" [ref=e251] [cursor=pointer]:
+              - /url: "#"
+            - link "Terms of Service" [ref=e252] [cursor=pointer]:
+              - /url: "#"
+  - region "Notifications alt+T"
+```

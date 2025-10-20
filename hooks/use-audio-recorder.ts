@@ -25,6 +25,7 @@ export function useAudioRecorder() {
   const chunksRef = useRef<Blob[]>([]);
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
+  const audioContextStartTimeRef = useRef<number>(0); // AudioContext time for sample-accurate timing
   const monitoringRef = useRef<boolean>(false);
 
   // Initialize audio context and get microphone access
@@ -121,7 +122,12 @@ export function useAudioRecorder() {
     };
 
     mediaRecorder.start();
-    startTimeRef.current = Date.now();
+
+    // Use AudioContext.currentTime for sample-accurate recording timing
+    if (audioContextRef.current) {
+      audioContextStartTimeRef.current = audioContextRef.current.currentTime;
+    }
+    startTimeRef.current = Date.now(); // Keep for fallback display only
 
     setState((prev) => ({
       ...prev,
@@ -130,12 +136,13 @@ export function useAudioRecorder() {
       duration: 0,
     }));
 
-    // Update duration
+    // Update duration using AudioContext time for accuracy
     const updateDuration = () => {
-      if (state.isRecording && !state.isPaused) {
+      if (state.isRecording && !state.isPaused && audioContextRef.current) {
+        const audioContextDuration = audioContextRef.current.currentTime - audioContextStartTimeRef.current;
         setState((prev) => ({
           ...prev,
-          duration: Math.floor((Date.now() - startTimeRef.current) / 1000),
+          duration: Math.floor(audioContextDuration),
         }));
         requestAnimationFrame(updateDuration);
       }

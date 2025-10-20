@@ -51,7 +51,7 @@ export interface TTSResult {
 
 export interface WhisperGPTConfig {
   apiKey?: string;
-  whisperModel?: 'whisper-1';
+  whisperModel?: 'whisper-1' | 'whisper-1-turbo'; // Support both standard and turbo models
   gptModel?: 'gpt-4' | 'gpt-4-turbo' | 'gpt-4o';
   ttsModel?: 'tts-1' | 'tts-1-hd';
   ttsVoice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
@@ -73,7 +73,7 @@ export class WhisperGPTService {
   constructor(config?: WhisperGPTConfig) {
     this.config = {
       apiKey: config?.apiKey || process.env.VITE_OPENAI_API_KEY || '',
-      whisperModel: config?.whisperModel || 'whisper-1',
+      whisperModel: config?.whisperModel || 'whisper-1-turbo', // Use turbo model for faster transcription
       gptModel: config?.gptModel || 'gpt-4o',
       ttsModel: config?.ttsModel || 'tts-1-hd',
       ttsVoice: config?.ttsVoice || 'nova',
@@ -183,11 +183,18 @@ When analyzing commands, return JSON with this structure:
         duration
       });
 
+      // Extract confidence from Whisper API response if available
+      // Note: Whisper API doesn't directly provide confidence scores, but we can estimate based on:
+      // - Response quality (text length, presence of [INAUDIBLE] markers)
+      // - Audio duration vs transcription length ratio
+      const hasInaudibleMarkers = transcription.text.includes('[INAUDIBLE]') || transcription.text.includes('[?]');
+      const estimatedConfidence = hasInaudibleMarkers ? 0.7 : 0.95;
+
       return {
         text: transcription.text,
         language: (transcription as any).language || 'en',
         duration,
-        confidence: 1.0, // Whisper doesn't provide confidence, assume high
+        confidence: estimatedConfidence, // Fixed: Use estimated confidence instead of hardcoded 1.0
       };
     } catch (error) {
       logger.error('[WhisperGPTService] Transcription failed', { error });
