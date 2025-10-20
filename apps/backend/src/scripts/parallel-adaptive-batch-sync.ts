@@ -13,6 +13,7 @@ import { iCloudSyncService } from '../services/notes/icloud-sync.service.js';
 import { appleNotesSyncService } from '../services/notes/apple-notes-sync.service.js';
 import { voiceMemoCompService } from '../services/notes/voice-memo-comp.service.js';
 import { vocalSeparationService } from '../services/notes/vocal-separation.service.js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -40,7 +41,7 @@ async function processSingleBatch(
   learning: any;
   management: any;
 }> {
-  console.log(`\n[Batch ${batchNum}] Starting...`);
+  logger.info('\n[Batch ${batchNum}] Starting...');
 
   // Create temp directory for this batch
   fs.mkdirSync(tempDir, { recursive: true });
@@ -96,7 +97,7 @@ async function processSingleBatch(
         // VOCAL SEPARATION: Extract clean vocals for voice model training
         const hasBackgroundMusic = (voiceMemo?.transcription?.length || 0) > result.note.content.length;
         if (hasBackgroundMusic) {
-          console.log(`[Batch ${batchNum}] 🎤 Separating vocals from: ${file}`);
+          logger.info('[Batch ${batchNum}] 🎤 Separating vocals from: ${file}');
           const separationResult = await vocalSeparationService.separateVocals(
             path.join(VOICE_MEMOS_PATH, file),
             {
@@ -107,9 +108,9 @@ async function processSingleBatch(
           );
 
           if (separationResult.success) {
-            console.log(`[Batch ${batchNum}] ✅ Vocals isolated: ${path.basename(separationResult.vocalsFilePath || '')}`);
+            logger.info('[Batch batchNum] ✅ Vocals isolated: ${path.basename(separationResult.vocalsFilePath || '')}', { batchNum });
           } else {
-            console.log(`[Batch ${batchNum}] ⚠️  Vocal separation failed: ${separationResult.error}`);
+            logger.info('[Batch ${batchNum}] ⚠️  Vocal separation failed: ${separationResult.error}');
           }
         }
 
@@ -119,12 +120,12 @@ async function processSingleBatch(
           result.note.content
         );
         if (appleNoteResult.success) {
-          console.log(`[Batch ${batchNum}] 📱 Created Apple Note: ${result.note.title}`);
+          logger.info('[Batch ${batchNum}] 📱 Created Apple Note: ${result.note.title}');
         } else {
-          console.log(`[Batch ${batchNum}] ⚠️  Apple Note failed: ${appleNoteResult.error}`);
+          logger.info('[Batch ${batchNum}] ⚠️  Apple Note failed: ${appleNoteResult.error}');
         }
 
-        console.log(`[Batch ${batchNum}] ✅ ${file}`);
+        logger.info('[Batch ${batchNum}] ✅ ${file}');
       }
     } catch (error) {
       console.error(`[Batch ${batchNum}] ❌ ${file}: ${error instanceof Error ? error.message : 'Error'}`);
@@ -134,7 +135,7 @@ async function processSingleBatch(
   // Clean up temp files
   fs.rmSync(tempDir, { recursive: true, force: true });
 
-  console.log(`[Batch ${batchNum}] 📊 Complete: ${batchResults.length}/${batch.length} processed`);
+  logger.info('[Batch ${batchNum}] 📊 Complete: ${batchResults.length}/${batch.length} processed');
 
   // JARVIS LEARNS FROM THIS BATCH
   const learning = await adaptiveLearningService.analyzeBatchAndLearn({
@@ -181,7 +182,7 @@ async function processSingleBatch(
           // Delete original voice memo file from main folder (LIVE SYNC)
           if (note?.voiceMemo?.filePath && fs.existsSync(note.voiceMemo.filePath)) {
             fs.unlinkSync(note.voiceMemo.filePath);
-            console.log(`[Batch ${batchNum}] 🗑️  Deleted original: ${path.basename(note.voiceMemo.filePath)}`);
+            logger.info('[Batch ${batchNum}] 🗑️  Deleted original: ${path.basename(note.voiceMemo.filePath)}');
           }
         } else if (action.type === 'merge') {
           const sourceNotes = await prisma.note.findMany({
@@ -214,7 +215,7 @@ async function processSingleBatch(
               });
               if (voiceMemo?.filePath && fs.existsSync(voiceMemo.filePath)) {
                 fs.unlinkSync(voiceMemo.filePath);
-                console.log(`[Batch ${batchNum}] 🗑️  Deleted merged source: ${path.basename(voiceMemo.filePath)}`);
+                logger.info('[Batch ${batchNum}] 🗑️  Deleted merged source: ${path.basename(voiceMemo.filePath)}');
               }
             }
           }
@@ -230,19 +231,19 @@ async function processSingleBatch(
     }
 
     learningLogService.logActions(batchNum, management.actions);
-    console.log(`[Batch ${batchNum}] 📝 Management: ${management.actions.length} actions`);
+    logger.info('[Batch ${batchNum}] 📝 Management: ${management.actions.length} actions');
   }
 
   // AUTO-COMP: Check for related takes and comp them automatically
   const autoComp = await adaptiveLearningService.autoCompRelatedTakes(batchResults);
 
   if (autoComp.comps.length > 0) {
-    console.log(`\n[Batch ${batchNum}] 🎬 AUTO-COMP: Found ${autoComp.comps.length} songs with multiple takes`);
+    logger.info('\n[Batch ${batchNum}] 🎬 AUTO-COMP: Found ${autoComp.comps.length} songs with multiple takes');
 
     for (const comp of autoComp.comps) {
-      console.log(`\n   Song: "${comp.songTitle}"`);
-      console.log(`   Takes: ${comp.takeNoteIds.length}`);
-      console.log(`   Reason: ${comp.reason}`);
+      logger.info('\n   Song: "${comp.songTitle}"');
+      logger.info('   Takes: ${comp.takeNoteIds.length}');
+      logger.info('   Reason: ${comp.reason}');
 
       try {
         // Perform the comp
@@ -256,10 +257,10 @@ async function processSingleBatch(
         );
 
         if (compResult.success) {
-          console.log(`   ✅ Comped successfully: ${path.basename(compResult.compedFilePath || '')}`);
-          console.log(`   Duration: ${compResult.duration?.toFixed(2)}s`);
+          logger.info('   ✅ Comped successfully: ${path.basename(compResult.compedFilePath || '')}');
+          logger.info('   Duration: ${compResult.duration?.toFixed(2)}s');
         } else {
-          console.log(`   ❌ Comp failed: ${compResult.error}`);
+          logger.info('   ❌ Comp failed: ${compResult.error}');
         }
       } catch (error) {
         console.error(`   ❌ Comp error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -267,7 +268,7 @@ async function processSingleBatch(
     }
   }
 
-  console.log(`[Batch ${batchNum}] ✅ Complete!`);
+  logger.info('[Batch ${batchNum}] ✅ Complete!');
 
   return {
     batchNum,
@@ -278,10 +279,10 @@ async function processSingleBatch(
 }
 
 async function syncAdaptiveBatchParallel(maxBatches: number = Infinity) {
-  console.log('🎵 JARVIS Parallel Adaptive Learning Voice Memo Processor');
+  logger.info('🎵 JARVIS Parallel Adaptive Learning Voice Memo Processor');
   console.log('='.repeat(60));
-  console.log(`Processing ${PARALLEL_BATCHES} batches simultaneously`);
-  console.log('JARVIS will learn from each batch and improve!\\n');
+  logger.info('Processing ${PARALLEL_BATCHES} batches simultaneously');
+  logger.info('JARVIS will learn from each batch and improve!\\n');
 
   // Load progress
   let progress: AdaptiveProgress = fs.existsSync(PROGRESS_FILE)
@@ -302,10 +303,10 @@ async function syncAdaptiveBatchParallel(maxBatches: number = Infinity) {
 
   // Show learning stats
   const stats = adaptiveLearningService.getLearningStats();
-  console.log('📚 Current Learning State:');
-  console.log(`   Batches analyzed: ${stats.totalBatchesAnalyzed}`);
-  console.log(`   Parsing rules learned: ${stats.improvements.parsingRules.length}`);
-  console.log(`   Average confidence: ${(stats.performanceMetrics.averageConfidence * 100).toFixed(1)}%`);
+  logger.info('📚 Current Learning State:');
+  logger.info('   Batches analyzed: ${stats.totalBatchesAnalyzed}');
+  logger.info('   Parsing rules learned: ${stats.improvements.parsingRules.length}');
+  logger.info('   Average confidence: ${(stats.performanceMetrics.averageConfidence * 100).toFixed(1)}%');
   console.log('');
 
   let batchesProcessed = 0;
@@ -330,9 +331,9 @@ async function syncAdaptiveBatchParallel(maxBatches: number = Infinity) {
     if (parallelBatches.length === 0) break;
 
     console.log('\\n' + '='.repeat(60));
-    console.log(`🚀 Processing ${parallelBatches.length} batches in parallel`);
-    console.log(`   Batches: ${parallelBatches.map(p => p.batchNum).join(', ')}`);
-    console.log(`   Progress: ${((progress.processedFiles / allFiles.length) * 100).toFixed(1)}%`);
+    logger.info('🚀 Processing ${parallelBatches.length} batches in parallel');
+    logger.info('   Batches: ${parallelBatches.map(p => p.batchNum).join(', ')}');
+    logger.info('   Progress: ${((progress.processedFiles / allFiles.length) * 100).toFixed(1)}%');
     console.log('='.repeat(60));
 
     // Process batches in parallel
@@ -362,15 +363,15 @@ async function syncAdaptiveBatchParallel(maxBatches: number = Infinity) {
 
     batchesProcessed += parallelBatches.length;
 
-    console.log(`\\n✅ ${parallelBatches.length} batches complete!`);
-    console.log(`   Total processed: ${progress.processedFiles}/${progress.totalFiles}`);
+    logger.info('\\n✅ ${parallelBatches.length} batches complete!');
+    logger.info('   Total processed: ${progress.processedFiles}/${progress.totalFiles}');
 
     // JARVIS META-LEARNING: Review and consolidate learnings every 5 batches
     if (progress.currentBatch % 5 === 0 && progress.currentBatch > 0) {
       console.log('\\n' + '='.repeat(60));
-      console.log('🧠 META-LEARNING REVIEW (Every 5 batches)');
+      logger.info('🧠 META-LEARNING REVIEW (Every 5 batches)');
       console.log('='.repeat(60));
-      console.log('JARVIS is reviewing ALL previous learnings from the beginning...');
+      logger.info('JARVIS is reviewing ALL previous learnings from the beginning...');
 
       const consolidation = await adaptiveLearningService.reviewAndConsolidateLearnings();
 
@@ -387,39 +388,39 @@ async function syncAdaptiveBatchParallel(maxBatches: number = Infinity) {
           },
         });
 
-        console.log(`\\n✅ Meta-learning complete: ${consolidation.summary}`);
+        logger.info('\\n✅ Meta-learning complete: ${consolidation.summary}');
         console.log('='.repeat(60));
       }
     }
 
     // Small pause between parallel groups
     if (progress.processedFiles < allFiles.length && batchesProcessed < maxBatches) {
-      console.log('\\n⏳ Waiting 5 seconds before next group...\\n');
+      logger.info('\\n⏳ Waiting 5 seconds before next group...\\n');
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
 
   // Final summary
   console.log('\\n' + '='.repeat(60));
-  console.log('📈 FINAL SUMMARY');
+  logger.info('📈 FINAL SUMMARY');
   console.log('='.repeat(60));
 
   const finalStats = adaptiveLearningService.getLearningStats();
-  console.log(`\\n📊 Processing Stats:`);
-  console.log(`   Total processed: ${progress.processedFiles}/${progress.totalFiles}`);
-  console.log(`   Batches completed: ${progress.currentBatch}`);
-  console.log(`   Remaining: ${progress.totalFiles - progress.processedFiles}`);
+  logger.info('\\n📊 Processing Stats:');
+  logger.info('   Total processed: ${progress.processedFiles}/${progress.totalFiles}');
+  logger.info('   Batches completed: ${progress.currentBatch}');
+  logger.info('   Remaining: ${progress.totalFiles - progress.processedFiles}');
 
-  console.log(`\\n🧠 Learning Stats:`);
-  console.log(`   Total batches analyzed: ${finalStats.totalBatchesAnalyzed}`);
-  console.log(`   Parsing rules learned: ${finalStats.improvements.parsingRules.length}`);
-  console.log(`   Common patterns found: ${finalStats.improvements.commonPatterns.length}`);
-  console.log(`   Average confidence: ${(finalStats.performanceMetrics.averageConfidence * 100).toFixed(1)}%`);
+  logger.info('\\n🧠 Learning Stats:');
+  logger.info('   Total batches analyzed: ${finalStats.totalBatchesAnalyzed}');
+  logger.info('   Parsing rules learned: ${finalStats.improvements.parsingRules.length}');
+  logger.info('   Common patterns found: ${finalStats.improvements.commonPatterns.length}');
+  logger.info('   Average confidence: ${(finalStats.performanceMetrics.averageConfidence * 100).toFixed(1)}%');
 
   if (progress.processedFiles < progress.totalFiles) {
-    console.log(`\\n▶️  Run again to continue with improved processing!`);
+    logger.info('\\n▶️  Run again to continue with improved processing!');
   } else {
-    console.log(`\\n🎉 All voice memos processed with adaptive learning!`);
+    logger.info('\\n🎉 All voice memos processed with adaptive learning!');
   }
 }
 
@@ -429,6 +430,6 @@ const batches = args.find(arg => arg.startsWith('--batches='))?.split('=')[1];
 const maxBatches = batches ? parseInt(batches) : Infinity;
 
 syncAdaptiveBatchParallel(maxBatches).catch(error => {
-  console.error('Fatal error:', error);
+  logger.error('Fatal error', { error: error.message || String(error) });
   process.exit(1);
 });

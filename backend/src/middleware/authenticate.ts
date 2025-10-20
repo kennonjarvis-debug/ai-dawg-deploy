@@ -7,6 +7,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 // Extend Express Request type to include user
 declare global {
@@ -95,7 +96,7 @@ export async function authenticate(
 
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
+    logger.error('Authentication error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to authenticate request'
@@ -148,7 +149,7 @@ export async function optionalAuthenticate(
 
     next();
   } catch (error) {
-    console.error('Optional authentication error:', error);
+    logger.error('Optional authentication error', { error: error.message || String(error) });
     next();
   }
 }

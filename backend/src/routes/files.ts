@@ -9,6 +9,7 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { authenticate } from '../middleware/authenticate.js';
 import { uploadLimiter } from '../middleware/rateLimiter.js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 const router = Router();
 
@@ -84,7 +85,7 @@ router.post(
         });
 
       if (uploadError) {
-        console.error('Error uploading file:', uploadError);
+        logger.error('Error uploading file', { uploadError });
         res.status(500).json({
           error: 'Upload failed',
           message: uploadError.message
@@ -112,7 +113,7 @@ router.post(
         .single();
 
       if (dbError) {
-        console.error('Error saving file metadata:', dbError);
+        logger.error('Error saving file metadata', { dbError });
         // Try to delete uploaded file
         await req.supabase.storage.from('audio-files').remove([fileName]);
 
@@ -135,7 +136,7 @@ router.post(
         }
       });
     } catch (error) {
-      console.error('Unexpected error:', error);
+      logger.error('Unexpected error', { error: error.message || String(error) });
       res.status(500).json({
         error: 'Internal server error',
         message: 'Failed to upload file'
@@ -169,7 +170,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
     const { data: files, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching files:', error);
+      logger.error('Error fetching files', { error: error.message || String(error) });
       res.status(500).json({
         error: 'Failed to fetch files',
         message: error.message
@@ -194,7 +195,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
       data: filesWithUrls
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch files'
@@ -243,7 +244,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch file'
@@ -286,7 +287,7 @@ router.delete('/:id', authenticate, async (req: Request, res: Response): Promise
       .remove([file.storage_path]);
 
     if (storageError) {
-      console.error('Error deleting file from storage:', storageError);
+      logger.error('Error deleting file from storage', { storageError });
     }
 
     // Delete metadata from database
@@ -297,7 +298,7 @@ router.delete('/:id', authenticate, async (req: Request, res: Response): Promise
       .eq('user_id', req.user!.id);
 
     if (dbError) {
-      console.error('Error deleting file metadata:', dbError);
+      logger.error('Error deleting file metadata', { dbError });
       res.status(500).json({
         error: 'Failed to delete file',
         message: dbError.message
@@ -310,7 +311,7 @@ router.delete('/:id', authenticate, async (req: Request, res: Response): Promise
       message: 'File deleted successfully'
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to delete file'
@@ -353,7 +354,7 @@ router.post('/:id/duplicate', authenticate, async (req: Request, res: Response):
       .download(originalFile.storage_path);
 
     if (downloadError || !fileData) {
-      console.error('Error downloading file:', downloadError);
+      logger.error('Error downloading file', { downloadError });
       res.status(500).json({
         error: 'Failed to duplicate file',
         message: 'Could not download original file'
@@ -375,7 +376,7 @@ router.post('/:id/duplicate', authenticate, async (req: Request, res: Response):
       });
 
     if (uploadError) {
-      console.error('Error uploading duplicate:', uploadError);
+      logger.error('Error uploading duplicate', { uploadError });
       res.status(500).json({
         error: 'Failed to duplicate file',
         message: uploadError.message
@@ -398,7 +399,7 @@ router.post('/:id/duplicate', authenticate, async (req: Request, res: Response):
       .single();
 
     if (dbError) {
-      console.error('Error creating duplicate metadata:', dbError);
+      logger.error('Error creating duplicate metadata', { dbError });
       res.status(500).json({
         error: 'Failed to create duplicate',
         message: dbError.message
@@ -419,7 +420,7 @@ router.post('/:id/duplicate', authenticate, async (req: Request, res: Response):
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to duplicate file'

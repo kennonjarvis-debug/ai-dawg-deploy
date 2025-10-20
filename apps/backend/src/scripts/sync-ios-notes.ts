@@ -13,6 +13,7 @@ import { actionRouterService } from '../services/notes/action-router.service.js'
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -32,9 +33,9 @@ const DEFAULT_PATHS = {
 };
 
 async function syncNotes() {
-  console.log('🎵 DAWG AI / JARVIS - iOS Notes Sync');
-  console.log('=====================================');
-  console.log(`App Context: ${appContext.toUpperCase()}`);
+  logger.info('🎵 DAWG AI / JARVIS - iOS Notes Sync');
+  logger.info('=====================================');
+  logger.info('App Context: ${appContext.toUpperCase()}');
   console.log('');
 
   // Use custom path or try default paths
@@ -48,11 +49,11 @@ async function syncNotes() {
 
   for (const syncPath of pathsToTry) {
     if (!fs.existsSync(syncPath)) {
-      console.log(`⏩ Skipping ${syncPath} (not found)`);
+      logger.info('⏩ Skipping ${syncPath} (not found)');
       continue;
     }
 
-    console.log(`\n📂 Scanning: ${syncPath}`);
+    logger.info('\n📂 Scanning: ${syncPath}');
 
     try {
       const status = await importService.importFromDirectory(syncPath, {
@@ -65,70 +66,70 @@ async function syncNotes() {
       totalMemosProcessed += status.memosProcessed;
       allErrors.push(...status.errors);
 
-      console.log(`  ✅ Imported ${status.notesProcessed} notes`);
-      console.log(`  ✅ Imported ${status.memosProcessed} voice memos`);
+      logger.info('  ✅ Imported ${status.notesProcessed} notes');
+      logger.info('  ✅ Imported ${status.memosProcessed} voice memos');
 
       if (status.errors.length > 0) {
-        console.log(`  ⚠️  ${status.errors.length} errors occurred`);
+        logger.info('  ⚠️  ${status.errors.length} errors occurred');
       }
     } catch (error) {
       const errorMsg = `Failed to sync ${syncPath}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      console.error(`  ❌ ${errorMsg}`);
+      logger.error('  ❌ ${errorMsg}');
       allErrors.push(errorMsg);
     }
   }
 
-  console.log('\n=====================================');
-  console.log('📊 Sync Summary:');
-  console.log(`  Notes processed: ${totalNotesProcessed}`);
-  console.log(`  Voice memos processed: ${totalMemosProcessed}`);
-  console.log(`  Errors: ${allErrors.length}`);
+  logger.info('\n=====================================');
+  logger.info('📊 Sync Summary:');
+  logger.info('  Notes processed: ${totalNotesProcessed}');
+  logger.info('  Voice memos processed: ${totalMemosProcessed}');
+  logger.info('  Errors: ${allErrors.length}');
 
   if (allErrors.length > 0) {
-    console.log('\n⚠️  Errors:');
-    allErrors.forEach(err => console.log(`  - ${err}`));
+    logger.info('\n⚠️  Errors:');
+    allErrors.forEach(err => logger.info('  - ${err}'););
   }
 
   // Now analyze and execute actions
-  console.log('\n🤖 Analyzing content and executing actions...');
+  logger.info('\n🤖 Analyzing content and executing actions...');
 
   const allNotes = await importService.getAllNotes();
   const recentNotes = allNotes.slice(-10); // Analyze last 10 notes
 
   for (const note of recentNotes) {
     try {
-      console.log(`\n📝 Analyzing: "${note.title}"`);
+      logger.info('\n📝 Analyzing: "${note.title}"');
 
       const analysis = await analysisService.analyzeNote(note, appContext);
-      console.log(`  Type: ${analysis.contentType} (confidence: ${(analysis.confidence * 100).toFixed(0)}%)`);
-      console.log(`  Summary: ${analysis.summary.substring(0, 100)}...`);
+      logger.info('  Type: ${analysis.contentType} (confidence: ${(analysis.confidence * 100).toFixed(0)}%)');
+      logger.info('  Summary: ${analysis.summary.substring(0, 100)}...');
 
       if (analysis.suggestedActions.length > 0) {
-        console.log(`  Suggested actions: ${analysis.suggestedActions.length}`);
+        logger.info('  Suggested actions: ${analysis.suggestedActions.length}');
 
         const results = await actionRouterService.executeActions(analysis, note);
 
         for (const result of results) {
           if (result.executed) {
-            console.log(`    ✅ ${result.action.type}: ${result.action.description}`);
+            logger.info('    ✅ ${result.action.type}: ${result.action.description}');
           } else {
-            console.log(`    ❌ ${result.action.type}: ${result.error}`);
+            logger.info('    ❌ ${result.action.type}: ${result.error}');
           }
         }
       } else {
-        console.log(`  No actions suggested`);
+        logger.info('  No actions suggested');
       }
     } catch (error) {
       console.error(`  ❌ Failed to analyze: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  console.log('\n✅ Sync complete!');
+  logger.info('\n✅ Sync complete!');
   console.log('');
 }
 
 // Run the sync
 syncNotes().catch(error => {
-  console.error('❌ Fatal error:', error);
+  logger.error('❌ Fatal error', { error: error.message || String(error) });
   process.exit(1);
 });

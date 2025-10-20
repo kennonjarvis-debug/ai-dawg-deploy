@@ -8,6 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import { importService } from '../services/notes/import.service.js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 // Configuration
 const VOICE_MEMOS_PATH = '/Users/benkennon/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings';
@@ -43,7 +44,7 @@ class VoiceMemosBatchProcessor {
    */
   private loadProgress(): SyncProgress {
     if (fs.existsSync(PROGRESS_FILE)) {
-      console.log('📂 Loading previous progress...');
+      logger.info('📂 Loading previous progress...');
       const data = fs.readFileSync(PROGRESS_FILE, 'utf-8');
       return JSON.parse(data);
     }
@@ -76,7 +77,7 @@ class VoiceMemosBatchProcessor {
    * Get all voice memo files sorted by date (newest first)
    */
   private getAllVoiceMemos(): string[] {
-    console.log('📂 Scanning voice memos directory...');
+    logger.info('📂 Scanning voice memos directory...');
 
     const files = fs.readdirSync(VOICE_MEMOS_PATH)
       .filter(file => file.endsWith('.m4a'))
@@ -88,7 +89,7 @@ class VoiceMemosBatchProcessor {
       .sort((a, b) => b.mtime - a.mtime) // Newest first
       .map(file => file.name);
 
-    console.log(`✅ Found ${files.length} voice memo files`);
+    logger.info('✅ Found ${files.length} voice memo files');
     return files;
   }
 
@@ -99,9 +100,9 @@ class VoiceMemosBatchProcessor {
     const startIndex = this.progress.processedFiles;
     const batch = allFiles.slice(startIndex, startIndex + BATCH_SIZE);
 
-    console.log(`\n📦 Batch ${this.progress.currentBatch + 1}`);
-    console.log(`   Files ${startIndex + 1}-${startIndex + batch.length} of ${allFiles.length}`);
-    console.log(`   Progress: ${((startIndex / allFiles.length) * 100).toFixed(1)}%`);
+    logger.info('\n📦 Batch ${this.progress.currentBatch + 1}');
+    logger.info('   Files ${startIndex + 1}-${startIndex + batch.length} of ${allFiles.length}');
+    logger.info('   Progress: ${((startIndex / allFiles.length) * 100).toFixed(1)}%');
 
     return batch;
   }
@@ -114,15 +115,15 @@ class VoiceMemosBatchProcessor {
     fs.mkdirSync(TEMP_DIR, { recursive: true });
 
     // Copy files to temp directory
-    console.log('\n📋 Copying files to temp directory...');
+    logger.info('\n📋 Copying files to temp directory...');
     for (const file of files) {
       const sourcePath = path.join(VOICE_MEMOS_PATH, file);
       const destPath = path.join(TEMP_DIR, file);
       fs.copyFileSync(sourcePath, destPath);
     }
 
-    console.log(`✅ Copied ${files.length} files`);
-    console.log('\n🎤 Starting transcription and analysis...\n');
+    logger.info('✅ Copied ${files.length} files');
+    logger.info('\n🎤 Starting transcription and analysis...\n');
 
     // Process with import service
     try {
@@ -138,7 +139,7 @@ class VoiceMemosBatchProcessor {
       this.progress.stats.totalErrors += status.errors.length;
 
       if (status.errors.length > 0) {
-        console.log(`\n⚠️  ${status.errors.length} errors in this batch`);
+        logger.info('\n⚠️  ${status.errors.length} errors in this batch');
         this.progress.errors.push(...status.errors.slice(0, 5)); // Keep first 5 errors
       }
 
@@ -147,17 +148,17 @@ class VoiceMemosBatchProcessor {
       this.progress.currentBatch += 1;
       this.progress.lastProcessedFile = files[files.length - 1];
 
-      console.log('\n📊 Batch Stats:');
-      console.log(`   Memos processed: ${status.memosProcessed}`);
-      console.log(`   Errors: ${status.errors.length}`);
+      logger.info('\n📊 Batch Stats:');
+      logger.info('   Memos processed: ${status.memosProcessed}');
+      logger.info('   Errors: ${status.errors.length}');
 
     } catch (error) {
-      console.error('❌ Batch processing error:', error);
+      logger.error('❌ Batch processing error', { error: error.message || String(error) });
       this.progress.errors.push(`Batch ${this.progress.currentBatch}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     // Clean up temp directory
-    console.log('\n🧹 Cleaning up temp files...');
+    logger.info('\n🧹 Cleaning up temp files...');
     fs.rmSync(TEMP_DIR, { recursive: true, force: true });
 
     // Save progress
@@ -168,10 +169,10 @@ class VoiceMemosBatchProcessor {
    * Run the batch processor
    */
   async run(maxBatches?: number): Promise<void> {
-    console.log('🎵 JARVIS Voice Memos Batch Processor');
-    console.log('====================================');
-    console.log(`App Context: ${APP_CONTEXT.toUpperCase()}`);
-    console.log(`Batch Size: ${BATCH_SIZE} files per batch`);
+    logger.info('🎵 JARVIS Voice Memos Batch Processor');
+    logger.info('====================================');
+    logger.info('App Context: ${APP_CONTEXT.toUpperCase()}');
+    logger.info('Batch Size: ${BATCH_SIZE} files per batch');
     console.log('');
 
     const allFiles = this.getAllVoiceMemos();
@@ -179,16 +180,16 @@ class VoiceMemosBatchProcessor {
 
     // Check if already completed
     if (this.progress.processedFiles >= allFiles.length) {
-      console.log('✅ All voice memos have been processed!');
+      logger.info('✅ All voice memos have been processed!');
       this.printSummary();
       return;
     }
 
     // Resume from where we left off
     if (this.progress.processedFiles > 0) {
-      console.log(`\n▶️  Resuming from batch ${this.progress.currentBatch + 1}`);
-      console.log(`   Already processed: ${this.progress.processedFiles} files`);
-      console.log(`   Remaining: ${allFiles.length - this.progress.processedFiles} files`);
+      logger.info('\n▶️  Resuming from batch ${this.progress.currentBatch + 1}');
+      logger.info('   Already processed: ${this.progress.processedFiles} files');
+      logger.info('   Remaining: ${allFiles.length - this.progress.processedFiles} files');
     }
 
     let batchesProcessed = 0;
@@ -205,20 +206,20 @@ class VoiceMemosBatchProcessor {
 
       // Stop if max batches reached
       if (maxBatches && batchesProcessed >= maxBatches) {
-        console.log(`\n⏸️  Reached max batches limit (${maxBatches})`);
-        console.log('   Run again to continue processing');
+        logger.info('\n⏸️  Reached max batches limit (${maxBatches})');
+        logger.info('   Run again to continue processing');
         break;
       }
 
       // Add a small delay between batches to avoid rate limits
       if (this.progress.processedFiles < allFiles.length) {
-        console.log('\n⏳ Waiting 2 seconds before next batch...\n');
+        logger.info('\n⏳ Waiting 2 seconds before next batch...\n');
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
     // Print final summary
-    console.log('\n====================================');
+    logger.info('\n====================================');
     this.printSummary();
   }
 
@@ -228,33 +229,33 @@ class VoiceMemosBatchProcessor {
   private printSummary(): void {
     const percentComplete = ((this.progress.processedFiles / this.progress.totalFiles) * 100).toFixed(1);
 
-    console.log('\n📊 Overall Progress:');
-    console.log(`   Total files: ${this.progress.totalFiles}`);
-    console.log(`   Processed: ${this.progress.processedFiles} (${percentComplete}%)`);
-    console.log(`   Remaining: ${this.progress.totalFiles - this.progress.processedFiles}`);
-    console.log(`   Batches completed: ${this.progress.currentBatch}`);
+    logger.info('\n📊 Overall Progress:');
+    logger.info('   Total files: ${this.progress.totalFiles}');
+    logger.info('   Processed: ${this.progress.processedFiles} (${percentComplete}%)');
+    logger.info('   Remaining: ${this.progress.totalFiles - this.progress.processedFiles}');
+    logger.info('   Batches completed: ${this.progress.currentBatch}');
     console.log('');
-    console.log('📈 Stats:');
-    console.log(`   Total memos imported: ${this.progress.stats.totalMemos}`);
-    console.log(`   Total notes created: ${this.progress.stats.totalNotes}`);
-    console.log(`   Total errors: ${this.progress.stats.totalErrors}`);
+    logger.info('📈 Stats:');
+    logger.info('   Total memos imported: ${this.progress.stats.totalMemos}');
+    logger.info('   Total notes created: ${this.progress.stats.totalNotes}');
+    logger.info('   Total errors: ${this.progress.stats.totalErrors}');
 
     if (this.progress.errors.length > 0) {
       console.log('');
-      console.log('⚠️  Recent Errors:');
-      this.progress.errors.slice(-5).forEach(err => console.log(`   - ${err}`));
+      logger.info('⚠️  Recent Errors:');
+      this.progress.errors.slice(-5).forEach(err => logger.info('   - ${err}'););
     }
 
     console.log('');
-    console.log(`Started: ${this.progress.startedAt}`);
-    console.log(`Last updated: ${this.progress.lastUpdatedAt}`);
+    logger.info('Started: ${this.progress.startedAt}');
+    logger.info('Last updated: ${this.progress.lastUpdatedAt}');
 
     if (this.progress.processedFiles >= this.progress.totalFiles) {
       console.log('');
-      console.log('✅ All voice memos processed!');
+      logger.info('✅ All voice memos processed!');
     } else {
       console.log('');
-      console.log('▶️  Run this script again to continue processing');
+      logger.info('▶️  Run this script again to continue processing');
     }
   }
 
@@ -264,7 +265,7 @@ class VoiceMemosBatchProcessor {
   static reset(): void {
     if (fs.existsSync(PROGRESS_FILE)) {
       fs.unlinkSync(PROGRESS_FILE);
-      console.log('✅ Progress reset. Starting fresh...');
+      logger.info('✅ Progress reset. Starting fresh...');
     }
   }
 }
@@ -294,7 +295,7 @@ const status = args.includes('--status');
     await processor.run(batchLimit);
 
   } catch (error) {
-    console.error('❌ Fatal error:', error);
+    logger.error('❌ Fatal error', { error: error.message || String(error) });
     process.exit(1);
   }
 })();

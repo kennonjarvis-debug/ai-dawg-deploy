@@ -4,6 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 let anthropicClient: Anthropic | null = null;
 
@@ -121,15 +122,15 @@ Provide comprehensive tags for cataloging and search.`;
         parsed = JSON.parse(jsonText);
       } catch (error) {
         // Fallback with basic tags
-        console.error('Tagging JSON parse error:', error);
+        logger.error('Tagging JSON parse error', { error: error.message || String(error) });
         return this.generateFallbackTags(options.lyrics, options.fileName);
       }
 
-      console.log(`✅ Tagged: "${parsed.suggestedFilename}" [${parsed.segment}]`);
+      logger.info('✅ Tagged: "${parsed.suggestedFilename}" [${parsed.segment}]');
 
       return parsed;
     } catch (error) {
-      console.error('Tagging error:', error);
+      logger.error('Tagging error', { error: error.message || String(error) });
       return this.generateFallbackTags(options.lyrics, options.fileName);
     }
   }

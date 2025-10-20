@@ -14,6 +14,7 @@ import { vocalSeparationService } from '../services/notes/vocal-separation.servi
 import { audioAnalysisService } from '../services/notes/audio-analysis.service.js';
 import { beatGenerationService } from '../services/notes/beat-generation.service.js';
 import { dynamicsProcessingService } from '../services/notes/dynamics-processing.service.js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 const VOICE_MEMOS_PATH = '/Users/benkennon/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings';
 const BATCH_SIZE = 10;
@@ -113,19 +114,19 @@ function extractSongTitle(completedLyrics: string): string {
  * Process a single voice memo
  */
 async function processVoiceMemo(file: ProcessedFile): Promise<void> {
-  console.log(`\n🎵 Processing: ${file.fileName}`);
+  logger.info('\n🎵 Processing: ${file.fileName}');
 
   try {
     // 1. ANALYZE INSTRUMENTAL
-    console.log('🎸 Analyzing instrumental backing track...');
+    logger.info('🎸 Analyzing instrumental backing track...');
     const instrumentalAnalysis = await audioAnalysisService.analyzeInstrumental(file.filePath);
 
     // 2. TRANSCRIBE
-    console.log('📝 Transcribing...');
+    logger.info('📝 Transcribing...');
     const transcription = await transcriptionService.transcribeAudio(file.filePath);
 
     // 3. PARSE LYRICS
-    console.log('🎤 Parsing lyrics...');
+    logger.info('🎤 Parsing lyrics...');
     let parsedLyrics = transcription.text;
 
     if (lyricParserService.hasBackgroundMusicIndicators(transcription.text) || transcription.text.length > 100) {
@@ -147,7 +148,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
     }
 
     // 4. COMPLETE SONG
-    console.log('✨ Attempting song completion...');
+    logger.info('✨ Attempting song completion...');
     const completion = await songCompletionService.completeSong(parsedLyrics, {
       fileName: file.fileName,
       duration: transcription.duration,
@@ -155,15 +156,15 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
     });
 
     if (!completion.isCompletable) {
-      console.log(`❌ Not completable: ${completion.reason}`);
-      console.log('🗑️  Deleting voice memo (insufficient data)...');
+      logger.info('❌ Not completable: ${completion.reason}');
+      logger.info('🗑️  Deleting voice memo (insufficient data)...');
 
       // Delete the original file
       try {
         fs.unlinkSync(file.filePath);
-        console.log(`✅ Deleted: ${file.fileName}`);
+        logger.info('✅ Deleted: ${file.fileName}');
       } catch (error) {
-        console.error(`⚠️  Failed to delete ${file.fileName}:`, error);
+        logger.error('⚠️  Failed to delete ${file.fileName}', { error: error.message || String(error) });
       }
 
       return;
@@ -173,7 +174,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
     const songTitle = extractSongTitle(completion.completedLyrics!);
 
     // 6. SEPARATE VOCALS + INSTRUMENTAL using stem splitter
-    console.log('🎼 Separating stems (vocals + instrumental)...');
+    logger.info('🎼 Separating stems (vocals + instrumental)...');
     const separatedStems = await vocalSeparationService.separateVocals(
       file.filePath,
       {
@@ -186,22 +187,22 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
       songTitle
     );
 
-    console.log(`✅ Stems separated:`);
-    console.log(`   Vocals: ${path.basename(separatedStems.vocalsPath)}`);
+    logger.info('✅ Stems separated:');
+    logger.info('   Vocals: ${path.basename(separatedStems.vocalsPath)}');
     if (separatedStems.instrumentalPath) {
-      console.log(`   Instrumental: ${path.basename(separatedStems.instrumentalPath)}`);
+      logger.info('   Instrumental: ${path.basename(separatedStems.instrumentalPath)}');
 
       // Analyze the separated instrumental stem for pitch/melody matching
-      console.log('🎵 Analyzing separated instrumental stem...');
+      logger.info('🎵 Analyzing separated instrumental stem...');
       const instrumentalStemAnalysis = await audioAnalysisService.analyzeInstrumental(
         separatedStems.instrumentalPath
       );
 
-      console.log(`✅ Instrumental stem analysis:`);
-      console.log(`   Genre: ${instrumentalStemAnalysis.genre}`);
-      console.log(`   Key: ${instrumentalStemAnalysis.key || 'Unknown'}`);
-      console.log(`   BPM: ${instrumentalStemAnalysis.bpm}`);
-      console.log(`   Instruments: ${instrumentalStemAnalysis.instruments?.join(', ')}`);
+      logger.info('✅ Instrumental stem analysis:');
+      logger.info('   Genre: ${instrumentalStemAnalysis.genre}');
+      logger.info('   Key: ${instrumentalStemAnalysis.key || 'Unknown'}');
+      logger.info('   BPM: ${instrumentalStemAnalysis.bpm}');
+      logger.info('   Instruments: ${instrumentalStemAnalysis.instruments?.join(', ')}');
 
       // Update main instrumental analysis with stem-specific data
       instrumentalAnalysis.key = instrumentalStemAnalysis.key;
@@ -209,7 +210,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
     }
 
     // 7. APPLY AUTO-COMPING (dynamics processing) to vocals
-    console.log('🎚️  Applying auto-comp to vocals...');
+    logger.info('🎚️  Applying auto-comp to vocals...');
     const rawVocalsPath = separatedStems.vocalsPath;
 
     const compResult = await dynamicsProcessingService.processVocals(rawVocalsPath);
@@ -218,7 +219,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
       // Replace raw vocals with processed vocals
       fs.unlinkSync(rawVocalsPath);
       fs.renameSync(compResult.outputPath, rawVocalsPath);
-      console.log(`✅ Auto-comp applied (${compResult.metrics?.loudness.toFixed(1)} LUFS)`);
+      logger.info('✅ Auto-comp applied (${compResult.metrics?.loudness.toFixed(1)} LUFS)');
     }
 
     // 8. OPTIONAL: GENERATE BEAT if no instrumental detected (or use original)
@@ -226,7 +227,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
     let finalVocalsPath = vocalsOnlyPath;
 
     if (!instrumentalAnalysis.hasInstrumental && beatGenerationService.isAvailable()) {
-      console.log('🎹 No instrumental detected - generating beat matching original key/tempo...');
+      logger.info('🎹 No instrumental detected - generating beat matching original key/tempo...');
 
       const beatResult = await beatGenerationService.generateBeat({
         instrumentalAnalysis,
@@ -240,7 +241,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
       });
 
       if (beatResult.success && beatResult.beatPath) {
-        console.log(`✅ Beat generated: ${beatResult.beatPath}`);
+        logger.info('✅ Beat generated: ${beatResult.beatPath}');
 
         // Combine vocals + beat
         const combinedPath = await beatGenerationService.combineVocalsAndBeat(
@@ -249,7 +250,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
           songTitle
         );
 
-        console.log(`✅ Combined vocals + beat`);
+        logger.info('✅ Combined vocals + beat');
 
         // Master to radio-ready quality
         if (audioMasteringService.isAvailable()) {
@@ -267,22 +268,22 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
 
           if (masteringResult.success && masteringResult.masteredPath) {
             finalVocalsPath = masteringResult.masteredPath;
-            console.log(`✅ Mastered to radio-ready quality (${masteringResult.iterations} iterations)`);
+            logger.info('✅ Mastered to radio-ready quality (${masteringResult.iterations} iterations)');
           }
         } else {
           finalVocalsPath = combinedPath;
         }
       } else {
-        console.warn(`⚠️  Beat generation failed: ${beatResult.error}`);
+        logger.warn('⚠️  Beat generation failed: ${beatResult.error}');
       }
     } else if (instrumentalAnalysis.hasInstrumental) {
-      console.log(`✓ Instrumental already present - skipping beat generation`);
+      logger.info('✓ Instrumental already present - skipping beat generation');
     } else {
-      console.log(`⚠️  Beat generation not available (REPLICATE_API_TOKEN not set)`);
+      logger.info('⚠️  Beat generation not available (REPLICATE_API_TOKEN not set)');
     }
 
     // 8. CREATE APPLE NOTE with vocals (or vocals+beat)
-    console.log(`📝 Creating Apple Note: "${songTitle}"`);
+    logger.info('📝 Creating Apple Note: "songTitle"', { songTitle });
 
     // Format lyrics - convert newlines to <br> for Apple Notes
     // Remove title from lyrics if it's the first line (Apple Notes shows title separately)
@@ -319,7 +320,7 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
     );
 
     if (appleNoteResult.success) {
-      console.log(`✅ Created song: "${songTitle}"`);
+      logger.info('✅ Created song: "songTitle"', { songTitle });
 
       // Save metadata marking as completed
       const metadataPath = file.filePath.replace('.m4a', '_metadata.json');
@@ -331,11 +332,11 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
         processedAt: new Date().toISOString(),
       }, null, 2));
     } else {
-      console.error(`⚠️  Apple Note creation failed: ${appleNoteResult.error}`);
+      logger.error('⚠️  Apple Note creation failed: ${appleNoteResult.error}');
     }
 
   } catch (error) {
-    console.error(`❌ Processing error: ${error}`);
+    logger.error('❌ Processing error: ${error}');
   }
 }
 
@@ -343,43 +344,43 @@ async function processVoiceMemo(file: ProcessedFile): Promise<void> {
  * Main processing loop
  */
 async function main() {
-  console.log('🎵 JARVIS Retroactive Song Processor');
-  console.log('=====================================');
-  console.log('Processing: Newest → Oldest');
-  console.log('Mode: Complete songs only\n');
+  logger.info('🎵 JARVIS Retroactive Song Processor');
+  logger.info('=====================================');
+  logger.info('Processing: Newest → Oldest');
+  logger.info('Mode: Complete songs only\n');
 
   const files = getVoiceMemoFiles();
   const unprocessedFiles = files.filter(f => !f.processed);
 
-  console.log(`📊 Total files: ${files.length}`);
-  console.log(`📊 Unprocessed: ${unprocessedFiles.length}`);
-  console.log(`📊 Already processed: ${files.length - unprocessedFiles.length}\n`);
+  logger.info('📊 Total files: ${files.length}');
+  logger.info('📊 Unprocessed: ${unprocessedFiles.length}');
+  logger.info('📊 Already processed: ${files.length - unprocessedFiles.length}\n');
 
   if (unprocessedFiles.length === 0) {
-    console.log('✅ All files processed!');
+    logger.info('✅ All files processed!');
     return;
   }
 
-  console.log(`Processing ${Math.min(BATCH_SIZE, unprocessedFiles.length)} files IN PARALLEL...\n`);
+  logger.info('Processing ${Math.min(BATCH_SIZE, unprocessedFiles.length)} files IN PARALLEL...\n');
 
   // Process batch in parallel (all 10 at once)
   const batch = unprocessedFiles.slice(0, BATCH_SIZE);
   await Promise.all(batch.map(file => processVoiceMemo(file)));
 
-  console.log('\n✅ Batch complete!');
-  console.log(`Remaining unprocessed: ${Math.max(0, unprocessedFiles.length - BATCH_SIZE)}`);
+  logger.info('\n✅ Batch complete!');
+  logger.info('Remaining unprocessed: ${Math.max(0, unprocessedFiles.length - BATCH_SIZE)}');
 
   // Check if all done
   if (unprocessedFiles.length <= BATCH_SIZE) {
-    console.log('\n🎉 ALL FILES PROCESSED!');
-    console.log('🔍 Running duplicate detection...\n');
+    logger.info('\n🎉 ALL FILES PROCESSED!');
+    logger.info('🔍 Running duplicate detection...\n');
 
     // Run deduplication
     const { execSync } = await import('child_process');
     try {
       execSync('npx tsx src/scripts/deduplicate-songs.ts', { stdio: 'inherit' });
     } catch (error) {
-      console.error('Deduplication failed:', error);
+      logger.error('Deduplication failed', { error: error.message || String(error) });
     }
   }
 }

@@ -8,6 +8,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { taggingService, VoiceMemoTags } from './tagging.service.js';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -87,7 +88,7 @@ export class VoiceMemoCompService {
       const outputFileName = options.outputFileName || `JARVIS_COMP_${timestamp}.${outputFormat}`;
       const outputPath = path.join(COMP_OUTPUT_PATH, outputFileName);
 
-      console.log(`Comping ${takeFilePaths.length} voice memos...`);
+      logger.info('Comping ${takeFilePaths.length} voice memos...');
 
       // Build ffmpeg command
       let ffmpegCommand: string;
@@ -120,7 +121,7 @@ export class VoiceMemoCompService {
       }
 
       // Execute ffmpeg
-      console.log('Running ffmpeg...');
+      logger.info('Running ffmpeg...');
       await execAsync(ffmpegCommand);
 
       // Get output file stats
@@ -132,14 +133,14 @@ export class VoiceMemoCompService {
       );
       const duration = parseFloat(durationOutput.trim());
 
-      console.log(`✅ Comped ${takeFilePaths.length} takes into: ${outputFileName}`);
-      console.log(`   Duration: ${duration.toFixed(2)}s`);
-      console.log(`   Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+      logger.info('✅ Comped ${takeFilePaths.length} takes into: ${outputFileName}');
+      logger.info('   Duration: ${duration.toFixed(2)}s');
+      logger.info('   Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB');
 
       // LIVE SYNC: Copy comp to main Voice Memos folder so it appears in Voice Memos app
       const mainFolderPath = path.join(VOICE_MEMOS_MAIN_PATH, outputFileName);
       fs.copyFileSync(outputPath, mainFolderPath);
-      console.log(`📱 Synced to Voice Memos app: ${outputFileName}`);
+      logger.info('📱 Synced to Voice Memos app: ${outputFileName}');
 
       return {
         success: true,
@@ -149,7 +150,7 @@ export class VoiceMemoCompService {
         takesCount: takeFilePaths.length,
       };
     } catch (error) {
-      console.error('Voice memo comping error:', error);
+      logger.error('Voice memo comping error', { error: error.message || String(error) });
       return {
         success: false,
         takesCount: takeFilePaths.length,
@@ -235,7 +236,7 @@ export class VoiceMemoCompService {
       if (!options.outputFileName && notes.length > 0) {
         const combinedLyrics = notes.map(n => n.content).join('\n\n');
 
-        console.log('Generating intelligent tags for comp...');
+        logger.info('Generating intelligent tags for comp...');
         const tags = await taggingService.tagVoiceMemo({
           lyrics: combinedLyrics,
           structure: undefined,
@@ -246,17 +247,17 @@ export class VoiceMemoCompService {
         const outputFormat = options.outputFormat || 'm4a';
         options.outputFileName = `${tags.suggestedFilename}_COMP.${outputFormat}`;
 
-        console.log(`Smart filename: ${options.outputFileName}`);
-        console.log(`  Song: ${tags.songTitle || 'Untitled'}`);
-        console.log(`  Segment: ${tags.segment}`);
-        console.log(`  Keywords: ${tags.keywords.slice(0, 3).join(', ')}`);
+        logger.info('Smart filename: ${options.outputFileName}');
+        logger.info('  Song: ${tags.songTitle || 'Untitled'}');
+        logger.info('  Segment: ${tags.segment}');
+        logger.info('  Keywords: ${tags.keywords.slice(0, 3).join(', ')}');
       }
 
       await prisma.$disconnect();
 
       return await this.compVoiceMemos(filePaths, options);
     } catch (error) {
-      console.error('Comp by note IDs error:', error);
+      logger.error('Comp by note IDs error', { error: error.message || String(error) });
       return {
         success: false,
         takesCount: noteIds.length,

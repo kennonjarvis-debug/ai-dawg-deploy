@@ -7,6 +7,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -50,7 +51,7 @@ export class PitchDetectionService {
    */
   async analyzePitch(audioPath: string): Promise<PitchAnalysis> {
     try {
-      console.log(`🎵 Analyzing pitch: ${path.basename(audioPath)}`);
+      logger.info('🎵 Analyzing pitch: ${path.basename(audioPath)}');
 
       // Create temp directory for output
       const tempDir = '/tmp/pitch-analysis';
@@ -70,7 +71,7 @@ export class PitchDetectionService {
       const key = this.detectKey(pitchData.notes);
       const tempo = await this.detectTempo(audioPath);
 
-      console.log(`✅ Pitch analysis complete: ${rootNote} at ${tempo} BPM in ${key}`);
+      logger.info('✅ Pitch analysis complete: ${rootNote} at ${tempo} BPM in ${key}');
 
       return {
         rootNote: rootNote.noteName,
@@ -83,7 +84,7 @@ export class PitchDetectionService {
         stability: pitchData.stability,
       };
     } catch (error) {
-      console.error('Pitch analysis error:', error);
+      logger.error('Pitch analysis error', { error: error.message || String(error) });
       throw error;
     }
   }
@@ -122,7 +123,7 @@ export class PitchDetectionService {
    * Fallback pitch analysis using ffmpeg spectral analysis
    */
   private async fallbackPitchAnalysis(audioPath: string): Promise<{ notes: PitchNote[]; stability: number }> {
-    console.warn('⚠️  Using fallback pitch analysis (Basic Pitch failed)');
+    logger.warn('⚠️  Using fallback pitch analysis (Basic Pitch failed)');
 
     // Use ffmpeg to get spectral data
     const { stdout } = await execAsync(
@@ -222,7 +223,7 @@ export class PitchDetectionService {
       const tempoMatch = stdout.match(/(\d+\.?\d*)\s*bpm/i);
       return tempoMatch ? Math.round(parseFloat(tempoMatch[1])) : 120;
     } catch (error) {
-      console.warn('⚠️  Tempo detection failed, using default 120 BPM');
+      logger.warn('⚠️  Tempo detection failed, using default 120 BPM');
       return 120;
     }
   }

@@ -8,6 +8,7 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -77,7 +78,7 @@ end tell`;
         const noteId = stdout.trim();
         await fs.unlink(tempFile); // Clean up temp file
 
-        console.log(`📝 Created Apple Note: "${title}"`);
+        logger.info('📝 Created Apple Note: "title"', { title });
 
         return {
           success: true,
@@ -88,7 +89,7 @@ end tell`;
         throw error;
       }
     } catch (error) {
-      console.error('Apple Notes create error:', error);
+      logger.error('Apple Notes create error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -123,13 +124,13 @@ end tell`;
 
       await execAsync(`osascript -e '${appleScript}'`);
 
-      console.log(`✏️  Updated Apple Note: ${noteId}`);
+      logger.info('✏️  Updated Apple Note: ${noteId}');
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Apple Notes update error:', error);
+      logger.error('Apple Notes update error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -153,13 +154,13 @@ end tell`;
 
       await execAsync(`osascript -e '${appleScript}'`);
 
-      console.log(`🗑️  Deleted Apple Note: ${noteId}`);
+      logger.info('🗑️  Deleted Apple Note: ${noteId}');
 
       return {
         success: true,
       };
     } catch (error) {
-      console.error('Apple Notes delete error:', error);
+      logger.error('Apple Notes delete error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

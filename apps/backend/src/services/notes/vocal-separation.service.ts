@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -90,7 +91,7 @@ export class VocalSeparationService {
         `${outputBasename}.${outputFormat}`
       );
 
-      console.log(`Separating vocals from: ${path.basename(inputFilePath)}`);
+      logger.info('Separating vocals from: ${path.basename(inputFilePath)}');
 
       // Build ffmpeg command for vocal isolation
       // Strategy: Extract center channel (where vocals usually are) + bandpass filter for vocal frequencies
@@ -129,7 +130,7 @@ export class VocalSeparationService {
       const ffmpegCommand = `ffmpeg -i "${inputFilePath}" -filter_complex "${filterComplex}" -map "[out]" ${codecArgs} "${vocalsOutputPath}" -y`;
 
       // Execute ffmpeg
-      console.log('Running ffmpeg vocal separation...');
+      logger.info('Running ffmpeg vocal separation...');
       await execAsync(ffmpegCommand);
 
       // Get output file stats
@@ -141,9 +142,9 @@ export class VocalSeparationService {
       );
       const duration = parseFloat(durationOutput.trim());
 
-      console.log(`✅ Vocals isolated: ${path.basename(vocalsOutputPath)}`);
-      console.log(`   Duration: ${duration.toFixed(2)}s`);
-      console.log(`   Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+      logger.info('✅ Vocals isolated: ${path.basename(vocalsOutputPath)}');
+      logger.info('   Duration: ${duration.toFixed(2)}s');
+      logger.info('   Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB');
 
       // LIVE SYNC: Copy to main Voice Memos folder (subfolders not recognized by app)
       // Add "JARVIS - " prefix so songs are easily identifiable and grouped together
@@ -152,7 +153,7 @@ export class VocalSeparationService {
       const voiceMemosPath = path.join(VOICE_MEMOS_MAIN_PATH, jarvisFilename);
 
       fs.copyFileSync(vocalsOutputPath, voiceMemosPath);
-      console.log(`📱 Synced to Voice Memos app: ${jarvisFilename}`);
+      logger.info('📱 Synced to Voice Memos app: ${jarvisFilename}');
 
       // Move original to Recently Deleted if requested
       if (options.deleteOriginal) {
@@ -168,9 +169,9 @@ export class VocalSeparationService {
 
         try {
           fs.renameSync(inputFilePath, deletedPath);
-          console.log(`🗑️  Moved original to Recently Deleted: ${originalFileName}`);
+          logger.info('🗑️  Moved original to Recently Deleted: ${originalFileName}');
         } catch (err) {
-          console.warn(`⚠️  Could not move original file: ${err}`);
+          logger.warn('⚠️  Could not move original file: ${err}');
         }
       }
 
@@ -187,7 +188,7 @@ export class VocalSeparationService {
         method: 'ffmpeg-center-extraction',
       };
     } catch (error) {
-      console.error('Vocal separation error:', error);
+      logger.error('Vocal separation error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

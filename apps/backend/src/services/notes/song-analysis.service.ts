@@ -8,6 +8,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -158,7 +159,7 @@ Provide detailed analysis of structure, theme, completion status, and next actio
         parsed = JSON.parse(jsonText);
       } catch (error) {
         // Fallback if JSON parsing fails
-        console.error('Song analysis JSON parse error:', error);
+        logger.error('Song analysis JSON parse error', { error: error.message || String(error) });
         return this.getDefaultAnalysis('partial_lyrics', 'JSON parsing failed');
       }
 
@@ -184,9 +185,9 @@ Provide detailed analysis of structure, theme, completion status, and next actio
           appleNotesFolder = 'JARVIS - Ideas';
       }
 
-      console.log(`📊 Song Analysis: ${parsed.completion?.status} (${parsed.completion?.percentage}% complete)`);
-      console.log(`🎵 Theme: ${parsed.theme?.primary} | Mood: ${parsed.theme?.mood}`);
-      console.log(`📁 Folder: ${appleNotesFolder}`);
+      logger.info('📊 Song Analysis: ${parsed.completion?.status} (${parsed.completion?.percentage}% complete)');
+      logger.info('🎵 Theme: ${parsed.theme?.primary} | Mood: ${parsed.theme?.mood}');
+      logger.info('📁 Folder: ${appleNotesFolder}');
 
       return {
         structure: parsed.structure || { hasVerse: false, hasChorus: false, hasBridge: false, repetitionScore: 0 },
@@ -197,7 +198,7 @@ Provide detailed analysis of structure, theme, completion status, and next actio
         appleNotesFolder,
       };
     } catch (error) {
-      console.error('Song analysis error:', error);
+      logger.error('Song analysis error', { error: error.message || String(error) });
       // Fallback to default analysis
       return this.getDefaultAnalysis('partial_lyrics', 'Analysis failed');
     }

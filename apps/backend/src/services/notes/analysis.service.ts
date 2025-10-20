@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
 import { PrismaClient } from '@prisma/client';
 import type { AIAnalysis, Action, AnalysisRequest, Note } from '../../types/notes.js';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 // Load .env from project root
 const __filename = fileURLToPath(import.meta.url);
@@ -35,7 +36,7 @@ export class AnalysisService {
    */
   async analyzeNote(note: Note, appContext: 'jarvis' | 'dawg_ai', userPreferences?: any): Promise<AIAnalysis> {
     try {
-      console.log(`Analyzing note ${note.id} for ${appContext}`);
+      logger.info('Analyzing note ${note.id} for ${appContext}');
 
       const systemPrompt = this.buildSystemPrompt(appContext, userPreferences);
       const userPrompt = this.buildUserPrompt(note);
@@ -56,11 +57,11 @@ export class AnalysisService {
       const analysisText = response.content[0].type === 'text' ? response.content[0].text : '';
       const analysis = await this.parseAndSaveAnalysisResponse(analysisText, note.id, appContext);
 
-      console.log(`Analysis complete: ${analysis.contentType} (confidence: ${analysis.confidence})`);
+      logger.info('Analysis complete: ${analysis.contentType} (confidence: ${analysis.confidence})');
 
       return analysis;
     } catch (error) {
-      console.error('Analysis error:', error);
+      logger.error('Analysis error', { error: error.message || String(error) });
       throw new Error(`Failed to analyze note: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -212,7 +213,7 @@ Provide your analysis as a JSON object.`;
         })),
       };
     } catch (error) {
-      console.error('Failed to parse analysis response:', error);
+      logger.error('Failed to parse analysis response', { error: error.message || String(error) });
       // Return fallback analysis and save it
       const dbAnalysis = await prisma.aIAnalysis.create({
         data: {
@@ -249,7 +250,7 @@ Provide your analysis as a JSON object.`;
         const analysis = await this.analyzeNote(note, appContext);
         analyses.push(analysis);
       } catch (error) {
-        console.error(`Failed to analyze note ${note.id}:`, error);
+        logger.error('Failed to analyze note ${note.id}', { error: error.message || String(error) });
       }
     }
 

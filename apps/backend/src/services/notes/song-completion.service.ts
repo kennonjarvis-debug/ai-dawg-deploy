@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { InstrumentalAnalysis } from './audio-analysis.service.js';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -198,7 +199,7 @@ Can this become a full song? If yes, complete it with proper structure and secti
       try {
         parsed = JSON.parse(jsonText);
       } catch (error) {
-        console.error('Song completion JSON parse error:', error);
+        logger.error('Song completion JSON parse error', { error: error.message || String(error) });
         return {
           isCompletable: false,
           reason: 'AI response parsing failed',
@@ -207,8 +208,8 @@ Can this become a full song? If yes, complete it with proper structure and secti
       }
 
       if (parsed.isCompletable) {
-        console.log(`✅ Song completable: ${parsed.reason}`);
-        console.log(`📝 Improvements: ${parsed.improvements?.join(', ')}`);
+        logger.info('✅ Song completable: ${parsed.reason}');
+        logger.info('📝 Improvements: ${parsed.improvements?.join(', ')}');
 
         return {
           isCompletable: true,
@@ -218,7 +219,7 @@ Can this become a full song? If yes, complete it with proper structure and secti
           metadata: parsed.metadata,  // Include metadata from AI response
         };
       } else {
-        console.log(`❌ Not completable: ${parsed.reason}`);
+        logger.info('❌ Not completable: ${parsed.reason}');
         return {
           isCompletable: false,
           reason: parsed.reason,
@@ -226,7 +227,7 @@ Can this become a full song? If yes, complete it with proper structure and secti
         };
       }
     } catch (error) {
-      console.error('Song completion error:', error);
+      logger.error('Song completion error', { error: error.message || String(error) });
       return {
         isCompletable: false,
         reason: 'Completion process failed',

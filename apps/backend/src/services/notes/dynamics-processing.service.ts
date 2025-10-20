@@ -7,6 +7,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -53,7 +54,7 @@ export class DynamicsProcessingService {
    */
   async process(audioPath: string, options: DynamicsOptions = {}): Promise<DynamicsResult> {
     try {
-      console.log(`🎚️  Applying dynamics processing: ${path.basename(audioPath)}`);
+      logger.info('🎚️  Applying dynamics processing: ${path.basename(audioPath)}');
 
       // Default options for country/pop vocals
       const opts = {
@@ -115,7 +116,7 @@ export class DynamicsProcessingService {
 
       const filterChain = filters.join(',');
 
-      console.log(`🎛️  Filter chain: ${filterChain}`);
+      logger.info('🎛️  Filter chain: ${filterChain}');
 
       // Apply processing
       await execAsync(
@@ -126,10 +127,10 @@ export class DynamicsProcessingService {
       // Measure output metrics
       const metrics = await this.measureAudio(outputPath);
 
-      console.log(`✅ Dynamics processed: ${path.basename(outputPath)}`);
-      console.log(`   Peak: ${metrics.peakLevel.toFixed(1)} dBFS`);
-      console.log(`   RMS: ${metrics.rmsLevel.toFixed(1)} dBFS`);
-      console.log(`   Loudness: ${metrics.loudness.toFixed(1)} LUFS`);
+      logger.info('✅ Dynamics processed: ${path.basename(outputPath)}');
+      logger.info('   Peak: ${metrics.peakLevel.toFixed(1)} dBFS');
+      logger.info('   RMS: ${metrics.rmsLevel.toFixed(1)} dBFS');
+      logger.info('   Loudness: ${metrics.loudness.toFixed(1)} LUFS');
 
       return {
         success: true,
@@ -137,7 +138,7 @@ export class DynamicsProcessingService {
         metrics,
       };
     } catch (error) {
-      console.error('Dynamics processing error:', error);
+      logger.error('Dynamics processing error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -187,7 +188,7 @@ export class DynamicsProcessingService {
         dynamicRange: 10,
       };
     } catch (error) {
-      console.warn('⚠️  Audio measurement failed, using defaults');
+      logger.warn('⚠️  Audio measurement failed, using defaults');
       return {
         peakLevel: -6,
         rmsLevel: -14,

@@ -8,6 +8,7 @@ import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -51,7 +52,7 @@ export class AudioAnalysisService {
    */
   async analyzeInstrumental(filePath: string): Promise<InstrumentalAnalysis> {
     try {
-      console.log('🎵 Analyzing audio for instrumental detection...');
+      logger.info('🎵 Analyzing audio for instrumental detection...');
 
       // Step 1: Extract audio features using ffmpeg
       const features = await this.extractAudioFeatures(filePath);
@@ -62,17 +63,17 @@ export class AudioAnalysisService {
       // Step 3: Use AI to classify the instrumental
       const aiAnalysis = await this.classifyWithAI(features, spectralAnalysis);
 
-      console.log(`✅ Analysis complete:`);
-      console.log(`   Has instrumental: ${aiAnalysis.hasInstrumental}`);
+      logger.info('✅ Analysis complete:');
+      logger.info('   Has instrumental: ${aiAnalysis.hasInstrumental}');
       if (aiAnalysis.genre) {
-        console.log(`   Genre: ${aiAnalysis.genre}`);
-        console.log(`   Mood: ${aiAnalysis.mood}`);
-        console.log(`   Instruments: ${aiAnalysis.instruments?.join(', ')}`);
+        logger.info('   Genre: ${aiAnalysis.genre}');
+        logger.info('   Mood: ${aiAnalysis.mood}');
+        logger.info('   Instruments: ${aiAnalysis.instruments?.join(', ')}');
       }
 
       return aiAnalysis;
     } catch (error) {
-      console.error('Audio analysis error:', error);
+      logger.error('Audio analysis error', { error: error.message || String(error) });
       return {
         hasInstrumental: false,
         confidence: 0,
@@ -225,7 +226,7 @@ Respond ONLY with valid JSON (no markdown, no extra text):
       const analysis = JSON.parse(responseText);
       return analysis;
     } catch (error) {
-      console.error('Failed to parse AI response:', error);
+      logger.error('Failed to parse AI response', { error: error.message || String(error) });
       return {
         hasInstrumental: false,
         confidence: 0,
@@ -244,7 +245,7 @@ Respond ONLY with valid JSON (no markdown, no extra text):
     const vocalsPath = path.join(outputDir, `${baseName}_vocals.m4a`);
     const instrumentalPath = path.join(outputDir, `${baseName}_instrumental.m4a`);
 
-    console.log('🎸 Separating vocals and instrumental...');
+    logger.info('🎸 Separating vocals and instrumental...');
 
     // Extract vocals (center channel with vocal frequency focus)
     await execAsync(
@@ -256,9 +257,9 @@ Respond ONLY with valid JSON (no markdown, no extra text):
       `ffmpeg -i "${filePath}" -af "pan=stereo|c0=c0-c1|c1=c1-c0,highpass=f=20,lowpass=f=15000" -c:a aac -b:a 192k "${instrumentalPath}" -y`
     );
 
-    console.log('✅ Separation complete');
-    console.log(`   Vocals: ${path.basename(vocalsPath)}`);
-    console.log(`   Instrumental: ${path.basename(instrumentalPath)}`);
+    logger.info('✅ Separation complete');
+    logger.info('   Vocals: ${path.basename(vocalsPath)}');
+    logger.info('   Instrumental: ${path.basename(instrumentalPath)}');
 
     return {
       vocalsPath,

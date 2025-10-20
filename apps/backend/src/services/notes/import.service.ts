@@ -13,6 +13,7 @@ import { analysisService } from './analysis.service.js';
 import { lyricParserService } from './lyric-parser.service.js';
 import { songAnalysisService } from './song-analysis.service.js';
 import { appleNotesSyncService } from './apple-notes-sync.service.js';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -189,7 +190,7 @@ export class ImportService {
       },
     });
 
-    console.log(`Imported note: ${dbNote.title}`);
+    logger.info('Imported note: ${dbNote.title}');
 
     // Convert Prisma Note to our Note type
     return this.convertToNote(dbNote);
@@ -209,7 +210,7 @@ export class ImportService {
 
       const fileName = path.basename(filePath);
 
-      console.log(`Importing voice memo: ${fileName}`);
+      logger.info('Importing voice memo: ${fileName}');
 
       // Auto-transcribe if requested
       if (options.autoTranscribe !== false) {
@@ -223,7 +224,7 @@ export class ImportService {
           // Check if this appears to be a music recording with background
           if (lyricParserService.hasBackgroundMusicIndicators(transcription.text) ||
               transcription.text.length > 100) {
-            console.log('Detected potential background music - parsing lyrics...');
+            logger.info('Detected potential background music - parsing lyrics...');
 
             const parsed = await lyricParserService.parseVoiceMemoLyrics(
               transcription.text,
@@ -236,10 +237,10 @@ export class ImportService {
             if (parsed.confidence > 0.6) {
               finalContent = parsed.cleanLyrics;
               parsedStructure = parsed.structure;
-              console.log(`Lyrics parsed with ${(parsed.confidence * 100).toFixed(0)}% confidence`);
+              logger.info('Lyrics parsed with ${(parsed.confidence * 100).toFixed(0)}% confidence');
 
               if (parsed.hasBackgroundMusic) {
-                console.log('Background music detected and filtered out');
+                logger.info('Background music detected and filtered out');
               }
             }
           } else {
@@ -248,7 +249,7 @@ export class ImportService {
           }
 
           // SONG ANALYSIS: Analyze structure, theme, completion status
-          console.log('🎵 Analyzing song structure and development...');
+          logger.info('🎵 Analyzing song structure and development...');
           const songAnalysis = await songAnalysisService.analyzeSong(finalContent, {
             duration: transcription.duration,
             fileName,
@@ -297,7 +298,7 @@ ${songAnalysis.nextActions.map(action => `• ${action}`).join('\n')}`;
           });
 
           // APPLE NOTES SYNC: Create note in appropriate folder based on analysis
-          console.log(`📁 Creating Apple Note in: ${songAnalysis.appleNotesFolder}`);
+          logger.info('📁 Creating Apple Note in: ${songAnalysis.appleNotesFolder}');
           const appleNoteResult = await appleNotesSyncService.createNote(
             intelligentTitle,
             contentWithMetadata,
@@ -305,9 +306,9 @@ ${songAnalysis.nextActions.map(action => `• ${action}`).join('\n')}`;
           );
 
           if (appleNoteResult.success) {
-            console.log(`✅ Apple Note created: "${intelligentTitle}" → ${songAnalysis.appleNotesFolder}`);
+            logger.info('✅ Apple Note created: "intelligentTitle" → ${songAnalysis.appleNotesFolder}', { intelligentTitle });
           } else {
-            console.error(`⚠️  Apple Note creation failed: ${appleNoteResult.error}`);
+            logger.error('⚠️  Apple Note creation failed: ${appleNoteResult.error}');
           }
 
           const note = this.convertToNote(dbNote);
@@ -320,7 +321,7 @@ ${songAnalysis.nextActions.map(action => `• ${action}`).join('\n')}`;
 
           return { memo, note };
         } catch (error) {
-          console.error('Transcription failed:', error);
+          logger.error('Transcription failed', { error: error.message || String(error) });
 
           // Create note without transcription
           const dbNote = await prisma.note.create({
@@ -378,7 +379,7 @@ ${songAnalysis.nextActions.map(action => `• ${action}`).join('\n')}`;
         return { memo };
       }
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error', { error: error.message || String(error) });
       throw error;
     }
   }
@@ -425,7 +426,7 @@ ${songAnalysis.nextActions.map(action => `• ${action}`).join('\n')}`;
         }
       }
 
-      console.log(`Import complete: ${status.notesProcessed} notes, ${status.memosProcessed} memos`);
+      logger.info('Import complete: ${status.notesProcessed} notes, ${status.memosProcessed} memos');
       return status;
     } catch (error) {
       status.errors.push(error instanceof Error ? error.message : 'Unknown error');

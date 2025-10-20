@@ -6,6 +6,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -44,7 +45,7 @@ async function getAllNotes(): Promise<Note[]> {
       return { id, title };
     });
   } catch (error) {
-    console.error('Failed to get notes:', error);
+    logger.error('Failed to get notes', { error: error.message || String(error) });
     return [];
   }
 }
@@ -102,7 +103,7 @@ async function deleteNote(noteId: string, title: string): Promise<boolean> {
     `;
 
     await execAsync(`osascript -e '${appleScript}'`);
-    console.log(`  🗑️  Deleted: "${title}"`);
+    logger.info('  🗑️  Deleted: "title"', { title });
     return true;
   } catch (error) {
     console.error(`  ❌ Failed to delete: "${title}"`, error);
@@ -114,7 +115,7 @@ async function deleteNote(noteId: string, title: string): Promise<boolean> {
  * Find and remove duplicate songs
  */
 async function deduplicateSongs() {
-  console.log('🔍 Searching for duplicate songs in Apple Notes...\n');
+  logger.info('🔍 Searching for duplicate songs in Apple Notes...\n');
 
   const notes = await getAllNotes();
 
@@ -123,7 +124,7 @@ async function deduplicateSongs() {
     return;
   }
 
-  console.log(`📊 Found ${notes.length} total songs\n`);
+  logger.info('📊 Found ${notes.length} total songs\n');
 
   const duplicateGroups: Map<string, Note[]> = new Map();
   const seen: Set<string> = new Set();
@@ -153,16 +154,16 @@ async function deduplicateSongs() {
   }
 
   if (duplicateGroups.size === 0) {
-    console.log('✅ No duplicates found!');
+    logger.info('✅ No duplicates found!');
     return;
   }
 
-  console.log(`🔴 Found ${duplicateGroups.size} duplicate groups:\n`);
+  logger.info('🔴 Found ${duplicateGroups.size} duplicate groups:\n');
 
   let deletedCount = 0;
 
   for (const [originalTitle, group] of duplicateGroups.entries()) {
-    console.log(`📝 "${originalTitle}" (${group.length} copies)`);
+    logger.info('📝 "originalTitle" (${group.length} copies)', { originalTitle });
 
     // Keep the first one, delete the rest
     for (let i = 1; i < group.length; i++) {
@@ -172,9 +173,9 @@ async function deduplicateSongs() {
     console.log('');
   }
 
-  console.log(`\n✅ Deduplication complete!`);
-  console.log(`📊 Kept: ${notes.length - deletedCount} unique songs`);
-  console.log(`🗑️  Deleted: ${deletedCount} duplicates`);
+  logger.info('\n✅ Deduplication complete!');
+  logger.info('📊 Kept: ${notes.length - deletedCount} unique songs');
+  logger.info('🗑️  Deleted: ${deletedCount} duplicates');
 }
 
 deduplicateSongs().catch(console.error);

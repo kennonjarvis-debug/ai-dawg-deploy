@@ -12,6 +12,7 @@ import { completionService } from '../services/notes/completion.service.js';
 import { learningLogService } from '../services/notes/learning-log.service.js';
 import { voiceMemoCompService } from '../services/notes/voice-memo-comp.service.js';
 import { taggingService } from '../services/notes/tagging.service.js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.post('/import/text', async (req: Request, res: Response) => {
       note,
     });
   } catch (error) {
-    console.error('Import text note error:', error);
+    logger.error('Import text note error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to import note',
@@ -97,7 +98,7 @@ router.post('/import/voice-memo', upload.single('audio'), async (req: Request, r
       note: result.note,
     });
   } catch (error) {
-    console.error('Import voice memo error:', error);
+    logger.error('Import voice memo error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to import voice memo',
@@ -130,7 +131,7 @@ router.post('/import/directory', async (req: Request, res: Response) => {
       status,
     });
   } catch (error) {
-    console.error('Import directory error:', error);
+    logger.error('Import directory error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to import directory',
@@ -162,7 +163,7 @@ router.get('/', async (req: Request, res: Response) => {
       count: notes.length,
     });
   } catch (error) {
-    console.error('Get notes error:', error);
+    logger.error('Get notes error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get notes',
@@ -200,7 +201,7 @@ router.post('/:id/analyze', async (req: Request, res: Response) => {
       analysis,
     });
   } catch (error) {
-    console.error('Analyze note error:', error);
+    logger.error('Analyze note error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to analyze note',
@@ -239,7 +240,7 @@ router.post('/:id/execute-actions', async (req: Request, res: Response) => {
       actions: actionResults,
     });
   } catch (error) {
-    console.error('Execute actions error:', error);
+    logger.error('Execute actions error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to execute actions',
@@ -261,7 +262,7 @@ router.get('/voice-memos', async (req: Request, res: Response) => {
       count: memos.length,
     });
   } catch (error) {
-    console.error('Get voice memos error:', error);
+    logger.error('Get voice memos error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get voice memos',
@@ -294,7 +295,7 @@ router.post('/sync/ios', async (req: Request, res: Response) => {
       message: 'iOS sync completed',
     });
   } catch (error) {
-    console.error('iOS sync error:', error);
+    logger.error('iOS sync error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to sync with iOS',
@@ -330,7 +331,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       version: result.version,
     });
   } catch (error) {
-    console.error('Update note error:', error);
+    logger.error('Update note error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update note',
@@ -356,7 +357,7 @@ router.post('/:id/complete-song', async (req: Request, res: Response) => {
       message: 'Song completed successfully',
     });
   } catch (error) {
-    console.error('Complete song error:', error);
+    logger.error('Complete song error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to complete song',
@@ -380,7 +381,7 @@ router.get('/:id/versions', async (req: Request, res: Response) => {
       count: versions.length,
     });
   } catch (error) {
-    console.error('Get versions error:', error);
+    logger.error('Get versions error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get version history',
@@ -405,7 +406,7 @@ router.post('/:id/restore/:version', async (req: Request, res: Response) => {
       message: `Restored to version ${version}`,
     });
   } catch (error) {
-    console.error('Restore version error:', error);
+    logger.error('Restore version error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to restore version',
@@ -441,7 +442,7 @@ router.get('/learning/log', async (req: Request, res: Response) => {
       count: log.length,
     });
   } catch (error) {
-    console.error('Get learning log error:', error);
+    logger.error('Get learning log error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get learning log',
@@ -462,7 +463,7 @@ router.get('/learning/metrics', async (req: Request, res: Response) => {
       metrics,
     });
   } catch (error) {
-    console.error('Get learning metrics error:', error);
+    logger.error('Get learning metrics error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get learning metrics',
@@ -483,7 +484,7 @@ router.get('/learning/full', async (req: Request, res: Response) => {
       ...data,
     });
   } catch (error) {
-    console.error('Get full learning log error:', error);
+    logger.error('Get full learning log error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get full learning log',
@@ -526,7 +527,7 @@ router.post('/voice-memos/comp', async (req: Request, res: Response) => {
       message: `Successfully comped ${result.takesCount} voice memos`,
     });
   } catch (error) {
-    console.error('Comp voice memos error:', error);
+    logger.error('Comp voice memos error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to comp voice memos',
@@ -548,7 +549,7 @@ router.get('/voice-memos/comps', async (req: Request, res: Response) => {
       count: comps.length,
     });
   } catch (error) {
-    console.error('List comps error:', error);
+    logger.error('List comps error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to list comped files',
@@ -595,7 +596,7 @@ router.post('/:id/tag', async (req: Request, res: Response) => {
       noteId: note.id,
     });
   } catch (error) {
-    console.error('Tag voice memo error:', error);
+    logger.error('Tag voice memo error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to tag voice memo',
@@ -660,7 +661,7 @@ router.post('/voice-memos/search', async (req: Request, res: Response) => {
       query,
     });
   } catch (error) {
-    console.error('Search voice memos error:', error);
+    logger.error('Search voice memos error', { error: error.message || String(error) });
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to search voice memos',

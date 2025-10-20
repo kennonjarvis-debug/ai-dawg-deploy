@@ -4,6 +4,7 @@
  */
 
 import type { Action, AIAnalysis, Note } from '../../types/notes.js';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 export interface ActionResult {
   action: Action;
@@ -39,7 +40,7 @@ export class ActionRouterService {
    * Execute a single action
    */
   private async executeAction(action: Action, note: Note, analysis: AIAnalysis): Promise<ActionResult> {
-    console.log(`Executing action: ${action.type} for ${action.appContext}`);
+    logger.info('Executing action: ${action.type} for ${action.appContext}');
 
     switch (action.type) {
       case 'finalize_song':

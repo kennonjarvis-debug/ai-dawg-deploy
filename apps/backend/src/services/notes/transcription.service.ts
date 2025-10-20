@@ -7,6 +7,7 @@ import 'dotenv/config';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -25,7 +26,7 @@ export class TranscriptionService {
    */
   async transcribeAudio(filePath: string): Promise<TranscriptionResult> {
     try {
-      console.log(`Transcribing audio file: ${filePath}`);
+      logger.info('Transcribing audio file: ${filePath}');
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {
@@ -36,7 +37,7 @@ export class TranscriptionService {
       const stats = fs.statSync(filePath);
       const fileSizeInMB = stats.size / (1024 * 1024);
 
-      console.log(`File size: ${fileSizeInMB.toFixed(2)} MB`);
+      logger.info('File size: ${fileSizeInMB.toFixed(2)} MB');
 
       // Whisper API supports files up to 25MB
       if (fileSizeInMB > 25) {
@@ -54,7 +55,7 @@ export class TranscriptionService {
         response_format: 'verbose_json', // Get detailed info
       });
 
-      console.log(`Transcription completed: ${response.text.substring(0, 100)}...`);
+      logger.info('Transcription completed: ${response.text.substring(0, 100)}...');
 
       return {
         text: response.text,
@@ -62,7 +63,7 @@ export class TranscriptionService {
         language: response.language,
       };
     } catch (error) {
-      console.error('Transcription error:', error);
+      logger.error('Transcription error', { error: error.message || String(error) });
       throw new Error(`Failed to transcribe audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -86,7 +87,7 @@ export class TranscriptionService {
         segments: (response as any).segments || [],
       };
     } catch (error) {
-      console.error('Transcription with timestamps error:', error);
+      logger.error('Transcription with timestamps error', { error: error.message || String(error) });
       throw error;
     }
   }
@@ -102,7 +103,7 @@ export class TranscriptionService {
         const result = await this.transcribeAudio(filePath);
         results.set(filePath, result);
       } catch (error) {
-        console.error(`Failed to transcribe ${filePath}:`, error);
+        logger.error('Failed to transcribe ${filePath}', { error: error.message || String(error) });
         // Continue with other files
       }
     }

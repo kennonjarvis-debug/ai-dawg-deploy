@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -102,7 +103,7 @@ export class AudioMasteringService {
     options: MasteringOptions = {}
   ): Promise<MasteringResult> {
     try {
-      console.log('🎚️  Mastering audio to radio-ready quality...');
+      logger.info('🎚️  Mastering audio to radio-ready quality...');
 
       // Default options
       const targetLoudness = options.targetLoudness || -14; // Streaming standard
@@ -117,10 +118,10 @@ export class AudioMasteringService {
       );
 
       // Analyze input
-      console.log('📊 Analyzing input audio...');
+      logger.info('📊 Analyzing input audio...');
       const inputMetrics = await this.analyzeAudio(inputPath);
-      console.log(`   Input loudness: ${inputMetrics.loudness.toFixed(2)} LUFS`);
-      console.log(`   Dynamic range: ${inputMetrics.dynamicRange.toFixed(2)} dB`);
+      logger.info('   Input loudness: ${inputMetrics.loudness.toFixed(2)} LUFS');
+      logger.info('   Dynamic range: ${inputMetrics.dynamicRange.toFixed(2)} dB');
 
       // Iterative refinement loop
       let currentPath = inputPath;
@@ -129,7 +130,7 @@ export class AudioMasteringService {
 
       while (iteration < maxIterations) {
         iteration++;
-        console.log(`\n🔄 Refinement iteration ${iteration}/${maxIterations}...`);
+        logger.info('\n🔄 Refinement iteration ${iteration}/${maxIterations}...');
 
         // Apply mastering processing
         const processedPath = await this.applyMastering(
@@ -146,8 +147,8 @@ export class AudioMasteringService {
 
         // Analyze output
         const outputMetrics = await this.analyzeAudio(processedPath);
-        console.log(`   Output loudness: ${outputMetrics.loudness.toFixed(2)} LUFS`);
-        console.log(`   Quality score: ${((outputMetrics.qualityScore || 0) * 100).toFixed(0)}%`);
+        logger.info('   Output loudness: ${outputMetrics.loudness.toFixed(2)} LUFS');
+        logger.info('   Quality score: ${((outputMetrics.qualityScore || 0) * 100).toFixed(0)}%');
 
         // Track improvements
         if (Math.abs(outputMetrics.loudness - targetLoudness) < 1.0) {
@@ -163,7 +164,7 @@ export class AudioMasteringService {
         // Check if quality threshold met
         const qualityScore = outputMetrics.qualityScore || 0;
         if (qualityScore >= targetQuality) {
-          console.log(`✅ Target quality achieved (${(qualityScore * 100).toFixed(0)}%)`);
+          logger.info('✅ Target quality achieved (${(qualityScore * 100).toFixed(0)}%)');
           break;
         }
 
@@ -172,9 +173,9 @@ export class AudioMasteringService {
 
       const finalMetrics = await this.analyzeAudio(outputPath);
 
-      console.log(`\n✅ Mastering complete after ${iteration} iteration(s)`);
-      console.log(`   Final loudness: ${finalMetrics.loudness.toFixed(2)} LUFS`);
-      console.log(`   Quality score: ${((finalMetrics.qualityScore || 0) * 100).toFixed(0)}%`);
+      logger.info('\n✅ Mastering complete after ${iteration} iteration(s)');
+      logger.info('   Final loudness: ${finalMetrics.loudness.toFixed(2)} LUFS');
+      logger.info('   Quality score: ${((finalMetrics.qualityScore || 0) * 100).toFixed(0)}%');
 
       return {
         success: true,
@@ -184,7 +185,7 @@ export class AudioMasteringService {
         improvements,
       };
     } catch (error) {
-      console.error('Mastering error:', error);
+      logger.error('Mastering error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -283,7 +284,7 @@ export class AudioMasteringService {
         qualityScore,
       };
     } catch (error) {
-      console.error('Audio analysis error:', error);
+      logger.error('Audio analysis error', { error: error.message || String(error) });
       // Return default values
       return {
         loudness: -23,

@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 // Load .env from project root
 const __filename = fileURLToPath(import.meta.url);
@@ -131,7 +132,7 @@ export class LyricParserService {
     notes?: string;
   }> {
     try {
-      console.log('Parsing voice memo lyrics from transcription...');
+      logger.info('Parsing voice memo lyrics from transcription...');
 
       const systemPrompt = `You are an expert music transcription parser specializing in extracting clean lyrics from voice memo transcriptions.
 
@@ -249,14 +250,14 @@ Extract the clean lyrics, removing any background music, beats, or non-lyrical c
         }
       }
 
-      console.log(`Lyric parsing complete (confidence: ${parsed.confidence || 0.8})`);
+      logger.info('Lyric parsing complete (confidence: ${parsed.confidence || 0.8})');
 
       // VALIDATION LAYER: Check if Claude's output is actually good
       const validation = this.validateParsedLyrics(parsed.cleanLyrics || '', rawTranscription);
 
       if (!validation.isValid) {
-        console.log(`⚠️  Validation failed: ${validation.reason}`);
-        console.log('Falling back to cleaned raw transcription');
+        logger.info('⚠️  Validation failed: ${validation.reason}');
+        logger.info('Falling back to cleaned raw transcription');
 
         // Fall back to quick cleanup of raw transcription
         const fallbackLyrics = this.quickCleanup(rawTranscription);
@@ -270,7 +271,7 @@ Extract the clean lyrics, removing any background music, beats, or non-lyrical c
         };
       }
 
-      console.log('✅ Validation passed');
+      logger.info('✅ Validation passed');
 
       return {
         cleanLyrics: parsed.cleanLyrics || rawTranscription,
@@ -280,7 +281,7 @@ Extract the clean lyrics, removing any background music, beats, or non-lyrical c
         notes: parsed.notes,
       };
     } catch (error) {
-      console.error('Lyric parsing error:', error);
+      logger.error('Lyric parsing error', { error: error.message || String(error) });
       // Fallback: return raw transcription if parsing fails
       return {
         cleanLyrics: rawTranscription,

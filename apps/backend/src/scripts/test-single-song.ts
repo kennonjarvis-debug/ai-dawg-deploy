@@ -12,27 +12,28 @@ import { vocalSeparationService } from '../services/notes/vocal-separation.servi
 import { audioAnalysisService } from '../services/notes/audio-analysis.service.js';
 import { beatGenerationService } from '../services/notes/beat-generation.service.js';
 import { audioMasteringService } from '../services/notes/audio-mastering.service.js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 // Test with one of the successful files
 const TEST_FILE = '/Users/benkennon/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/20251011 095953-2E1707E1.m4a';
 
 async function testSingleSong() {
-  console.log('🧪 Testing single song with new formatting and metadata...\n');
-  console.log(`📁 File: ${TEST_FILE.split('/').pop()}\n`);
+  logger.info('🧪 Testing single song with new formatting and metadata...\n');
+  logger.info('📁 File: ${TEST_FILE.split('/').pop()}\n');
 
   try {
     // 1. ANALYZE INSTRUMENTAL
-    console.log('🎸 Analyzing instrumental backing track...');
+    logger.info('🎸 Analyzing instrumental backing track...');
     const instrumentalAnalysis = await audioAnalysisService.analyzeInstrumental(TEST_FILE);
-    console.log(`✅ Instrumental analysis complete\n`);
+    logger.info('✅ Instrumental analysis complete\n');
 
     // 2. TRANSCRIBE
-    console.log('📝 Transcribing...');
+    logger.info('📝 Transcribing...');
     const transcription = await transcriptionService.transcribeAudio(TEST_FILE);
-    console.log(`✅ Transcribed (${transcription.text.length} chars)\n`);
+    logger.info('✅ Transcribed (${transcription.text.length} chars)\n');
 
     // 3. PARSE LYRICS
-    console.log('🎤 Parsing lyrics...');
+    logger.info('🎤 Parsing lyrics...');
     let parsedLyrics = transcription.text;
 
     if (lyricParserService.hasBackgroundMusicIndicators(transcription.text) || transcription.text.length > 100) {
@@ -52,10 +53,10 @@ async function testSingleSong() {
     } else {
       parsedLyrics = lyricParserService.quickCleanup(transcription.text);
     }
-    console.log(`✅ Parsed\n`);
+    logger.info('✅ Parsed\n');
 
     // 4. COMPLETE SONG
-    console.log('✨ Completing song...');
+    logger.info('✨ Completing song...');
     const completion = await songCompletionService.completeSong(parsedLyrics, {
       fileName: TEST_FILE.split('/').pop(),
       duration: transcription.duration,
@@ -63,39 +64,39 @@ async function testSingleSong() {
     });
 
     if (!completion.isCompletable) {
-      console.log(`❌ Not completable: ${completion.reason}`);
+      logger.info('❌ Not completable: ${completion.reason}');
       return;
     }
 
-    console.log(`✅ Song completable!`);
-    console.log(`\n📊 Metadata:`);
+    logger.info('✅ Song completable!');
+    logger.info('\n📊 Metadata:');
     if (completion.metadata) {
-      console.log(`  Key: ${completion.metadata.key}`);
-      console.log(`  BPM: ${completion.metadata.bpm}`);
-      console.log(`  Mood: ${completion.metadata.mood}`);
-      console.log(`  Reference Artists: ${completion.metadata.referenceArtists.join(', ')}`);
-      console.log(`  Reference Songs: ${completion.metadata.referenceSongs.join(', ')}`);
+      logger.info('  Key: ${completion.metadata.key}');
+      logger.info('  BPM: ${completion.metadata.bpm}');
+      logger.info('  Mood: ${completion.metadata.mood}');
+      logger.info('  Reference Artists: ${completion.metadata.referenceArtists.join(', ')}');
+      logger.info('  Reference Songs: ${completion.metadata.referenceSongs.join(', ')}');
     } else {
-      console.log(`  ⚠️  No metadata returned`);
+      logger.info('  ⚠️  No metadata returned');
     }
 
-    console.log(`\n🎸 Instrumental Analysis:`);
+    logger.info('\n🎸 Instrumental Analysis:');
     if (instrumentalAnalysis.hasInstrumental) {
-      console.log(`  Has Instrumental: Yes (${(instrumentalAnalysis.confidence * 100).toFixed(0)}% confidence)`);
-      console.log(`  Genre: ${instrumentalAnalysis.genre}`);
-      console.log(`  Instruments: ${instrumentalAnalysis.instruments?.join(', ')}`);
-      console.log(`  Tempo: ${instrumentalAnalysis.tempo} (${instrumentalAnalysis.bpm} BPM)`);
-      console.log(`  Mood: ${instrumentalAnalysis.mood}`);
-      console.log(`  Energy: ${instrumentalAnalysis.energy}`);
+      logger.info('  Has Instrumental: Yes (${(instrumentalAnalysis.confidence * 100).toFixed(0)}% confidence)');
+      logger.info('  Genre: ${instrumentalAnalysis.genre}');
+      logger.info('  Instruments: ${instrumentalAnalysis.instruments?.join(', ')}');
+      logger.info('  Tempo: ${instrumentalAnalysis.tempo} (${instrumentalAnalysis.bpm} BPM)');
+      logger.info('  Mood: ${instrumentalAnalysis.mood}');
+      logger.info('  Energy: ${instrumentalAnalysis.energy}');
     } else {
-      console.log(`  Has Instrumental: No (a cappella or no backing track detected)`);
+      logger.info('  Has Instrumental: No (a cappella or no backing track detected)');
     }
 
     // 5. EXTRACT SONG TITLE for naming vocals file
     const songTitle = extractSongTitle(completion.completedLyrics!);
 
     // 6. EXTRACT VOCALS with song title
-    console.log('\n🎼 Separating vocals...');
+    logger.info('\n🎼 Separating vocals...');
     await vocalSeparationService.separateVocals(
       TEST_FILE,
       {
@@ -106,7 +107,7 @@ async function testSingleSong() {
       },
       songTitle
     );
-    console.log(`✅ Vocals extracted\n`);
+    logger.info('✅ Vocals extracted\n');
 
     // 7. OPTIONAL: GENERATE BEAT if no instrumental detected
     const vocalsFileName = `JARVIS - ${songTitle}.m4a`;
@@ -114,7 +115,7 @@ async function testSingleSong() {
     let finalVocalsPath = vocalsOnlyPath;
 
     if (!instrumentalAnalysis.hasInstrumental && beatGenerationService.isAvailable()) {
-      console.log('\n🎹 No instrumental detected - generating beat...');
+      logger.info('\n🎹 No instrumental detected - generating beat...');
 
       const beatResult = await beatGenerationService.generateBeat({
         instrumentalAnalysis,
@@ -126,7 +127,7 @@ async function testSingleSong() {
       });
 
       if (beatResult.success && beatResult.beatPath) {
-        console.log(`✅ Beat generated!`);
+        logger.info('✅ Beat generated!');
 
         // Combine vocals + beat
         const combinedPath = await beatGenerationService.combineVocalsAndBeat(
@@ -135,11 +136,11 @@ async function testSingleSong() {
           songTitle
         );
 
-        console.log(`✅ Combined vocals + beat`);
+        logger.info('✅ Combined vocals + beat');
 
         // Master to radio-ready quality
         if (audioMasteringService.isAvailable()) {
-          console.log('\n🎚️  Mastering to radio-ready quality...');
+          logger.info('\n🎚️  Mastering to radio-ready quality...');
 
           const masteringResult = await audioMasteringService.master(
             combinedPath,
@@ -157,25 +158,25 @@ async function testSingleSong() {
 
           if (masteringResult.success && masteringResult.masteredPath) {
             finalVocalsPath = masteringResult.masteredPath;
-            console.log(`\n✅ Mastered in ${masteringResult.iterations} iteration(s)`);
-            console.log(`   Loudness: ${masteringResult.metrics?.loudness.toFixed(2)} LUFS`);
-            console.log(`   Quality: ${((masteringResult.metrics?.qualityScore || 0) * 100).toFixed(0)}%`);
-            console.log(`   Improvements: ${masteringResult.improvements?.join(', ')}\n`);
+            logger.info('\n✅ Mastered in ${masteringResult.iterations} iteration(s)');
+            logger.info('   Loudness: ${masteringResult.metrics?.loudness.toFixed(2)} LUFS');
+            logger.info('   Quality: ${((masteringResult.metrics?.qualityScore || 0) * 100).toFixed(0)}%');
+            logger.info('   Improvements: ${masteringResult.improvements?.join(', ')}\n');
           } else {
-            console.warn(`⚠️  Mastering failed: ${masteringResult.error}\n`);
+            logger.warn('⚠️  Mastering failed: ${masteringResult.error}\n');
           }
         }
       } else {
-        console.warn(`⚠️  Beat generation failed: ${beatResult.error}\n`);
+        logger.warn('⚠️  Beat generation failed: ${beatResult.error}\n');
       }
     } else if (instrumentalAnalysis.hasInstrumental) {
-      console.log(`\n✓ Instrumental already present - skipping beat generation\n`);
+      logger.info('\n✓ Instrumental already present - skipping beat generation\n');
     } else {
-      console.log(`\n⚠️  Beat generation not available (REPLICATE_API_TOKEN not set)\n`);
+      logger.info('\n⚠️  Beat generation not available (REPLICATE_API_TOKEN not set)\n');
     }
 
     // 8. CREATE APPLE NOTE
-    console.log(`📝 Creating Apple Note: "${songTitle}"\n`);
+    logger.info('📝 Creating Apple Note: "songTitle"\n', { songTitle });
 
     // Format lyrics - convert newlines to <br> for Apple Notes
     // Remove title from lyrics if it's the first line (Apple Notes shows title separately)
@@ -212,18 +213,18 @@ async function testSingleSong() {
     );
 
     if (appleNoteResult.success) {
-      console.log(`✅ Test complete! Check Apple Notes for: "${songTitle}"`);
-      console.log(`\n🎯 Next step: Verify the note has:`);
-      console.log(`   ✓ Proper line spacing between sections`);
-      console.log(`   ✓ Bold section labels ([Verse 1], [Chorus], etc.)`);
-      console.log(`   ✓ Metadata box with key, BPM, mood, references`);
-      console.log(`   ✓ Clickable vocals link`);
+      logger.info('✅ Test complete! Check Apple Notes for: "songTitle"', { songTitle });
+      logger.info('\n🎯 Next step: Verify the note has:');
+      logger.info('   ✓ Proper line spacing between sections');
+      logger.info('   ✓ Bold section labels ([Verse 1], [Chorus], etc.)');
+      logger.info('   ✓ Metadata box with key, BPM, mood, references');
+      logger.info('   ✓ Clickable vocals link');
     } else {
-      console.error(`❌ Apple Note creation failed: ${appleNoteResult.error}`);
+      logger.error('❌ Apple Note creation failed: ${appleNoteResult.error}');
     }
 
   } catch (error) {
-    console.error(`❌ Test error: ${error}`);
+    logger.error('❌ Test error: ${error}');
   }
 }
 

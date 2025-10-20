@@ -13,6 +13,7 @@ import { InstrumentalAnalysis } from './audio-analysis.service.js';
 // Import music generation from DAWG AI lib
 // Note: We're using direct imports instead of HTTP calls since we're in the same codebase
 import Replicate from 'replicate';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -96,11 +97,11 @@ export class BeatGenerationService {
    */
   async generateBeat(options: BeatGenerationOptions = {}): Promise<BeatGenerationResult> {
     try {
-      console.log('🎹 Generating beat...');
+      logger.info('🎹 Generating beat...');
 
       // Validate Replicate API token
       if (!this.replicateApiToken) {
-        console.warn('⚠️  REPLICATE_API_TOKEN not set. Beat generation disabled.');
+        logger.warn('⚠️  REPLICATE_API_TOKEN not set. Beat generation disabled.');
         return {
           success: false,
           error: 'Replicate API token not configured',
@@ -117,9 +118,9 @@ export class BeatGenerationService {
       const duration = options.duration || 30;
       const model = options.model || 'stereo-large'; // Default to highest quality
 
-      console.log(`🎵 Generating: "${prompt}"`);
-      console.log(`   Duration: ${duration}s`);
-      console.log(`   Model: ${model}`);
+      logger.info('🎵 Generating: "prompt"', { prompt });
+      logger.info('   Duration: ${duration}s');
+      logger.info('   Model: ${model}');
 
       // Call Replicate API directly
       if (!this.replicate) {
@@ -161,7 +162,7 @@ export class BeatGenerationService {
       // Download generated audio
       const beatPath = await this.downloadBeat(audioUrl, prompt);
 
-      console.log(`✅ Beat generated: ${path.basename(beatPath)}`);
+      logger.info('✅ Beat generated: ${path.basename(beatPath)}');
 
       return {
         success: true,
@@ -170,7 +171,7 @@ export class BeatGenerationService {
         prompt,
       };
     } catch (error) {
-      console.error('Beat generation error:', error);
+      logger.error('Beat generation error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -280,7 +281,7 @@ export class BeatGenerationService {
     outputName: string
   ): Promise<string> {
     try {
-      console.log('🎼 Combining vocals and beat...');
+      logger.info('🎼 Combining vocals and beat...');
 
       const VOICE_MEMOS_MAIN_PATH = '/Users/benkennon/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings';
       const outputPath = path.join(VOICE_MEMOS_MAIN_PATH, `JARVIS - ${outputName}.m4a`);
@@ -291,12 +292,12 @@ export class BeatGenerationService {
 
       await execAsync(command);
 
-      console.log(`✅ Combined track created: ${path.basename(outputPath)}`);
-      console.log(`📱 Synced to Voice Memos app`);
+      logger.info('✅ Combined track created: ${path.basename(outputPath)}');
+      logger.info('📱 Synced to Voice Memos app');
 
       return outputPath;
     } catch (error) {
-      console.error('Combining error:', error);
+      logger.error('Combining error', { error: error.message || String(error) });
       throw error;
     }
   }

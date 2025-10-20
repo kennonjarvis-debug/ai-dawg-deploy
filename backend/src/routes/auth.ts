@@ -9,6 +9,7 @@ import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { logger } from '../../../src/lib/utils/logger.js';
 
 const router = Router();
 
@@ -55,7 +56,7 @@ router.post('/signup', authLimiter, async (req: Request, res: Response): Promise
     });
 
     if (error) {
-      console.error('Signup error:', error);
+      logger.error('Signup error', { error: error.message, email });
       res.status(400).json({
         error: 'Signup failed',
         message: error.message
@@ -72,7 +73,7 @@ router.post('/signup', authLimiter, async (req: Request, res: Response): Promise
       message: 'Account created successfully'
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected signup error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to create account'
@@ -104,7 +105,7 @@ router.post('/signin', authLimiter, async (req: Request, res: Response): Promise
     });
 
     if (error) {
-      console.error('Signin error:', error);
+      logger.error('Signin error', { error: error.message, email });
       res.status(401).json({
         error: 'Authentication failed',
         message: 'Invalid email or password'
@@ -120,7 +121,7 @@ router.post('/signin', authLimiter, async (req: Request, res: Response): Promise
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected signin error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to sign in'
@@ -142,7 +143,7 @@ router.post('/signout', authenticate, async (req: Request, res: Response): Promi
     const { error } = await req.supabase.auth.signOut();
 
     if (error) {
-      console.error('Signout error:', error);
+      logger.error('Signout error', { error: error.message, userId: req.user?.id });
       res.status(500).json({
         error: 'Signout failed',
         message: error.message
@@ -155,7 +156,7 @@ router.post('/signout', authenticate, async (req: Request, res: Response): Promi
       message: 'Signed out successfully'
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected signout error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to sign out'
@@ -177,7 +178,7 @@ router.get('/session', authenticate, async (req: Request, res: Response): Promis
     const { data: { session }, error } = await req.supabase.auth.getSession();
 
     if (error) {
-      console.error('Session error:', error);
+      logger.error('Session error', { error: error.message, userId: req.user?.id });
       res.status(500).json({
         error: 'Failed to get session',
         message: error.message
@@ -193,7 +194,7 @@ router.get('/session', authenticate, async (req: Request, res: Response): Promis
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected session error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to get session'
@@ -222,7 +223,7 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
     });
 
     if (error) {
-      console.error('Refresh error:', error);
+      logger.error('Token refresh error', { error: error.message });
       res.status(401).json({
         error: 'Refresh failed',
         message: error.message
@@ -237,7 +238,7 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected refresh error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to refresh session'
@@ -273,7 +274,7 @@ router.get('/user', authenticate, async (req: Request, res: Response): Promise<v
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected get user error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to get user'
@@ -309,7 +310,7 @@ router.put('/user', authenticate, async (req: Request, res: Response): Promise<v
     });
 
     if (error) {
-      console.error('Update user error:', error);
+      logger.error('Update user error', { error: error.message, userId: req.user?.id });
       res.status(500).json({
         error: 'Update failed',
         message: error.message
@@ -324,7 +325,7 @@ router.put('/user', authenticate, async (req: Request, res: Response): Promise<v
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected update user error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to update user'
@@ -353,7 +354,7 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response):
     });
 
     if (error) {
-      console.error('Reset password error:', error);
+      logger.error('Reset password error', { error: error.message, email });
       res.status(500).json({
         error: 'Reset failed',
         message: error.message
@@ -366,7 +367,7 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response):
       message: 'Password reset email sent'
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected reset password error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to send reset email'
@@ -408,7 +409,7 @@ router.post('/update-password', authenticate, async (req: Request, res: Response
     });
 
     if (error) {
-      console.error('Update password error:', error);
+      logger.error('Update password error', { error: error.message, userId: req.user?.id });
       res.status(500).json({
         error: 'Update failed',
         message: error.message
@@ -424,7 +425,7 @@ router.post('/update-password', authenticate, async (req: Request, res: Response
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected update password error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to update password'

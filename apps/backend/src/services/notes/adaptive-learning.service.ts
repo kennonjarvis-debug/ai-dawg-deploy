@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,7 +75,7 @@ export class AdaptiveLearningService {
    */
   private loadLearning(): LearningData {
     if (fs.existsSync(LEARNING_FILE)) {
-      console.log('📚 Loading previous learning...');
+      logger.info('📚 Loading previous learning...');
       const data = fs.readFileSync(LEARNING_FILE, 'utf-8');
       return JSON.parse(data);
     }
@@ -131,7 +132,7 @@ export class AdaptiveLearningService {
     newRules: string[];
   }> {
     try {
-      console.log('\n🧠 JARVIS is analyzing the batch and learning...');
+      logger.info('\n🧠 JARVIS is analyzing the batch and learning...');
 
       // Build analysis prompt
       const systemPrompt = `You are JARVIS, an adaptive AI system that learns from each batch of voice memo transcriptions.
@@ -207,9 +208,9 @@ What can we learn? What should we improve for the next batch?`;
 
       // Add new insights
       if (analysis.insights) {
-        console.log('\n💡 New Insights:');
+        logger.info('\n💡 New Insights:');
         analysis.insights.forEach((insight: string) => {
-          console.log(`   - ${insight}`);
+          logger.info('   - ${insight}');
           if (!this.learning.improvements.commonPatterns.includes(insight)) {
             this.learning.improvements.commonPatterns.push(insight);
           }
@@ -218,9 +219,9 @@ What can we learn? What should we improve for the next batch?`;
 
       // Add new rules
       if (analysis.newRules) {
-        console.log('\n📋 New Rules to Apply:');
+        logger.info('\n📋 New Rules to Apply:');
         analysis.newRules.forEach((rule: string) => {
-          console.log(`   - ${rule}`);
+          logger.info('   - ${rule}');
           if (!this.learning.improvements.parsingRules.includes(rule)) {
             this.learning.improvements.parsingRules.push(rule);
           }
@@ -229,9 +230,9 @@ What can we learn? What should we improve for the next batch?`;
 
       // Add improvements
       if (analysis.improvements) {
-        console.log('\n🔧 Improvements for Next Batch:');
+        logger.info('\n🔧 Improvements for Next Batch:');
         analysis.improvements.forEach((improvement: string) => {
-          console.log(`   - ${improvement}`);
+          logger.info('   - ${improvement}');
           if (!this.learning.improvements.successfulTechniques.includes(improvement)) {
             this.learning.improvements.successfulTechniques.push(improvement);
           }
@@ -250,7 +251,7 @@ What can we learn? What should we improve for the next batch?`;
       // Save learning
       this.saveLearning();
 
-      console.log(`\n✅ Learning updated (Version ${this.learning.version})`);
+      logger.info('\n✅ Learning updated (Version ${this.learning.version})');
 
       return {
         insights: analysis.insights || [],
@@ -258,7 +259,7 @@ What can we learn? What should we improve for the next batch?`;
         newRules: analysis.newRules || [],
       };
     } catch (error) {
-      console.error('Learning analysis error:', error);
+      logger.error('Learning analysis error', { error: error.message || String(error) });
       return {
         insights: [],
         improvements: [],
@@ -278,7 +279,7 @@ What can we learn? What should we improve for the next batch?`;
     summary: string;
   }> {
     try {
-      console.log('\n🔄 JARVIS is reviewing ALL previous learnings...');
+      logger.info('\n🔄 JARVIS is reviewing ALL previous learnings...');
 
       const systemPrompt = `You are JARVIS, an adaptive AI system performing meta-learning - learning about your own learning process.
 
@@ -360,14 +361,14 @@ Consolidate these learnings into a refined, deduplicated knowledge base. Remove 
       // Save consolidated learning
       this.saveLearning();
 
-      console.log('\n🎯 Learning Consolidation Complete:');
-      console.log(`   Parsing rules: ${oldRulesCount} → ${this.learning.improvements.parsingRules.length} (-${removedRules})`);
-      console.log(`   Patterns: ${oldPatternsCount} → ${this.learning.improvements.commonPatterns.length}`);
+      logger.info('\n🎯 Learning Consolidation Complete:');
+      logger.info('   Parsing rules: ${oldRulesCount} → ${this.learning.improvements.parsingRules.length} (-${removedRules})');
+      logger.info('   Patterns: ${oldPatternsCount} → ${this.learning.improvements.commonPatterns.length}');
       if (consolidation.metaInsights) {
-        console.log('\n💡 Meta-Insights:');
-        consolidation.metaInsights.forEach((insight: string) => console.log(`   - ${insight}`));
+        logger.info('\n💡 Meta-Insights:');
+        consolidation.metaInsights.forEach((insight: string) => logger.info('   - ${insight}'););
       }
-      console.log(`\n📝 ${consolidation.summary}`);
+      logger.info('\n📝 ${consolidation.summary}');
 
       return {
         consolidated: true,
@@ -376,7 +377,7 @@ Consolidate these learnings into a refined, deduplicated knowledge base. Remove 
         summary: consolidation.summary || 'Learnings consolidated successfully',
       };
     } catch (error) {
-      console.error('Learning consolidation error:', error);
+      logger.error('Learning consolidation error', { error: error.message || String(error) });
       return {
         consolidated: false,
         removedRules: 0,
@@ -428,7 +429,7 @@ ${this.learning.improvements.successfulTechniques.map((tech, i) => `${i + 1}. ${
       fs.unlinkSync(LEARNING_FILE);
     }
     this.learning = this.loadLearning();
-    console.log('🔄 Learning reset - starting fresh');
+    logger.info('🔄 Learning reset - starting fresh');
   }
 
   /**
@@ -456,7 +457,7 @@ ${this.learning.improvements.successfulTechniques.map((tech, i) => `${i + 1}. ${
     }>;
   }> {
     try {
-      console.log('\n🔧 Analyzing batch for note management actions...');
+      logger.info('\n🔧 Analyzing batch for note management actions...');
 
       const systemPrompt = `You are JARVIS, an adaptive AI system managing a music note database.
 
@@ -551,22 +552,22 @@ What management actions should be taken?`;
 
       // Log actions
       if (analysis.actions && analysis.actions.length > 0) {
-        console.log(`\n📊 Recommended Actions: ${analysis.actions.length}`);
+        logger.info('\n📊 Recommended Actions: ${analysis.actions.length}');
 
         const deleteCount = analysis.actions.filter((a: any) => a.type === 'delete').length;
         const mergeCount = analysis.actions.filter((a: any) => a.type === 'merge').length;
         const updateCount = analysis.actions.filter((a: any) => a.type === 'update').length;
 
-        if (deleteCount > 0) console.log(`   🗑️  Delete: ${deleteCount} notes`);
-        if (mergeCount > 0) console.log(`   🔗 Merge: ${mergeCount} groups`);
-        if (updateCount > 0) console.log(`   ✏️  Update: ${updateCount} notes`);
+        if (deleteCount > 0) logger.info('   🗑️  Delete: ${deleteCount} notes');
+        if (mergeCount > 0) logger.info('   🔗 Merge: ${mergeCount} groups');
+        if (updateCount > 0) logger.info('   ✏️  Update: ${updateCount} notes');
       }
 
       return {
         actions: analysis.actions || [],
       };
     } catch (error) {
-      console.error('Note management analysis error:', error);
+      logger.error('Note management analysis error', { error: error.message || String(error) });
       return {
         actions: [],
       };

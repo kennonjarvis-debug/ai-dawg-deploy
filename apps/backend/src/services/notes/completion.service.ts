@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
 import { PrismaClient } from '@prisma/client';
 import type { Note } from '../../types/notes.js';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 // Load .env from project root
 const __filename = fileURLToPath(import.meta.url);
@@ -35,7 +36,7 @@ export class CompletionService {
    */
   async completeSong(noteId: string, userPreferences?: any): Promise<{ note: Note; version: number }> {
     try {
-      console.log(`Completing song for note ${noteId}`);
+      logger.info('Completing song for note ${noteId}');
 
       // Get the current note
       const dbNote = await prisma.note.findUnique({
@@ -117,7 +118,7 @@ Return the completed song as plain text (no JSON, just the song lyrics).`;
         },
       });
 
-      console.log(`Song completed: ${updatedNote.title} (version ${nextVersion + 1})`);
+      logger.info('Song completed: ${updatedNote.title} (version ${nextVersion + 1})');
 
       return {
         note: {
@@ -136,7 +137,7 @@ Return the completed song as plain text (no JSON, just the song lyrics).`;
         version: nextVersion + 1,
       };
     } catch (error) {
-      console.error('Song completion error:', error);
+      logger.error('Song completion error', { error: error.message || String(error) });
       throw new Error(`Failed to complete song: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -218,7 +219,7 @@ Return the completed song as plain text (no JSON, just the song lyrics).`;
         version: nextVersion + 1,
       };
     } catch (error) {
-      console.error('Update note error:', error);
+      logger.error('Update note error', { error: error.message || String(error) });
       throw new Error(`Failed to update note: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

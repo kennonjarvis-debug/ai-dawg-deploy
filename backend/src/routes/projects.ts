@@ -9,6 +9,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import { projectLimiter } from '../middleware/rateLimiter.js';
 import type {
+import { logger } from '../../../src/lib/utils/logger.js';
   CreateProjectRequest,
   UpdateProjectRequest,
   Project,
@@ -39,7 +40,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
       .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching projects:', error);
+      logger.error('Error fetching projects', { error: error.message || String(error) });
       res.status(500).json({
         error: 'Failed to fetch projects',
         message: error.message
@@ -52,7 +53,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
       data: projects
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch projects'
@@ -111,7 +112,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response): Promise<vo
       data: project
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch project'
@@ -183,7 +184,7 @@ router.post('/', authenticate, async (req: Request, res: Response): Promise<void
       .single();
 
     if (error) {
-      console.error('Error creating project:', error);
+      logger.error('Error creating project', { error: error.message || String(error) });
       res.status(500).json({
         error: 'Failed to create project',
         message: error.message
@@ -196,7 +197,7 @@ router.post('/', authenticate, async (req: Request, res: Response): Promise<void
       data: project
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to create project'
@@ -264,7 +265,7 @@ router.put('/:id', authenticate, async (req: Request, res: Response): Promise<vo
       .single();
 
     if (updateError) {
-      console.error('Error updating project:', updateError);
+      logger.error('Error updating project', { updateError });
       res.status(500).json({
         error: 'Failed to update project',
         message: updateError.message
@@ -277,7 +278,7 @@ router.put('/:id', authenticate, async (req: Request, res: Response): Promise<vo
       data: updatedProject
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to update project'
@@ -306,7 +307,7 @@ router.delete('/:id', authenticate, async (req: Request, res: Response): Promise
       .eq('user_id', req.user!.id);
 
     if (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error deleting project', { error: error.message || String(error) });
       res.status(500).json({
         error: 'Failed to delete project',
         message: error.message
@@ -319,7 +320,7 @@ router.delete('/:id', authenticate, async (req: Request, res: Response): Promise
       message: 'Project deleted successfully'
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to delete project'
@@ -366,7 +367,7 @@ router.post('/:id/share', authenticate, async (req: Request, res: Response): Pro
       );
 
       if (updateError) {
-        console.error('Error generating share token:', updateError);
+        logger.error('Error generating share token', { updateError });
         res.status(500).json({
           error: 'Failed to generate share token',
           message: updateError.message
@@ -394,7 +395,7 @@ router.post('/:id/share', authenticate, async (req: Request, res: Response): Pro
       }
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to share project'
@@ -437,7 +438,7 @@ router.get('/shared/:token', async (req: Request, res: Response): Promise<void> 
       data: project
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch shared project'
@@ -482,7 +483,7 @@ router.get('/:id/versions', authenticate, async (req: Request, res: Response): P
       .limit(50); // Limit to last 50 versions
 
     if (error) {
-      console.error('Error fetching versions:', error);
+      logger.error('Error fetching versions', { error: error.message || String(error) });
       res.status(500).json({
         error: 'Failed to fetch versions',
         message: error.message
@@ -495,7 +496,7 @@ router.get('/:id/versions', authenticate, async (req: Request, res: Response): P
       data: versions
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error: error.message || String(error) });
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch versions'

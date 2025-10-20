@@ -6,6 +6,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -43,14 +44,14 @@ export class VoiceMemosFolderService {
         await execAsync(`sqlite3 "${VOICE_MEMOS_DB}" < "${tempFile}"`);
         await fs.unlink(tempFile);
 
-        console.log(`✅ Assigned "${displayName}" to JARVIS folder`);
+        logger.info('✅ Assigned "displayName" to JARVIS folder', { displayName });
         return { success: true };
       } catch (error) {
         await fs.unlink(tempFile).catch(() => {});
         throw error;
       }
     } catch (error) {
-      console.error('Voice Memos folder assignment error:', error);
+      logger.error('Voice Memos folder assignment error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -68,14 +69,14 @@ export class VoiceMemosFolderService {
       const count = parseInt(stdout.trim(), 10);
 
       if (count > 0) {
-        console.log('✅ JARVIS folder exists in Voice Memos database');
+        logger.info('✅ JARVIS folder exists in Voice Memos database');
         return { success: true };
       } else {
-        console.warn('⚠️  JARVIS folder not found - please create it manually in Voice Memos app');
+        logger.warn('⚠️  JARVIS folder not found - please create it manually in Voice Memos app');
         return { success: false, error: 'JARVIS folder does not exist' };
       }
     } catch (error) {
-      console.error('Voice Memos folder verification error:', error);
+      logger.error('Voice Memos folder verification error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

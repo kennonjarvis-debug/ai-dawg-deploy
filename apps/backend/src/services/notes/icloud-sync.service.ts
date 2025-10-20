@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../../../../src/lib/utils/logger.js';
 
 const VOICE_MEMOS_JARVIS_PATH = '/Users/benkennon/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/Jarvis';
 
@@ -62,14 +63,14 @@ export class ICloudSyncService {
 
       fs.writeFileSync(metadataPath, JSON.stringify(metadataContent, null, 2));
 
-      console.log(`✅ Synced to iCloud: ${newFileName}`);
+      logger.info('✅ Synced to iCloud: ${newFileName}');
 
       return {
         success: true,
         syncedPath: targetPath,
       };
     } catch (error) {
-      console.error('iCloud sync error:', error);
+      logger.error('iCloud sync error', { error: error.message || String(error) });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
