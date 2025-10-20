@@ -13,8 +13,8 @@
  * REPLACE THIS with real native bridge in production!
  */
 
-import type {
 import { logger } from '$lib/utils/logger';
+import type {
   VST3NativeBridge,
   VST3PluginHandle,
   VST3PluginInfo,

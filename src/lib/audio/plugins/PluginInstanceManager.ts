@@ -13,8 +13,8 @@ import {
   createAUPlugin,
   createCLAPPlugin,
 } from './wrappers';
-import type {
 import { logger } from '$lib/utils/logger';
+import type {
   WebAudioPluginConfig,
   VST3NativeBridge,
   AUNativeBridge,

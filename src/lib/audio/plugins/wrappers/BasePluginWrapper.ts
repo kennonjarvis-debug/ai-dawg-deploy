@@ -6,8 +6,8 @@
  * and audio processing.
  */
 
-import type {
 import { logger } from '$lib/utils/logger';
+import type {
   PluginMetadata,
   PluginParameter,
   PluginPreset,

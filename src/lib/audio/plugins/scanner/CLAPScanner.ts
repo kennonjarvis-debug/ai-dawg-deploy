@@ -9,8 +9,8 @@
  */
 
 import type { PluginMetadata, PluginScanError } from '../types';
-import {
 import { logger } from '$lib/utils/logger';
+import {
   inferCategory,
   inferProcessingType,
   inferUseCases,
