@@ -13,11 +13,31 @@
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-		<!-- Font stylesheet with display=swap (already optimized) -->
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+		<!-- Preload critical fonts (highest priority) -->
+		<link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
 
-		<!-- Preload critical fonts to improve FCP -->
-		<link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2" as="font" type="font/woff2" crossorigin>
+		<!-- Font stylesheet with display=swap (load with lower priority) -->
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" fetchpriority="low">
+		<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+		<!-- Critical CSS will be injected by SvelteKit -->
+		<style>
+		/* Critical above-the-fold styles */
+		*,::before,::after{box-sizing:border-box;border:0 solid #e5e7eb}
+		html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:Inter,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+		body{margin:0;line-height:inherit;background-color:#0a0a0a;color:#fff;font-family:Inter,system-ui,sans-serif}
+		.fixed{position:fixed}.top-0{top:0}.left-0{left:0}.right-0{right:0}.z-40{z-index:40}
+		.flex{display:flex}.items-center{align-items:center}.justify-between{justify-content:space-between}
+		.gap-6{gap:1.5rem}.px-8{padding-left:2rem;padding-right:2rem}.py-4{padding-top:1rem;padding-bottom:1rem}
+		.text-2xl{font-size:1.5rem;line-height:2rem}.font-bold{font-weight:700}
+		.bg-gradient-to-r{background-image:linear-gradient(to right,var(--tw-gradient-stops))}
+		.from-accent-primary{--tw-gradient-from:#a855f7;--tw-gradient-to:rgba(168,85,247,0);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}
+		.to-accent-secondary{--tw-gradient-to:#c084fc}
+		.bg-clip-text{-webkit-background-clip:text;background-clip:text}.text-transparent{color:transparent}
+		.glass-strong{background:rgba(255,255,255,.1);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2)}
+		.border-b{border-bottom-width:1px}.border-white\/10{border-color:rgba(255,255,255,.1)}
+		.pt-20{padding-top:5rem}.max-w-7xl{max-width:80rem}.mx-auto{margin-left:auto;margin-right:auto}
+		</style>
 
 		%sveltekit.head%
 	</head>
