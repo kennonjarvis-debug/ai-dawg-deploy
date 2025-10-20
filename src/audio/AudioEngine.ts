@@ -300,9 +300,13 @@ export class AudioEngine {
       throw new Error('Audio engine not initialized or no input source');
     }
 
-    // Validate: Prevent double recording
+    // Validate: Prevent double recording (check BOTH single and multi-track recording)
     if (this.recordingState.isRecording) {
       throw new Error('Already recording. Stop current recording first.');
+    }
+
+    if (this.multiTrackRecording.isRecording) {
+      throw new Error('Multi-track recording in progress. Stop it before starting single-track recording.');
     }
 
     // Check and resume AudioContext if suspended
@@ -887,6 +891,15 @@ export class AudioEngine {
 
     if (!this.audioContext || !this.sourceNode) {
       throw new Error('Audio engine not initialized or no input source');
+    }
+
+    // Validate: Prevent conflict with single-track recording
+    if (this.recordingState.isRecording) {
+      throw new Error('Single-track recording in progress. Stop it before starting multi-track recording.');
+    }
+
+    if (this.multiTrackRecording.isRecording) {
+      throw new Error('Multi-track recording already in progress.');
     }
 
     console.log('[AudioEngine] Starting multi-track recording for', trackIds.length, 'tracks');

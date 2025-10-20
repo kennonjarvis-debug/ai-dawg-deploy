@@ -69,6 +69,58 @@ export function useSyncPlayback(
   }, [projectId, isPlaying, currentTime]);
 }
 
+/**
+ * Hook for complete transport state synchronization
+ * Syncs ALL transport properties for multi-user collaboration
+ */
+export function useSyncTransport(
+  projectId: string | null,
+  transportState: {
+    isPlaying: boolean;
+    isRecording: boolean;
+    isRecordArmed: boolean;
+    isLooping: boolean;
+    currentTime: number;
+    bpm: number;
+    key: string;
+    timeSignature: { numerator: number; denominator: number };
+    loopStart: number;
+    loopEnd: number;
+    punchMode: 'off' | 'quick-punch' | 'track-punch';
+    punchInTime: number | null;
+    punchOutTime: number | null;
+  }
+) {
+  useEffect(() => {
+    if (!projectId || !wsClient.isConnected()) {
+      return;
+    }
+
+    // Sync complete transport state with other collaborators
+    wsClient.emit('transport:sync', {
+      projectId,
+      state: transportState,
+      timestamp: Date.now(),
+    });
+  }, [
+    projectId,
+    transportState.isPlaying,
+    transportState.isRecording,
+    transportState.isRecordArmed,
+    transportState.isLooping,
+    transportState.currentTime,
+    transportState.bpm,
+    transportState.key,
+    transportState.timeSignature.numerator,
+    transportState.timeSignature.denominator,
+    transportState.loopStart,
+    transportState.loopEnd,
+    transportState.punchMode,
+    transportState.punchInTime,
+    transportState.punchOutTime,
+  ]);
+}
+
 // === CHAT-TO-CREATE WEBSOCKET HOOKS ===
 
 /**
