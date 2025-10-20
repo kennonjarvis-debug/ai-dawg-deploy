@@ -65,9 +65,13 @@ export class WebSocketClient {
       return;
     }
 
-    // Skip WebSocket connection in demo mode
-    if (import.meta.env.VITE_DEMO_MODE === 'true') {
-      console.log('[WebSocket] Demo mode enabled - skipping real-time connection');
+    // Skip WebSocket connection in demo mode or production (Vercel doesn't support WebSockets)
+    const isDemo = import.meta.env.VITE_DEMO_MODE === 'true';
+    const isProduction = import.meta.env.PROD === true;
+
+    if (isDemo || isProduction) {
+      console.log('[WebSocket] Real-time features disabled in production/demo mode');
+      console.log('[WebSocket] App will function without live collaboration');
       return;
     }
 
