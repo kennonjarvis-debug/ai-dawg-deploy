@@ -26,28 +26,34 @@ export class WebSocketClient {
     const baseUrl = (() => {
       if (url) return url;
 
-      // Use environment variable with fallback to localhost
-      const envUrl = typeof window !== 'undefined' && import.meta?.env?.VITE_API_URL
-        ? import.meta.env.VITE_API_URL
+      // Prioritize VITE_WEBSOCKET_URL for WebSocket connections
+      const wsUrl = typeof window !== 'undefined' && import.meta?.env?.VITE_WEBSOCKET_URL
+        ? import.meta.env.VITE_WEBSOCKET_URL
         : null;
 
-      if (envUrl) {
-        // Ensure https:// URLs work with Socket.IO
-        return envUrl;
+      if (wsUrl) {
+        console.log('[WebSocket] Using VITE_WEBSOCKET_URL:', wsUrl);
+        return wsUrl;
+      }
+
+      // Fallback to VITE_API_URL (remove /api suffix if present)
+      const apiUrl = typeof window !== 'undefined' && import.meta?.env?.VITE_API_URL
+        ? import.meta.env.VITE_API_URL.replace(/\/api$/, '')
+        : null;
+
+      if (apiUrl) {
+        console.log('[WebSocket] Using VITE_API_URL (cleaned):', apiUrl);
+        return apiUrl;
       }
 
       // For local development
       if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        return import.meta.env.VITE_API_URL || 'http://localhost:3100';
+        return import.meta.env.VITE_WEBSOCKET_URL || import.meta.env.VITE_API_URL || 'http://localhost:3100';
       }
 
-      // For production, use same host with appropriate protocol
-      if (typeof window !== 'undefined') {
-        const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-        return `${protocol}//${window.location.hostname}`;
-      }
-
-      return import.meta.env.VITE_API_URL || 'http://localhost:3100';
+      // Last resort: use default local URL (don't use window.location for production)
+      console.warn('[WebSocket] No environment variable found, using localhost fallback');
+      return 'http://localhost:3100';
     })();
 
     console.log('[WebSocket] Connecting to:', baseUrl);
